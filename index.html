@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Dossani Portal</title>
+  <meta name="description" content="Dossani Paradise Management — one portal for every team." />
+  <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Dossani Portal" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --navy-950:#0d0a35; --navy-900:#14104a; --navy-800:#1b1660; --navy-700:#251d7f;
+      --navy-600:#322aa0; --navy-500:#4339c4; --navy-400:#6c63d8; --navy-300:#9d97e6;
+      --navy-200:#c7c3f1; --navy-100:#e6e4f9; --navy-50:#f2f1fc;
+      --red-700:#c60819; --red-600:#e8091b;
+      --gray-900:#14161f; --gray-800:#23262f; --gray-500:#6b6f7d; --gray-400:#939aa8;
+      --gray-300:#c2c6d0; --gray-200:#dee1e8; --gray-100:#eef0f4; --gray-50:#f7f8fb;
+
+      --primary:var(--navy-700); --accent:var(--red-600);
+      --text-heading:var(--navy-800); --text-body:var(--gray-800);
+      --text-muted:var(--gray-500); --text-subtle:var(--gray-400);
+      --surface-page:var(--gray-50); --surface-card:#ffffff;
+      /* 40% brand red; --alert-ink is the darkest text that stays readable on it */
+      --alert-wash:rgba(232,9,27,.4); --alert-ink:#6d1520;
+      --border-subtle:var(--gray-200); --divider:var(--gray-200);
+
+      --font-display:'Cinzel','Trajan Pro','Times New Roman',serif;
+      --font-serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+      --font-sans:'Mulish',system-ui,-apple-system,'Segoe UI',sans-serif;
+      --tracking-wide:0.04em; --tracking-wider:0.12em; --tracking-widest:0.22em;
+
+      --radius-md:6px; --radius-lg:10px; --radius-xl:16px; --radius-pill:999px;
+      --gap:0.72rem;
+      --shadow-sm:0 1px 3px rgba(20,16,74,.08),0 1px 2px rgba(20,16,74,.06);
+      --shadow-md:0 4px 12px rgba(20,16,74,.10),0 2px 4px rgba(20,16,74,.06);
+      --shadow-lg:0 12px 28px rgba(20,16,74,.14),0 4px 10px rgba(20,16,74,.08);
+      --shadow-navy:0 12px 26px rgba(37,29,127,.30);
+      --ease:cubic-bezier(.16,1,.3,1);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{font-family:var(--font-sans);background:var(--surface-page);color:var(--text-body);
+      line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+
+    /* DPM plate */
+    .plate{display:inline-flex;flex-direction:column;align-items:center;background:var(--navy-700);
+      border:3px solid var(--accent);border-radius:var(--radius-lg);box-shadow:var(--shadow-navy);
+      padding:.4rem .9rem .46rem;}
+    .plate .dpm{font-family:var(--font-display);font-weight:700;color:#fff;letter-spacing:.13em;
+      line-height:1;font-size:1.5rem;}
+    .plate .plate-rule{width:28px;height:3px;background:var(--accent);border-radius:2px;margin-top:.35rem;}
+    .plate.mini{flex-direction:row;padding:.28rem .5rem;border-width:2px;border-radius:7px;box-shadow:none;}
+    .plate.mini .dpm{font-size:.98rem;letter-spacing:.1em;}
+    .plate.mini .plate-rule{display:none;}
+
+    /* Top bar */
+    .topbar{position:sticky;top:0;z-index:50;background:rgba(20,16,74,.82);
+      backdrop-filter:saturate(150%) blur(12px);-webkit-backdrop-filter:saturate(150%) blur(12px);
+      border-bottom:1px solid rgba(199,195,241,.16);}
+    .topbar-inner{max-width:1200px;margin:0 auto;padding:.6rem 1.5rem;display:flex;align-items:center;gap:1rem;}
+    .topbar-brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;}
+    .topbar-word{font-family:var(--font-display);font-weight:600;color:#fff;font-size:.95rem;
+      letter-spacing:var(--tracking-wide);white-space:nowrap;}
+    .topbar-search{margin-left:auto;}
+    .topbar-search .field{width:250px;}
+
+    /* Hero */
+    .hero{position:relative;overflow:hidden;color:#fff;border-bottom:1px solid rgba(199,195,241,.14);
+      background:
+        radial-gradient(120% 120% at 88% -40%, rgba(232,9,27,.18), transparent 55%),
+        radial-gradient(90% 120% at 6% 140%, rgba(67,57,196,.32), transparent 55%),
+        linear-gradient(158deg, var(--navy-900) 0%, var(--navy-800) 55%, var(--navy-700) 100%);}
+    .hero::after{content:"DPM";position:absolute;right:-1rem;bottom:-2.4rem;font-family:var(--font-display);
+      font-weight:900;font-size:9rem;color:rgba(199,195,241,.06);letter-spacing:.05em;pointer-events:none;
+      line-height:.8;user-select:none;}
+    .hero-inner{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:1.15rem 1.5rem 1.25rem;
+      display:flex;flex-direction:column;align-items:center;text-align:center;}
+    .hero .plate{margin-bottom:.65rem;}
+    .eyebrow{font-family:var(--font-display);font-weight:600;font-size:.7rem;
+      letter-spacing:var(--tracking-widest);text-transform:uppercase;color:var(--navy-200);
+      display:inline-flex;align-items:center;gap:.55rem;margin-bottom:.55rem;}
+    .eyebrow::before,.eyebrow::after{content:"";width:18px;height:2px;background:var(--accent);
+      border-radius:2px;opacity:.9;}
+    .hero h1{font-family:var(--font-display);font-weight:700;color:#fff;font-size:clamp(1.6rem,3.4vw,2.4rem);
+      line-height:1.04;letter-spacing:var(--tracking-wide);}
+
+    /* Who's using the portal. Lives in the hero because the top bar is hidden
+       by the fit-to-window stage. */
+    .who{display:inline-flex;align-items:center;gap:.5rem;margin-top:.6rem;padding:.24rem .34rem .24rem .68rem;
+      border-radius:var(--radius-pill);background:rgba(255,255,255,.08);
+      border:1px solid rgba(199,195,241,.22);font-size:.76rem;color:var(--navy-100);max-width:100%;}
+    .who[hidden]{display:none;}
+    .who-dot{width:7px;height:7px;border-radius:50%;background:#3ecf8e;flex-shrink:0;
+      box-shadow:0 0 0 3px rgba(62,207,142,.18);}
+    .who.is-guest .who-dot{background:var(--gray-400);box-shadow:0 0 0 3px rgba(147,154,168,.18);}
+    .who-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+    .who-text b{color:#fff;font-weight:700;}
+    .who-btn{font-family:var(--font-sans);font-size:.72rem;font-weight:700;letter-spacing:.02em;
+      color:#fff;background:rgba(232,9,27,.9);border:none;border-radius:var(--radius-pill);
+      padding:.24rem .7rem;cursor:pointer;flex-shrink:0;transition:background .15s ease,transform .15s ease;}
+    .who-btn:hover{background:var(--red-600);transform:translateY(-1px);}
+    .who-btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+
+    /* Search field (top bar only) */
+    .field{display:flex;align-items:center;gap:.6rem;border-radius:var(--radius-lg);padding:0 .8rem;
+      transition:box-shadow .18s ease,border-color .18s ease;
+      background:rgba(255,255,255,.1);border:1px solid rgba(199,195,241,.24);}
+    .field svg{width:17px;height:17px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+      flex-shrink:0;stroke:var(--navy-200);}
+    .field input{border:none;outline:none;background:none;width:100%;font-family:var(--font-sans);
+      font-size:.9rem;color:#fff;padding:.48rem 0;}
+    .field input::placeholder{color:var(--navy-200);}
+    .field .slash{font-family:var(--font-display);font-size:.7rem;color:var(--navy-200);
+      border:1px solid rgba(199,195,241,.3);border-radius:5px;padding:.06rem .38rem;flex-shrink:0;}
+    .field:focus-within{border-color:var(--navy-300);box-shadow:0 0 0 3px rgba(199,195,241,.15);}
+
+    /* Board: featured tile on top, then a centred grid */
+    main{max-width:1200px;margin:0 auto;padding:1.2rem 1.5rem 0.9rem;}
+    .board{max-width:788px;margin:0 auto;}
+    .board-top{display:flex;justify-content:center;margin-bottom:var(--gap);}
+    .board-top .tile{width:calc((100% - 2 * var(--gap)) / 3);}
+    .board-grid{display:flex;flex-wrap:wrap;gap:var(--gap);justify-content:center;}
+    .board-grid .tile{width:calc((100% - 2 * var(--gap)) / 3);}
+
+    .tile{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;
+      text-align:center;gap:.5rem;background:var(--surface-card);border:1px solid var(--border-subtle);
+      border-radius:var(--radius-lg);padding:.82rem .85rem .78rem;text-decoration:none;color:inherit;
+      box-shadow:var(--shadow-sm);transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .15s ease;}
+    .tile::after{content:"";position:absolute;left:50%;right:50%;bottom:0;height:3px;background:var(--accent);
+      transition:left .2s var(--ease),right .2s var(--ease);}
+    .tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--navy-100);}
+    .tile:hover::after{left:22%;right:22%;}
+    .tile:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+    .board-top .tile{border-color:var(--navy-200);box-shadow:var(--shadow-md);
+      background:linear-gradient(180deg,var(--navy-50),#fff);}
+
+    /* ---- Tile with pending notifications ---------------------------------
+       A 20px badge is easy to miss on a board of 18 tiles, so the whole card
+       takes a 40% wash of the brand red. The wash is composited over the card
+       colour explicitly rather than set as a translucent background-color,
+       because the page behind the tile is grey — a plain rgba() would let that
+       grey muddy the result, and would tint the featured tile's gradient
+       differently from every other tile. */
+    .tile.has-alerts,
+    .board-top .tile.has-alerts{
+      background:linear-gradient(0deg,var(--alert-wash),var(--alert-wash)),var(--surface-card);
+      border-color:rgba(198,8,25,.42);}
+    .tile.has-alerts:hover{border-color:rgba(198,8,25,.6);}
+    /* --text-muted only clears 2.4:1 on the wash, so the description shifts to
+       a dark maroon (5.8:1). The tile name is navy and already clears 8:1. */
+    .tile.has-alerts .tile-desc{color:var(--alert-ink);}
+    .tile.has-alerts .tile-icon{background:#fff;border-color:rgba(198,8,25,.2);}
+
+    /* The icon needs a non-clipping parent so the PayMi count badge can sit
+       proudly outside the icon's rounded corner. .tile-icon itself keeps
+       overflow:hidden so logos stay inside their rounded square. */
+    .tile-iconwrap{position:relative;display:grid;place-items:center;flex-shrink:0;}
+    .tile-badge{position:absolute;top:-7px;right:-9px;z-index:2;min-width:20px;height:20px;
+      padding:0 5px;border-radius:var(--radius-pill);background:var(--red-600);color:#fff;
+      font-family:var(--font-sans);font-weight:800;font-size:.68rem;line-height:20px;
+      text-align:center;letter-spacing:.01em;border:2px solid var(--surface-card);
+      box-shadow:0 2px 6px rgba(198,8,25,.42);pointer-events:none;
+      font-variant-numeric:tabular-nums;}
+    .tile-badge[hidden]{display:none;}
+
+    .tile-icon{width:42px;height:42px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;
+      overflow:hidden;background:var(--navy-50);border:1px solid var(--navy-100);}
+    .tile-icon img{max-width:27px;max-height:27px;width:auto;height:auto;display:block;object-fit:contain;}
+    .tile-icon.letter{font-family:var(--font-display);font-weight:700;font-size:1.25rem;color:var(--navy-700);}
+
+    .tile-body{min-width:0;width:100%;}
+    .tile-name{font-family:var(--font-sans);font-weight:700;font-size:.92rem;color:var(--text-heading);
+      line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tile-desc{font-size:.74rem;color:var(--text-muted);margin-top:.18rem;white-space:nowrap;
+      overflow:hidden;text-overflow:ellipsis;}
+
+    .no-results{display:none;text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.95rem;}
+    .no-results.show{display:block;}
+    .no-results strong{color:var(--text-heading);}
+
+    /* Footer */
+    footer{border-top:1px solid var(--divider);max-width:1200px;margin:0 auto;padding:1rem 1.5rem 1.2rem;
+      display:flex;flex-wrap:wrap;gap:.7rem 1.4rem;align-items:center;justify-content:space-between;
+      color:var(--text-muted);font-size:.82rem;}
+    footer .f-brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
+    footer .f-brand .name{font-family:var(--font-display);font-weight:600;color:var(--text-heading);
+      letter-spacing:var(--tracking-wide);font-size:.85rem;transition:color .15s ease;}
+    footer .f-brand:hover .name{color:var(--accent);}
+    footer .updated .tag{color:var(--navy-700);font-weight:700;background:var(--navy-50);
+      padding:.12rem .5rem;border-radius:var(--radius-md);margin-left:.3rem;}
+    footer .foot-right{display:flex;flex-direction:column;align-items:flex-end;gap:.15rem;}
+    footer .version{font-size:.68rem;color:var(--text-subtle);letter-spacing:.05em;font-weight:600;}
+
+    @media (max-width:720px){ .topbar-search{display:none;} .hero::after{font-size:7rem;} }
+    @media (max-width:640px){
+      .board-grid .tile,.board-top .tile{width:calc((100% - 1 * var(--gap)) / 2);}
+    }
+    @media (max-width:400px){
+      .board-grid .tile,.board-top .tile{width:100%;}
+    }
+    @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto;}}
+  
+    /* ---- Fit-to-window: every app on one screen, scaled to fill the window ---- */
+    html,body{height:100%;overflow:hidden;}
+    #fit{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      overflow:hidden;background:var(--surface-page);}
+    #stage{transform-origin:center center;width:fit-content;--tilew:240px;--cols:3;}
+    #stage .topbar{display:none;}
+    #stage main{max-width:none;padding:14px 20px 8px;}
+    #stage .board{max-width:none;}
+    #stage .hero h1{font-size:2rem;}
+    #stage .hero-inner{padding:16px 20px 18px;}
+    #stage .board-top{margin-bottom:14px;}
+    #stage .board-top .tile{width:var(--tilew);}
+    #stage .board-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:0 auto;width:calc(var(--cols) * var(--tilew) + (var(--cols) - 1) * 14px + 2px);}
+    #stage .board-grid .tile{width:var(--tilew);}
+    #stage footer{max-width:none;padding:10px 20px 14px;}
+
+    /* ---- Sign-in gate ----------------------------------------------------
+       Deliberately OUTSIDE #fit so the fit-to-window transform never scales
+       or blurs the form. "gate-off" on <html> is the single source of truth
+       for whether the gate is showing. ------------------------------------ */
+    #gate{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
+      padding:1.1rem;overflow:auto;-webkit-overflow-scrolling:touch;
+      background:
+        radial-gradient(120% 120% at 88% -30%, rgba(232,9,27,.20), transparent 55%),
+        radial-gradient(90% 120% at 6% 130%, rgba(67,57,196,.34), transparent 55%),
+        linear-gradient(158deg, var(--navy-950) 0%, var(--navy-800) 58%, var(--navy-700) 100%);}
+    html.gate-off #gate{display:none;}
+
+    .gate-card{width:100%;max-width:392px;background:var(--surface-card);border-radius:var(--radius-xl);
+      box-shadow:0 24px 60px rgba(9,6,32,.5);padding:1.6rem 1.5rem 1.35rem;
+      display:flex;flex-direction:column;align-items:center;text-align:center;margin:auto;
+      animation:gateIn .32s var(--ease) both;}
+    @keyframes gateIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+    .gate-card .plate{margin-bottom:.8rem;}
+    .gate-title{font-family:var(--font-display);font-weight:700;color:var(--text-heading);
+      font-size:1.16rem;letter-spacing:var(--tracking-wide);line-height:1.2;}
+    .gate-sub{font-family:var(--font-serif);font-size:.95rem;color:var(--text-muted);
+      margin-top:.3rem;line-height:1.4;font-style:italic;}
+
+    .gate-form{width:100%;margin-top:1.15rem;display:flex;flex-direction:column;gap:.62rem;text-align:left;}
+    .gate-label{font-size:.7rem;font-weight:800;letter-spacing:var(--tracking-wider);
+      text-transform:uppercase;color:var(--text-muted);margin-bottom:.28rem;display:block;}
+    .gate-input{width:100%;font-family:var(--font-sans);font-size:.92rem;color:var(--text-body);
+      background:var(--gray-50);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);
+      padding:.6rem .8rem;outline:none;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;}
+    .gate-input:focus{border-color:var(--navy-400);background:#fff;box-shadow:0 0 0 3px rgba(108,99,216,.16);}
+    .gate-input::placeholder{color:var(--text-subtle);}
+    .gate-input:disabled{opacity:.6;cursor:not-allowed;}
+
+    .gate-btn{width:100%;font-family:var(--font-sans);font-weight:800;font-size:.86rem;
+      letter-spacing:var(--tracking-wide);color:#fff;background:var(--navy-700);border:none;
+      border-radius:var(--radius-lg);padding:.68rem 1rem;cursor:pointer;margin-top:.2rem;
+      display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+      transition:background .16s ease,transform .16s ease,box-shadow .16s ease;}
+    .gate-btn:hover:not(:disabled){background:var(--navy-600);transform:translateY(-1px);box-shadow:var(--shadow-navy);}
+    .gate-btn:disabled{opacity:.72;cursor:progress;transform:none;}
+    .gate-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+    .gate-err{display:none;font-size:.79rem;line-height:1.4;color:#8d1220;background:#fdeaec;
+      border:1px solid #f4c2c8;border-left:3px solid var(--red-600);border-radius:var(--radius-md);
+      padding:.5rem .68rem;}
+    .gate-err.show{display:block;}
+
+    .gate-or{display:flex;align-items:center;gap:.7rem;width:100%;margin:1.05rem 0 .8rem;
+      color:var(--text-subtle);font-size:.66rem;font-weight:700;letter-spacing:var(--tracking-wider);
+      text-transform:uppercase;}
+    .gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:var(--divider);}
+
+    .gate-guest{width:100%;font-family:var(--font-sans);font-weight:700;font-size:.82rem;
+      color:var(--navy-700);background:#fff;border:1px solid var(--navy-200);border-radius:var(--radius-lg);
+      padding:.62rem .9rem;cursor:pointer;line-height:1.35;
+      transition:background .16s ease,border-color .16s ease,transform .16s ease;}
+    .gate-guest:hover{background:var(--navy-50);border-color:var(--navy-400);transform:translateY(-1px);}
+    .gate-guest:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+    .gate-foot{font-size:.68rem;color:var(--text-subtle);margin-top:.95rem;line-height:1.45;}
+    .gate-cancel{position:absolute;top:.9rem;right:1rem;background:rgba(255,255,255,.1);border:none;
+      color:#fff;font-size:1.1rem;line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer;
+      display:none;align-items:center;justify-content:center;transition:background .15s ease;}
+    .gate-cancel:hover{background:rgba(255,255,255,.22);}
+    #gate.can-cancel .gate-cancel{display:flex;}
+
+    .spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.32);border-top-color:#fff;
+      border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media (max-width:420px){
+      .gate-card{padding:1.35rem 1.15rem 1.15rem;}
+      .gate-title{font-size:1.05rem;}
+    }
+  
+    /* ===== Overhaul: corner chip, sign-in, admin drawer ===== */
+    .ovl-btn{font-family:var(--font-sans);font-weight:700;border:none;cursor:pointer;border-radius:8px;}
+    #corner{position:fixed;top:10px;right:12px;z-index:200;display:flex;gap:8px;align-items:center;font-family:var(--font-sans);}
+    #corner .hello{color:#fff;background:rgba(20,16,74,.85);border:1px solid rgba(199,195,241,.3);padding:7px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;}
+    #corner .signin{background:var(--accent);color:#fff;padding:8px 14px;font-size:13px;}
+    #cmenu{position:fixed;top:48px;right:12px;z-index:210;background:#fff;border:1px solid var(--border-subtle);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;display:none;min-width:180px;}
+    #cmenu button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 14px;font:600 13px var(--font-sans);color:var(--text-heading);cursor:pointer;}
+    #cmenu button:hover{background:var(--navy-50);}
+    .modal-bg{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:300;display:none;align-items:center;justify-content:center;}
+    .modal-bg.open{display:flex;}
+    .modal{background:#fff;border-radius:14px;padding:22px 22px 18px;width:min(360px,92vw);box-shadow:var(--shadow-lg);font-family:var(--font-sans);}
+    .modal h3{font-family:var(--font-display);color:var(--text-heading);font-size:18px;margin-bottom:4px;}
+    .modal p{font-size:12.5px;color:var(--text-muted);margin-bottom:12px;}
+    .modal input{width:100%;padding:10px 12px;border:1px solid var(--gray-300);border-radius:8px;font:500 14px var(--font-sans);margin-bottom:10px;}
+    .modal .go{width:100%;padding:10px;background:var(--primary);color:#fff;font-size:14px;}
+    .modal .err{color:var(--accent);font-size:12px;margin:-4px 0 8px;display:none;}
+    #drawer{position:fixed;top:0;right:-390px;width:370px;height:100%;background:#fff;z-index:250;box-shadow:-10px 0 30px rgba(20,16,74,.18);transition:right .25s var(--ease);display:flex;flex-direction:column;font-family:var(--font-sans);}
+    body.admin-open #drawer{right:0;}
+    body.admin-open #fit{right:370px;}
+    #drawer header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+    #drawer header b{font-family:var(--font-display);letter-spacing:.04em;font-size:14px;}
+    #drawer header .x{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    #dbody{flex:1;overflow-y:auto;padding:14px 16px 20px;}
+    #dbody label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin:14px 0 5px;}
+    #dbody select,#dbody input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:7px;font:500 13px var(--font-sans);}
+    #tilelist{list-style:none;margin:6px 0;padding:0;}
+    #tilelist li{display:flex;align-items:center;gap:8px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:6px 8px;margin-bottom:6px;cursor:grab;}
+    #tilelist li.dragging{opacity:.4;}
+    #tilelist li img{width:18px;height:18px;object-fit:contain;}
+    #tilelist li .nm{flex:1;font-size:13px;font-weight:700;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #tilelist li .feat{font-size:9.5px;font-weight:800;color:var(--accent);letter-spacing:.05em;}
+    #tilelist li button{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:13px;padding:2px 4px;}
+    #tilelist li button:hover{color:var(--accent);}
+    .drow{display:flex;gap:8px;}
+    .dbtn{flex:1;padding:9px 10px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;font:700 12.5px var(--font-sans);color:var(--text-heading);cursor:pointer;}
+    .dbtn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+    .dbtn.accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+    #dirty{display:none;background:var(--red-50,#fff1f2);color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;margin-top:12px;}
+    body.dirty #dirty{display:block;}
+    .appform{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:10px;margin-top:8px;display:none;}
+    .appform.open{display:block;}
+    .appform input{margin-bottom:7px;}
+    #libsearch-res{max-height:150px;overflow-y:auto;margin-top:6px;}
+    .libitem,.person-hit{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-heading);}
+    .libitem:hover,.person-hit:hover{background:var(--navy-50);}
+    .person-hit small{color:var(--text-muted);font-weight:500;}
+    #preview-note{position:fixed;left:12px;top:10px;z-index:200;background:var(--accent);color:#fff;font:700 12px var(--font-sans);padding:6px 12px;border-radius:999px;display:none;}
+    body.previewing #preview-note{display:block;}
+    @media (max-width:760px){ #drawer{width:100%;right:-100%;} body.admin-open #fit{right:0;display:none;} }
+</style>
+</head>
+<body>
+  <div id="fit"><div id="stage">
+  <section class="hero" id="top">
+    <div class="hero-inner">
+      <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
+      <span class="eyebrow">Dossani Paradise Management</span>
+      <h1 id="portal-title">Dossani Portal</h1>
+    </div>
+  </section>
+  <main id="app-root"></main>
+  <footer>
+    <a class="f-brand" href="https://dossaniparadise.com" target="_blank" rel="noopener noreferrer">
+      <span class="plate mini"><span class="dpm">DPM</span></span>
+      <span class="name">Dossani Paradise Management</span>
+    </a>
+    <div class="foot-right">
+      <div class="updated">Updated<span class="tag" id="footer-date"></span></div>
+      <div class="version" id="footer-ver"></div>
+    </div>
+  </footer>
+  </div></div>
+
+  <div id="preview-note">Previewing</div>
+  <div id="corner"></div>
+  <div id="cmenu"></div>
+
+  <div class="modal-bg" id="signin-bg"><div class="modal">
+    <h3>Sign in</h3><p>Use your work email. Admins will be asked for the admin password.</p>
+    <input type="email" id="si-email" placeholder="you@dossaniparadise.com" autocomplete="email" />
+    <input type="password" id="si-pass" placeholder="Admin password" style="display:none" />
+    <div class="err" id="si-err"></div>
+    <button class="ovl-btn go" id="si-go">Continue</button>
+  </div></div>
+
+  <aside id="drawer">
+    <header><b>EDIT PORTALS</b><button class="x" id="dr-close">✕</button></header>
+    <div id="dbody">
+      <label>Portal</label>
+      <select id="sel-portal"></select>
+      <label>Or find a person</label>
+      <input type="text" id="psearch" placeholder="Search name or email…" autocomplete="off" />
+      <div id="psearch-res"></div>
+      <div id="person-tools"></div>
+      <label>Portal title</label>
+      <input type="text" id="ptitle" />
+      <label>Tiles <span style="font-weight:500;text-transform:none;letter-spacing:0">(drag to reorder — first is the big featured tile)</span></label>
+      <ul id="tilelist"></ul>
+      <div class="drow">
+        <button class="dbtn" id="btn-add">+ Add app</button>
+        <button class="dbtn" id="btn-new">+ New app</button>
+      </div>
+      <div class="appform" id="addform">
+        <input type="text" id="libsearch" placeholder="Search the app library…" />
+        <div id="libsearch-res"></div>
+      </div>
+      <div class="appform" id="newform">
+        <input type="text" id="nf-name" placeholder="App name" />
+        <input type="text" id="nf-url" placeholder="https://link" />
+        <input type="text" id="nf-desc" placeholder="Caption" />
+        <input type="text" id="nf-icon" placeholder="Icon image URL (optional)" />
+        <button class="dbtn primary" id="nf-save" style="width:100%">Add to this portal</button>
+      </div>
+      <div class="appform" id="editform">
+        <input type="hidden" id="ef-id" />
+        <input type="text" id="ef-name" placeholder="App name" />
+        <input type="text" id="ef-url" placeholder="https://link" />
+        <input type="text" id="ef-desc" placeholder="Caption" />
+        <input type="text" id="ef-icon" placeholder="Icon image URL or data URI" />
+        <div class="drow"><button class="dbtn primary" id="ef-save">Save app</button><button class="dbtn" id="ef-cancel">Cancel</button></div>
+      </div>
+      <label>Copy this portal's tiles into…</label>
+      <div class="drow"><select id="dup-target" style="flex:1"></select><button class="dbtn" id="btn-dup">Copy</button></div>
+      <div id="dirty">Unpublished changes (only on this device). Publish, then upload the downloaded file to GitHub.</div>
+      <div class="drow" style="margin-top:12px">
+        <button class="dbtn accent" id="btn-publish">Publish (download index.html)</button>
+        <button class="dbtn" id="btn-discard">Discard</button>
+      </div>
+    </div>
+  </aside>
+
+  <script type="application/json" id="portal-config">{"meta": {"version": "4.0", "updated": "August 2026"}, "adminEmails": ["itsupport@dossaniparadise.com", "deisy@dossaniparadise.com", "rahim@dossaniparadise.com"], "adminPass": "T3ZlcndhdGNoQDc2MDUx", "api": "https://alignment-api-khaki.vercel.app/api/dpm-alignment", "apps": [{"id": "rbi-okta", "name": "RBI · Okta", "url": "https://rbi.okta.com/oauth2/v1/authorize?client_id=okta.2b1959c8-bcc0-56eb-a589-cfcfb7422f26&code_challenge=fKhiRUJKNzaAxiLUo2FjGbMC0tdE9NsV9YmnLf4Ixs4&code_challenge_method=S256&nonce=yT1a93Zrw3LAP31SfZcEFvhAwbcz73Sbdv4vdEn6cUtfq5wxIY0jt2tFpLuZWwGc&redirect_uri=https%3A%2F%2Frbi.okta.com%2Fenduser%2Fcallback&response_type=code&state=xeUHcVZ8S8EAvFQdPfkGR4tRcZwOlAUzoichNtilEXPxTeqoDNkC6886YIHtJ6XQ&scope=openid%20profile%20email%20okta.users.read.self%20okta.users.manage.self%20okta.internal.enduser.read%20okta.internal.enduser.manage%20okta.enduser.dashboard.read%20okta.enduser.dashboard.manage%20okta.myAccount.sessions.manage%20okta.internal.navigation.enduser.read", "desc": "Restaurant Brands sign-on", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACEElEQVR4nHRTPUgcQRT+ZnbvDj2bI3BFcomSQP4IKZREkiIhXplUIQQUA4FUgUCaQCTXCBIhSZEiIaQRCwsbbcTGwuMKFfxDRMHGxj/Ef1RO8W5vx2929+7m0HvL2337zXtv3nvzjQ1THn6Jwgm/hFKvAdFMJBGsrFOniPchGkljtvOkGCJKwQ9S11FQHbRaqTFcLnuMGETO6cLyT50UlgffTl0D1F9a7dQaVJdaaiMseQvxpxPYGT+00NRZC6fQzcxtFRUBWeoGkQN+bWrEqPoOICOoT2YksmcthN4YwS51lBW1wxLP4Yhn7L2Nmg7WiklacZp7ZUOId/y5UtpXqQyE/ICl7hWjmg3cSy1wsYd2MsBietiSxmPD8Zj6G0vfVy5072HenLJlUDTrBInyP3bgyjlUE0vO8r1tIAlZ4aCYwnasqglkXnuoCgg+SYoSh5KNVRPkQ48YHjeQNSZQkwYQZR+fOLD6C8F3Oxro+5lWnYFOC9z/9pZZ/6PMPtc/CfxBqDADNyRQcJu8xMCLoGote/R7b6MmPIyTXD+Bj/DPV/JoW6BPx7G36URMxP3qSqL4DOh7YWEzkyctFxl3Ex7DSoQKB1XFArscDAzBFV+x2LXvT5ycxtUnYxyg7q8BPucvE03rXjI0RV4Yl0nL1vgRbiTTvGnzbMEOSq6DT99VbjzCXX8hnPuHhR+7xbBzAAAA///iqZUFAAAABklEQVQDABEknSsJ0Li/AAAAAElFTkSuQmCC"}, {"id": "genius-back-office", "name": "Genius Back Office", "url": "https://xbo.xenial.com/", "desc": "RTIConnect / Xenial", "icon": "https://play-lh.googleusercontent.com/Frmm1zrtTeDo_6WhQplleLKFkLaodTlWHQCX3lus8Ox-GrqYnmnprzghCXNESdXdbvsWnLruoA8qN4_0obAi"}, {"id": "c-store-pro", "name": "C-Store Pro", "url": "https://secure.cstorepro.com/EmagineNETCOSM/login.aspx", "desc": "C-Store Back Office", "icon": "https://www.google.com/s2/favicons?domain=cstorepro.com&sz=64"}, {"id": "outlook", "name": "Outlook", "url": "https://outlook.office365.com", "desc": "Email", "icon": "https://www.google.com/s2/favicons?domain=outlook.com&sz=64"}, {"id": "par-pos", "name": "PAR POS", "url": "https://admin25.parpos.com/Public/Login?ReturnUrl=%2f", "desc": "Point-of-sale admin", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAB9klEQVR4nJRSz0tUURS+97x7Z+4I/RSmGLAC90XUqv6ACFcWJFZIJAw0mDEFE7QqSiopo0Xgrl9gtAgGQlq0EXEhoht1M4Ki82QcdXBmdMb34773rue9N4Loau7mvfud75x7vu8cdunqLdLMAdLkAaXUIegocjDEKKX48TwkKfzXNC2Mua5HKQlyFYIY8jxEKEO2BiAEx7vruruGJaIRZMdiUeSG5QzDDBHHcZlhWNevXX4/kBaxqGXaP0f+fhj62pe6+6CnM58vtLefa2kRudzyl+Ffs/M5JV3AwkJE4vHWb9+z4xPT6cc93V0dmWe9Z+OtiUT85Iljnz7/aGs786Tvfr1mAKBL2Kjna1gtbOh6URE18Kp/cUnfKG1hP9Xt2sjv0dzCCmYG7RGgKIr40t69Sfc+vC2lY9r2n+x/AJBSnj51fG4me+F84vXb4UA0MC8QDUCTqZdCRIcGM1ipP3WPc4bJ5cp2obCJMianZhlDA5VPtSxZXC+Vy9XuOzdH/43d6Eg+zQzm9bVSqayvFp+/+BiJ8EfJLtuWaDS9eKVT04Bzjsah+mp1B71D47FqaGu9bmACXmu13cbgkCqlSYGapoXvMsYC7y0S6ONccxynUtnBuo3BBQOm/p74XZJwohjeXwfia4TGyvgvHFqYo8hBvOlt3QMAAP//h93/vQAAAAZJREFUAwB/3/lNzvjOcAAAAABJRU5ErkJggg=="}, {"id": "sicom", "name": "SICOM", "url": "https://bkdmb.sicomasp.com/login.php", "desc": "Store systems & kitchen", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB0ElEQVR4nJSTy0sbURTGfzNOCKFGBC2FpIpQi7GrLmq7LVa6NbZ7bTbtwnbfx67Q17r2sSiIdqeg/gG+FooSBUXxgUsxWYgLGaPgK9d7cs04TgzoB5dz7p17vvOdc+baSqkGvSbUzbEgsZY4wEN82D/OM7V5wCmK2ojD3WiIlbTDg2aIx/w3mRQC5T8ZXHYZXssRq64gcTvE/ZowajvMmy6Htlb49fMSAY5/8298n975HPfqbTqaojyKRwg7FqoO3nbDkxZK4CnI7uRp/7xLXb3iz+tqIlYFY6OwlYXmBLQ940p4Cv4OHJF3HXpSlZzkbJKvIJOBqipwXUPS32v2fthFZ23VorE2RKzGpq/fBH98D3Mz0NWpv6/D6HipAo9gdcmm8U6o4Lt75kyaJkg0GSukZQlu6Zrzh1bBL46q778JGjvPLGUE4TWxMwXrG4r0tFVQkHx5OeOLJHz7UkrgNTHZDh8+WQyNmEZJ8HcdEI+frxhXwvFnSM/p4OjF5a8/IFoJezlt9XmHTvKuu0wJfrQ+N7aoQMbY81snSOupzJZREISUIOWImkzWqBOyIETBhLZPg8EyAZm9QHryuMWUEPiRFoWgQTvDBF7kNTCpV+oMAAD//2QjS+UAAAAGSURBVAMAimXXhSkxEI0AAAAASUVORK5CYII="}, {"id": "findmi", "name": "FindMi", "url": "https://dossaniparadise.github.io/DPM-FindMi/", "desc": "Company Directory", "icon": "data:image/png;base64,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"}, {"id": "fixmi", "name": "FixMi", "url": "https://dossaniparadise.github.io/DPM-FixMi/", "desc": "Submit R&M Tickets", "icon": "data:image/png;base64,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"}, {"id": "paymi", "name": "PayMi", "url": "https://dossaniparadise.github.io/DPM-Paymi/", "desc": "Invoice tracking", "icon": "data:image/png;base64,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"}, {"id": "rsi-web", "name": "RSI Web", "url": "https://www.rsiweb.com/net/public/PubIndex.aspx?ReturnUrl=%2fNet%2fhome%2fhome.aspx", "desc": "Restaurant reporting", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACG0lEQVR4nJxTTUhUURT+3vV2eYWEZIpMwhTYMEa0NCKyolVIMrNxVxEEEtEiRFrF4NLFINJChKRFBDHRFC5sMcsW7VzLBDHJJILZYhiG967P+zrnvp8Zd+WBw7n33PN95+edJ0AShmGBtBH+u3BsgbFOfPiktUYiQgiriRhjrEa+rl9KUWSCRudHI6u3t20QRUHl85ADA3wEu3SzCdPcgRzNkI7CtFoI6lsUdwmSiLKdahXe6mrK3CF1SyWo6Wno9XV4Cwvpmzs3B5HLoTM7i9NraxCepxFwGi7p6zfILzWIyUkL0jqAVy5DzMzYN/WyRG+3EIfbiqVJbrEDJogu/f1d/8ZGNJupezDDw9ROM43vToQdN6/DTN2F2dyEXFy0Q3NXqLWREZhKBfrhfeilMnqTHiHA8itgbAxot4FW2w5R0kDdt+8gP3y0rTFRD56T0CeLedyJCdsnS7C8RNNuw5t/Dv1iHtjdjRBUTfKFLdZ1FfpILQHZU1cuQ9GEGRBU3kPevgPU6wiePbXWpaEqJVMC3oPQ87x0eZL+ess80nOcno0l8H0/LBQewPejTazVqtjqc3CCzgek+cNDPHr8BENDZ7G39xtvXq/g6rUbOJfJ4NcOLZdSKgUnzAw+eTEHfK/bLAy+cD6bVsDg8fG8vXMzweDgGbm//ycl4cwMPojvnLnXcubEpj8TjidF4TjOZz6Q/vwPIMcWGfsXAAD//306wc4AAAAGSURBVAMAmVcYQOseJLwAAAAASUVORK5CYII="}, {"id": "360iq", "name": "360iQ", "url": "https://id.go360iq.com/web/login?ReturnUrl=https:%2F%2Fid.go360iq.com%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3D360IQWebClient%26redirect_uri%3Dhttps%253A%252F%252Fapp.go360iq.com%252Fen-US%252FAccount%252FLogon%26response_type%3Dcode%26scope%3Dopenid%2520profile%2520user%2520offline_access%2520web-microservices%26code_challenge%3DvJ5UZ3bDdwJPs70a4T7PZrJnnEZp3VPEUOoMT9t1aNQ%26code_challenge_method%3DS256%26state%3DOpenIdConnect.AuthenticationProperties%253DEPkb9tpcLx8E7utuCkUVp5PJuSqvBW0gsh7inkQ4luyqSb2Sps5dY0ZuI830STXrhK5R31Y_PTcDzECxOULKFD92RkHU7qgn3kl2wDmKGmpojrPAjiV9mw-bkG2m_QtvpF7QCc3IqnakBrgyk9UvluceNGPjKkb1OgMGmLzmvH4uK7E3imaoc1QGUiCoJFTTfYBMLEM2j2yuLePalRLTUmKpIDQvLkob6r1B-W0KIhxKoYF1rsf2V_Rri2BCkqkM76bTuJL10jkWxJsM7_2BfY2JUJpZCAe5rjLEst5xi54m8dQfxoEhAkAtzM7lZv3jjcyhZe-0C3PCUzUkXLnZvg%26response_mode%3Dform_post%26ApplicationType%3DWeb%26ui_locales%3Den-US%26Username%26x-client-SKU%3DID_NET461%26x-client-ver%3D5.3.0.0#/healthdashboard", "desc": "Cameras", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACJ0lEQVR4nGRSzWsTQRSfmZ3NR7PbfJTa0lCw2pYUj3705MGriOJB8Ch4aPEvEKEI3jwEFD1WchGh0pt4Ej+uQkAwKdVgjVgMtdE2TZqv3Z33fLO7iYW+mYF5j/fxe7/3JCKygSAoLgxEYIyThMaBikwfSQFaUS7jwvcmVZBf220q8KQwR0zbD0PO9JF+AgG7Zff9fXFuOTJ/eb/3+9XWamX/kwLHNKILY4tXZm5bkTQgcJ0VdT2mHNGsRfptB5wXmw8/bK+TLRkbB1Rvfjx/WXkE6FF6wsRBKR3hdvfaP+sSpFL54nIuc/7WmRXLTB44f1dLK9utyt0LhSlrBgAE+r01mfP4y4N3W4W+6jqqN51cGOWW+/FpOjaRtefJ0nFbqPtAETTdcRv1w2pMJngAEIGssPsZyutK9YkGzkPihKYIUXBDGlFNm76Cux0sr0HvAKtvORB67eMPADWDA8rJ379coNcVO6WYaRtWVpt8FH7TXA7HxplBxKXjEyNGYqNZyuVupiKpem9ns7Zmm6lU9ARHHSS5TsnItafaLbcxmTh5afrG6+qzJ9/zNARdELzrs3fG4pPBHGSAx45kLmavZe05qn51dmnKOvV1r0jk/Dr89qdbixqJcE0ICGg+2P91CuAOpNrYyBeXRqPj9xYLNBbqR+qlYjxgIFwyrQA92q2sfXouc9ZTDoHRHqgrQOAUtu6nP6p2vTZ94jIRGPnR9T4uQ4TDzz8AAAD//ycG2IcAAAAGSURBVAMAzn43nWAm+MwAAAAASUVORK5CYII="}, {"id": "safetyculture", "name": "SafetyCulture", "url": "https://app.safetyculture.com/templates", "desc": "Inspections & audits", "icon": "https://www.google.com/s2/favicons?domain=safetyculture.com&sz=64"}, {"id": "rti-oil", "name": "RTI Oil", "url": "https://rtitom.com/LogIn.aspx?ReturnUrl=%2f", "desc": "Oil management", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWklEQVR4nIxTv08UURCeefPe3e6dKCCxojJWxEotLsFCEiNwNDYkxBgt/Qus4RIbG1sbYqwMgcTEggTEBIjhlxj/ARJ6CQQC3u3d7r55ztu7vYsmRCe7+37ONzPfN6uhY1P7+zdZFW64ZsvqAmKStPcJEYG4dXJ8fLhXrZ7DX4bgHAKiq37/8dbowrO0Xo9RITlmBKWcP5M5oKIjIHq/vPzpNczNpTmAykDEOEkGdblcwoLpV0HQp8LSFZKRisWrOgiuAvMtE4avpsar893g+cfbxNbujDKmws0okagq25TsnHVMhcI1WT12NhmgsERxK370+X5lTTJROgdYGa0syLAAl9jk7v4qUvGDB1fgJmVrDUZGsAvwYH1dh8PDBAcHfzhGYYgXfX02Pku/GmMbWUlaD2WH09PcBdgYG/PEpJdlMLH97bYCDD2h1vKvnIcuwPjW3pRCd5dT1xRpyOsDmQaWHdF1An5irTWEAbLjjcxpaUkAnBNgZEX4NBwcmolPz0BpnXn7B5Tw7KM2GiyqyNhcWf3S/NiR33q2XaYn6XoaRY5t2rRJnPiX41bKcRyz7ypFSpIBcesffWhCn5v30/mEbfyGI7UIBKn0EVpPh0THhB2QGpR2eimX7plyqVK+sNPi8g4WFwnhP218Z+cOsdqmMDBJFM2L7C98+V0Ss5p8Y9VqnY1ZeWUuWvtV6xSPiuUk0lgqCEdB7tUDaJfiejHnesByxpub/q8SFS04a9v3arWejJdahyMA4c2w0dJYAmraSc66fwN0rH7+86Q0MPQ8bTQCi3yYg/8GAAD//zqbwRcAAAAGSURBVAMAEscLd/UHSesAAAAASUVORK5CYII="}, {"id": "onedrive", "name": "OneDrive", "url": "https://alsinvestments-my.sharepoint.com/shared?id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FFast%20Food%20Ops%20Files%2FAbove%20Restaurant%20Leader%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments&viewid=45f7a3c5%2Dddce%2D472c%2Da9e0%2D09b9e6167324&ga=1", "desc": "Ops Files", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACCElEQVR4nKRTwWoUQRB91dOz2U10sxsJQTQ4uShEMDGoSE5B8L7ePPoDsuMX6B/oJ+QPcvDowehZXDzpLeYiMYLr7MzO9Mx0d1m7imiCh7AFDd1V9V69KqoVZjSFGU3/L3D3Zb1jWq5nF6itm/aQ5tTuYL11eDKPTjoe7nGUON77HvJG1nCEeY+gxdwI5O7di3e3F5+cUhDFg446Un2TpXE5KjpVowVTA2VN0IJTNagmRqg43nr1De/vL/8hoc34oFMXbjA6HkbRjRV0rq3iSwn+ISBBQ4WetbYIlCXV9vDiswtq59N2982EQJms6udJGnm2aAv4OAfSnMnnDm7oUB/V8EORcaWJ8lIT5nILfkXvXz9In09byIfpozzJcLV3B1/HwMgwqkoqFdJDUQHSe7DVRiGCTAlYB4RytPZx9DFNdF6UUXN1GWPdQj4FM1MuHaclbFLg3PZ5lHMBEgPkE8khIdSEIAhAxH29dO/WZwZFaWbhnNwqB5+W7EaGnBf5awtIRYyEUXol01SsFCMgLyy0qM3Y7nrGU6GDcp7YWHLjil1uoG92kSaYEpTu19S9DJ6ltOVg8vxAUTzsVCG/ZsYmOWaWTF+UhIvzcOtLyH6D+e/lIUjidIceTBepIySNysRsXc9b3kBXJr12AWORbaWk/wcNFtBbDvEMj2n/1Cae1Wb+TDMT/AQAAP//jwuVcgAAAAZJREFUAwCO3BAlPrGgJAAAAABJRU5ErkJggg=="}, {"id": "onedrive-2", "name": "OneDrive 2", "url": "https://alsinvestments-my.sharepoint.com/shared?ga=1&id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FC%2DStore%20Ops%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments", "desc": "Ops Files", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACCElEQVR4nKRTwWoUQRB91dOz2U10sxsJQTQ4uShEMDGoSE5B8L7ePPoDsuMX6B/oJ+QPcvDowehZXDzpLeYiMYLr7MzO9Mx0d1m7imiCh7AFDd1V9V69KqoVZjSFGU3/L3D3Zb1jWq5nF6itm/aQ5tTuYL11eDKPTjoe7nGUON77HvJG1nCEeY+gxdwI5O7di3e3F5+cUhDFg446Un2TpXE5KjpVowVTA2VN0IJTNagmRqg43nr1De/vL/8hoc34oFMXbjA6HkbRjRV0rq3iSwn+ISBBQ4WetbYIlCXV9vDiswtq59N2982EQJms6udJGnm2aAv4OAfSnMnnDm7oUB/V8EORcaWJ8lIT5nILfkXvXz9In09byIfpozzJcLV3B1/HwMgwqkoqFdJDUQHSe7DVRiGCTAlYB4RytPZx9DFNdF6UUXN1GWPdQj4FM1MuHaclbFLg3PZ5lHMBEgPkE8khIdSEIAhAxH29dO/WZwZFaWbhnNwqB5+W7EaGnBf5awtIRYyEUXol01SsFCMgLyy0qM3Y7nrGU6GDcp7YWHLjil1uoG92kSaYEpTu19S9DJ6ltOVg8vxAUTzsVCG/ZsYmOWaWTF+UhIvzcOtLyH6D+e/lIUjidIceTBepIySNysRsXc9b3kBXJr12AWORbaWk/wcNFtBbDvEMj2n/1Cae1Wb+TDMT/AQAAP//jwuVcgAAAAZJREFUAwCO3BAlPrGgJAAAAABJRU5ErkJggg=="}, {"id": "hr-portal", "name": "HR Portal", "url": "https://dossaniparadise.github.io/HR-Landing-Page/", "desc": "HR forms & quick links", "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23251d7f%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%229%22%20cy%3D%228%22%20r%3D%223.1%22%2F%3E%3Cpath%20d%3D%22M3.6%2019.4c0-3.2%202.4-5.4%205.4-5.4s5.4%202.2%205.4%205.4%22%2F%3E%3Ccircle%20cx%3D%2217.2%22%20cy%3D%228.9%22%20r%3D%222.3%22%2F%3E%3Cpath%20d%3D%22M15.4%2014.3c2.5.3%204.1%202.4%204.1%205.1%22%2F%3E%3C%2Fsvg%3E"}, {"id": "paycom", "name": "Paycom", "url": "https://www.paycomonline.net/", "desc": "Payroll & HR", "icon": "https://e7.pngegg.com/pngimages/420/762/png-clipart-paycom-thumbnail-tech-companies-thumbnail.png"}, {"id": "screenconnect", "name": "ScreenConnect", "url": "https://dpisupport.screenconnect.com", "desc": "Remote store support", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACRElEQVR4nKRTO0xTURj+zjn3Fm65vVIELoIoSmMMJJJoYiQiGtKhxOBg1OCgbAZGohvRycFNEwclMjF1UhwAnXQSJ2MhMIFIgSAIhT5vH/ec421D1aZj/+E8/vPl+x/ffygqNIoKTSm5tVw8Cpc1AklVEMnK0IJJSBFEOLRYdJESwImODqjVixACDrA8HHESlnwJKesGdpZXygkAE+3nf2F/9wEi4Tf/+V043qEXTm5VM8ceDal1tV82BgY+K76ZGcMCnjDDcKW+hep3n7209ds3bzWM3D+bOzhQlGo3pG1PrfX0fCqyqcfMRifLqQvj4w2KZVkGa2p6CCnBamqiyOUoqzMu8XjiMtJZcNsphdKAGQwObQ8Ofi20Qog0Y+zIlsNFqaKIQs0Qo9bE+GnoHhoNvhsLX+nVNwIBfd3v19sJ6dx++iKAU1338gQMgkvOOfV65V8VZCzBYnNzEbSdu6s2md6Wt5O11sJCDqaJjM8nkONeSEzqw8MfidutyFRaFmQUtk0VVXXeDhv6cz7Y+Gq2m+/vz7uam1ud+rG5vsaNvh4Se/8Bnt6rW0RzU6TSEJpGFE3TYtlkMo6qqupiNpv9/XNtodAdQqRfxOOguptkd373gbFrPJF8LdKZCCEkekbXs4WordPTvamVte695xOzgJ0psKzOx501fcjJUe97DI8+itXveTmt8kGq83XCqJl1orTmFSkfIgcquLPnTuLHUrjo/jfKkeVF1Hb5nWZch7DLCQQRoCQDj7JXwosKreLf+AcAAP//mp1C+QAAAAZJREFUAwDmhd/awi5O+wAAAABJRU5ErkJggg=="}, {"id": "cash-connect", "name": "Cash Connect", "url": "https://www.cashtrack.cashconnect.com/Account/Login.aspx?ReturnUrl=%2f", "desc": "Smart safes", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWklEQVR4nKRSS2sTURT+5j4mkzRt2hilRSiFIkbbCEWrtGJ9IELBhTTiY6O4EdRGcO1KpL/AmoXtRlxYMO1GEATRiuhGBOmixIL4QClqEm3aThKTmfGcmfoHmjtzhm/OOd+53zn3CjS5BJpc6j+4NjmWc1037cFDHQZ2Uu3Mnm4/dmfhKz7AhaaYQY8QYvbu+Nxpjhn8Gc+OPTwyePRcsnc3HNeFIyS63r1CvKvhFygtKyzvPQTpOpBCIP9xEfNvX8xMXp07L2/cO5vbl+w705noQHn1F1bXSijbJfR9ykP0b4PRomEtfsFCNAR7rYj19SKiYROt4XB/z3BnShnw0umhK2g4dRIIePSpC5Y5ABFJBP0NFDDYvR3apRaMQPb+Ho33S9fTSkgqAQeZ7CVIehJbEqhSwq2VFeiDSZ9ff53H7VgMFuFCsUDZDrKZ+2CuUkKh7v5FvC2GVqsFx4ePoUrbiKePSUE4OCrTwsmRE7BI3rM3z2HXKj6HuYKHUnNr2NqewOjIKDk0mUnD0jC06Rtj9nGMc+KxuM9hrlBSUv9VmEykijNPZqH8ZAmhN4ww+zjGOZzLHOX7uQD1ZFkhaG3hwqmLNAPB0mCYMmiBsBCmH1O0q2VZPoe5gQL6+UHDmcpNQVG/ygzRznTHNowx+zg2/Wga335+h2M4gQItFTy60EM7UihXbBQ+L5ECg9SYcCLaVyAJsz9M53VgVwpRTYgGrZWCMfHg8nykzTrsHzARXUqqELrpAo2OSHDff9uYoE34TCTleXxZ6LXLlZfM6iVrx+bWHwNNrn8AAAD//zI/iy4AAAAGSURBVAMAEHa78AyLrXwAAAAASUVORK5CYII="}, {"id": "flowers", "name": "Flowers", "url": "https://omsi.flocorp.com/omsi/clientportal/apps/cplogin.html?p=Km530c8XSlYiXYABAQY6Y53vyTnsGDiiyfOmqbodyug%3d&utm_source=Supply+Updates+-+Template&utm_medium=newsletter&utm_campaign=Flowers+Ordering+Portal+Update", "desc": "Bread orders", "icon": "https://www.google.com/s2/favicons?domain=flowersfoods.com&sz=64"}, {"id": "bitrix24", "name": "Bitrix24", "url": "https://dossaniparadise.bitrix24.com/extranet/workgroups/group/12/disk/path/?viewMode=grid", "desc": "Paperwork and Receipts", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB+ElEQVR4nKRTzUtUURT/3fveOE/fmL4oZTKssFHCiqCIiIqWfa5atJhFixYRtOkPaFerIKhVi2gXRuTOnQjiRvd+gIriF6Pgxyg68+bNvPuu59xxxlF3znmcdy/3nt85v985XFtrLbpHshFOYTOPPClSw1sadZjUBK/1J+caMHS3BZMPPfy6kUBHXOJ4TK2LrqHNKoPn7Q343ps4UmHFj9C/FiCINP5lAmyXjhIWXYMb1ZOBe63oSVhmr+h0NqdgCeCqa4EWLPkKL8d2kFeHSWx90D4OZDBfTe4qfJzaw6JfvkxRgh+9Lq40SrxOxvF7qVDTA6JmE+xTtwtG+6HGu/EyePaxZ4KYyYeJHCIt8OZSI16QVMaxS62A95ebkO50wPVGt0OsF09OdS6vML4bIulIfLvZjGdtcTDWMHh10THU2blZtcYsKkyCCNW4t522YWDzr80RVL0MvNNqw5ECBTpPDWeric7GBK6foZHyR/OjVhxKmKemRayJcni2wOeeJpOkYgnq8NdrLuJCmJigpJAhSYw1DH5O5/DllguLQJaUeHo+htstzRjNhuA8D7wYvJgwlUsqgh+U8HexWJEA9C8UYNEmTbraHZiZs993ygzCfBHrB2w2qRH/l0P0LYRGtOjoW63rLRgJ9Zjg53zhz+qpnnMmnZT7AAAA//9PvO61AAAABklEQVQDAHd694Xfwx4YAAAAAElFTkSuQmCC"}, {"id": "zenput", "name": "Zenput", "url": "https://www.zenput.com/mobile/", "desc": "Store audits", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACVElEQVR4nIRTO2hUQRQ98968/RnMR0jhgihoqqRQERFS+Cksgo3EKCKE+AuIGgQ1YIKINrHSxlSioJ2FtnYKFoFNoqspsgpGMWJE0KhZN5v3u947md24sujA7Gfm3nvOPfeMJqJxAFt5x1EUuUqpmM8c1Fmu65o7ieG/ivek4gOSZHug8M9F4GjiApUDpSvJvu+r5/lpWuJvx1EwZTmOYgIzQyqVxLYtHeR5GoJpi8SKL8lxHMzP/6CdXb3q67fv5GlPUhHGMTKpFNLpJH4u/MLVoTM4cnAfgiCE1q6hoDlZsJBIeIovqVgsKZcvoyjGqkwaL15No/B6Bg0NGWTXtppYAWQGpn0VxzFVG1K1Esx9/oJjpy+j8GYGg+eOo7+vx7QjBSpL/5kQhmG1v4ViCQODI3g5VcDhA1040dttkv8GqRmXpSbjwvWbtzE2nkfnjs24dP4k6rGU3zUFIhZNa4079x/iwaPHWL8ui2tDZ9Hc1AhutYZ6pVC1BRHN4+Snz3K4MXoP6WQSwxf60bZpA/wggGZWRiyZryQTrRSIDbKLd+8/4srILR5TgIsDR7F3T6fRJOF5FoYto5ZZEOewoyCjEHsaAftODSM3OYWWptWqo70NjqXJzoJfLqPn0H6MfspQoxvhbnc72PfQMsplFgRxWYZNw27FWC4PWDfKR1hexPbdu+jJ2yXVrEM2GUEkEQaRFJFVWizTh9k5aVHVCgYEYYRsawtm/QQl2YQb16T51bGV7WMiO///PKaVRRZVYCbsWEwR0URErbel00hgOcZiTfwGAAD//3g9XNcAAAAGSURBVAMALfQstKPK27oAAAAASUVORK5CYII="}, {"id": "onedrive-arl-files", "name": "OneDrive · ARL Files", "url": "https://alsinvestments-my.sharepoint.com/shared?id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FFast%20Food%20Ops%20Files%2FAbove%20Restaurant%20Leader%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments&ga=1", "desc": "Above-restaurant files", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACiklEQVR4nFxTO2hUQRQ9d9687MbEGNAogmAgVcBa1MaQQlIqqFgEgiAiWMQgNqlSapVoo1iYUiujhSI2FoJikEAKwVRGiyj4CZvs++2bmeudmXzEXS4zb96cz/08ja3fwpeZwd/Umv/BxemcmOCArJ1juLuJo/v60AYjB3POTLXsa4W5mwN3p9Q2wd5GOkugEescWZa/sTDGYEjAAgwEG+xoE45bEpvOTXqc3iZQpM4ys2gwO+uIHcNagzIqh8hikIG/F3E7BHLmjyHa5FfnXIhKXlXyXHAkMVvXCf8RbKnDKztYMelvEQoh6cjtjgd7WTnzS/Ynj0Qnnl+fMB0zVxVVf13WMJWBsgwlRextEPb3ZOi1JUqplgmc5M1idXkNK7OfSGdZMVMKuFNUsKUod2oJFwhyaca63G6tfAYlYJ0mFB14qzELlWfFYNEuMDE8hndXHqCHmlicfITJUxeRtTLk7RJKE3RDU9LQ0M2E025Nfg0EVS7KYvvh+wVsFG08nbgNX4A7L+bh5LwSAkqUJ2HdpdDVTClt6kASCGxHSiOWXe3wZOk1jh0ewuMPr8AdG8IUNRIBqlTJmiBpKHiwRGw/l5acJxG1qyfP4eXyW1w6PoY+vQcspJDQAtSN3QhEXTqmEMCidGt0HF9/fcf4/Wl8+7mGa6PnQwqutpK3jjUQoEoF7N2kKqRAh6bPrNvS9DtvufZdiNb93qeWitDAUB1ceAJSsf6+HcvTS6RkLm/I8K9GgJWJiWBvPSGHvoOOo22pg3RRaVHXCcnK/04kDlw48kbYR0K+YlmKxLKSB3uQ74JKFIW9Chb449Si2vkadWIuy3g8452PY5ecKEwgid+Qgm8rqeSef/cXAAD//9fqixgAAAAGSURBVAMAcwJxhBCdv/wAAAAASUVORK5CYII="}, {"id": "rapid-pay-card", "name": "Rapid Pay Card", "url": "https://www.rapidadmin.com/login", "desc": "Pay cards", "icon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6d3TbmaS4YYEIadUdvO9xa4VBQjzIAd5cR2XEFfL89Q&s"}, {"id": "bitrix24-my-drive", "name": "Bitrix24 · My Drive", "url": "https://dossaniparadise.bitrix24.com/company/personal/user/4/disk/path/Fast%20Food/", "desc": "Paperwork and Receipts", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB+ElEQVR4nKRTzUtUURT/3fveOE/fmL4oZTKssFHCiqCIiIqWfa5atJhFixYRtOkPaFerIKhVi2gXRuTOnQjiRvd+gIriF6Pgxyg68+bNvPuu59xxxlF3znmcdy/3nt85v985XFtrLbpHshFOYTOPPClSw1sadZjUBK/1J+caMHS3BZMPPfy6kUBHXOJ4TK2LrqHNKoPn7Q343ps4UmHFj9C/FiCINP5lAmyXjhIWXYMb1ZOBe63oSVhmr+h0NqdgCeCqa4EWLPkKL8d2kFeHSWx90D4OZDBfTe4qfJzaw6JfvkxRgh+9Lq40SrxOxvF7qVDTA6JmE+xTtwtG+6HGu/EyePaxZ4KYyYeJHCIt8OZSI16QVMaxS62A95ebkO50wPVGt0OsF09OdS6vML4bIulIfLvZjGdtcTDWMHh10THU2blZtcYsKkyCCNW4t522YWDzr80RVL0MvNNqw5ECBTpPDWeric7GBK6foZHyR/OjVhxKmKemRayJcni2wOeeJpOkYgnq8NdrLuJCmJigpJAhSYw1DH5O5/DllguLQJaUeHo+htstzRjNhuA8D7wYvJgwlUsqgh+U8HexWJEA9C8UYNEmTbraHZiZs993ygzCfBHrB2w2qRH/l0P0LYRGtOjoW63rLRgJ9Zjg53zhz+qpnnMmnZT7AAAA//9PvO61AAAABklEQVQDAHd694Xfwx4YAAAAAElFTkSuQmCC"}], "portals": [{"id": "everything", "title": "Dossani Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24", "zenput", "onedrive-arl-files", "rapid-pay-card", "bitrix24-my-drive"]}, {"id": "burger-king", "title": "Burger King Portal", "tiles": ["rbi-okta", "genius-back-office", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "subway", "title": "Subway Portal", "tiles": ["rbi-okta", "genius-back-office", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "c-store", "title": "C-Store Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "car-wash", "title": "Car Wash Portal", "tiles": ["rbi-okta", "genius-back-office", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "district-managers", "title": "District Manager Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24"]}, {"id": "directors", "title": "Director of Operations Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24"]}, {"id": "support-staff", "title": "Support Staff Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24", "zenput", "onedrive-arl-files", "rapid-pay-card", "bitrix24-my-drive"]}], "people": {}, "roleMap": {"admins": "support-staff", "vps": "directors", "directors": "directors", "areaCoaches": "district-managers", "repairTechnicians": "support-staff"}, "entityMap": [{"match": ["burger", "bk"], "portal": "burger-king"}, {"match": ["subway"], "portal": "subway"}, {"match": ["c-store", "cstore", "c store", "conven"], "portal": "c-store"}, {"match": ["car wash", "carwash", "wash"], "portal": "car-wash"}]}</script>
+  <script>
+  "use strict";
+  /* ================= CONFIG / DRAFT ================= */
+  var PUB = JSON.parse(document.getElementById("portal-config").textContent);
+  var draft = null; try{ draft = JSON.parse(localStorage.getItem("dpmDraft")||"null"); }catch(e){}
+  var sess = null; try{ sess = JSON.parse(localStorage.getItem("dpmSession")||"null"); }catch(e){}
+  function isAdmin(){ return !!(sess && sess.admin); }
+  function C(){ return (isAdmin() && draft) ? draft : PUB; }
+  function saveDraft(){ if(!draft){ draft = JSON.parse(JSON.stringify(PUB)); } localStorage.setItem("dpmDraft", JSON.stringify(draft)); document.body.classList.add("dirty"); }
+  function appById(id){ return C().apps.find(function(a){return a.id===id;}); }
+  function portalById(id){ return C().portals.find(function(p){return p.id===id;}); }
+
+  /* ================= DIRECTORY (FindMi) ================= */
+  var dir = {people:[], entities:[], loaded:false};
+  var ROLE_TITLES={admins:"Admin",vps:"VP of Operations",directors:"Director of Operations",areaCoaches:"Area Coach",repairTechnicians:"Repair Technician",staff:"Team Member",generalManagers:"General Manager"};
+  function normalizeDir(data){
+    var people=[], entities=[];
+    (function walk(node,key,entityId){
+      if(Array.isArray(node)){ for(var i=0;i<node.length;i++) walk(node[i],key,entityId); return; }
+      if(node && typeof node==="object"){
+        var ent = (node.entityId!==undefined && node.entityId!==null) ? node.entityId : entityId;
+        if(key==="entities" && node.name!==undefined && node.id!==undefined) entities.push({id:node.id,name:String(node.name)});
+        if(node.email && node.name){
+          people.push({name:String(node.name), email:String(node.email).toLowerCase().trim(),
+            title: node.title||node.role||ROLE_TITLES[key]||"", roleKey:key||"", entityId:ent});
+        }
+        for(var k in node){ var v=node[k]; if(v && typeof v==="object") walk(v,k,ent); }
+      }
+    })(data,"",null);
+    return {people:people, entities:entities};
+  }
+  function loadDirectory(){
+    try{ var cached=JSON.parse(localStorage.getItem("dpmDir")||"null");
+      if(cached && Date.now()-cached.t < 864e5){ dir=cached.d; dir.loaded=true; onDir(); } }catch(e){}
+    fetch(C().api+"?_="+Date.now(), {cache:"no-store"}).then(function(r){return r.json();}).then(function(j){
+      var d=normalizeDir(j); if(d.people.length){ dir={people:d.people,entities:d.entities,loaded:true};
+        localStorage.setItem("dpmDir", JSON.stringify({t:Date.now(), d:dir})); onDir(); }
+    }).catch(function(){});
+  }
+  function findPerson(email){ email=(email||"").toLowerCase().trim();
+    return dir.people.find(function(p){return p.email===email;})||null; }
+  function onDir(){ if(sess && sess.email){ var p=findPerson(sess.email); if(p){ sess.person=p; localStorage.setItem("dpmSession",JSON.stringify(sess)); } } renderAll(); }
+
+  /* ================= PORTAL RESOLUTION ================= */
+  function resolveFor(session){
+    var cfg=C();
+    if(session && session.email){
+      var ov=cfg.people[session.email];
+      if(ov){ if(ov.custom) return {custom:true, title:ov.custom.title, tiles:ov.custom.tiles, id:"person:"+session.email};
+              if(ov.portal && portalById(ov.portal)) return portalById(ov.portal); }
+      var p=session.person;
+      if(p){
+        var rm=cfg.roleMap[p.roleKey]; if(rm && portalById(rm)) return portalById(rm);
+        if(p.entityId!==undefined && p.entityId!==null){
+          var ent=dir.entities.find(function(e){return String(e.id)===String(p.entityId);});
+          if(ent){ var nm=ent.name.toLowerCase();
+            var em=cfg.entityMap.find(function(m){return m.match.some(function(w){return nm.indexOf(w)>=0;});});
+            if(em && portalById(em.portal)) return portalById(em.portal); } }
+      }
+    }
+    return portalById("everything");
+  }
+  function heroTitleFor(portal, session){
+    if(portal.custom && portal.title) return portal.title;
+    if(session && session.person && session.person.title) return session.person.title;
+    return portal.title || "Dossani Portal";
+  }
+
+  /* ================= RENDERER + FIT ================= */
+  var root=document.getElementById("app-root");
+  function domainOf(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return ""; } }
+  function buildIcon(app){
+    var wrap=document.createElement("div"); wrap.className="tile-icon";
+    var srcs=[]; if(app.icon) srcs.push(app.icon);
+    var d=domainOf(app.url); if(d) srcs.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
+    if(!srcs.length){ return letter(wrap,app.name); }
+    var img=document.createElement("img"); img.alt=""; img.loading="lazy"; var i=0; img.src=srcs[0];
+    img.addEventListener("error",function(){ i++; if(i<srcs.length) img.src=srcs[i]; else letter(wrap,app.name); });
+    wrap.appendChild(img); return wrap;
+  }
+  function letter(wrap,name){ wrap.innerHTML=""; wrap.classList.add("letter"); wrap.textContent=(name||"?").trim().charAt(0).toUpperCase(); return wrap; }
+  function tile(app){
+    var a=document.createElement("a"); a.className="tile"; a.href=app.url; a.target="_blank"; a.rel="noopener noreferrer";
+    a.appendChild(buildIcon(app));
+    var body=document.createElement("div"); body.className="tile-body";
+    var nm=document.createElement("div"); nm.className="tile-name"; nm.textContent=app.name;
+    var ds=document.createElement("div"); ds.className="tile-desc"; ds.textContent=app.desc||domainOf(app.url);
+    body.appendChild(nm); body.appendChild(ds); a.appendChild(body); return a;
+  }
+  var viewPortal=null;
+  function renderPortal(portal, session){
+    viewPortal=portal;
+    document.getElementById("portal-title").textContent=heroTitleFor(portal,session);
+    root.innerHTML="";
+    var board=document.createElement("div"); board.className="board";
+    var top=document.createElement("div"); top.className="board-top";
+    var grid=document.createElement("div"); grid.className="board-grid";
+    var tiles=(portal.tiles||[]).map(appById).filter(Boolean);
+    if(tiles.length) top.appendChild(tile(tiles[0]));
+    tiles.slice(1).forEach(function(ap){ grid.appendChild(tile(ap)); });
+    board.appendChild(top); board.appendChild(grid); root.appendChild(board);
+    fit();
+  }
+  var stage=document.getElementById("stage"), fitEl=document.getElementById("fit");
+  function fit(){
+    var availW=fitEl.clientWidth-4, availH=fitEl.clientHeight-4;
+    var n=stage.querySelectorAll(".board-grid .tile").length;
+    var maxC=Math.min(8, Math.max(2, n||2)); var best=null;
+    for(var c=2;c<=maxC;c++){ stage.style.setProperty("--cols",c);
+      var w=stage.offsetWidth,h=stage.offsetHeight; var s=Math.min(availW/w, availH/h);
+      if(!best||s>best.s) best={c:c,s:s}; }
+    stage.style.setProperty("--cols",best.c);
+    stage.style.transform="scale("+Math.min(best.s,3)+")";
+  }
+  var raf; function sched(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(fit); }
+  window.addEventListener("resize",sched); window.addEventListener("orientationchange",sched);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit);
+  window.addEventListener("load",fit);
+
+  /* ================= CORNER / SIGN-IN ================= */
+  var corner=document.getElementById("corner"), cmenu=document.getElementById("cmenu");
+  function firstName(){ if(sess&&sess.person&&sess.person.name) return sess.person.name.split(" ")[0];
+    if(sess&&sess.email) return sess.email.split("@")[0].split(/[._]/)[0].replace(/^./,function(c){return c.toUpperCase();}); return ""; }
+  function renderCorner(){
+    cmenu.style.display="none";
+    if(!sess){ corner.innerHTML='<button class="ovl-btn signin" id="c-signin">Sign in</button>';
+      document.getElementById("c-signin").onclick=openSignin; return; }
+    corner.innerHTML='<button class="hello" id="c-hello">Hello, '+firstName()+' ▾</button>';
+    document.getElementById("c-hello").onclick=function(){ 
+      cmenu.innerHTML=(isAdmin()?'<button id="m-edit">✎ Edit Portals</button>':'')+'<button id="m-out">Sign out</button>';
+      cmenu.style.display=cmenu.style.display==="block"?"none":"block";
+      var me=document.getElementById("m-edit"); if(me) me.onclick=openDrawer;
+      document.getElementById("m-out").onclick=signOut; };
+  }
+  var sibg=document.getElementById("signin-bg"), siE=document.getElementById("si-email"), siP=document.getElementById("si-pass"), siErr=document.getElementById("si-err");
+  function openSignin(){ sibg.classList.add("open"); siE.value=""; siP.value=""; siP.style.display="none"; siErr.style.display="none"; siE.focus(); }
+  siE.addEventListener("input",function(){ var admin=C().adminEmails.indexOf(siE.value.toLowerCase().trim())>=0;
+    siP.style.display=admin?"block":"none"; });
+  document.getElementById("si-go").onclick=function(){
+    var email=siE.value.toLowerCase().trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ siErr.textContent="Enter a valid email."; siErr.style.display="block"; return; }
+    var admin=C().adminEmails.indexOf(email)>=0;
+    if(admin && btoa(siP.value)!==C().adminPass){ siErr.textContent="Wrong admin password."; siErr.style.display="block"; return; }
+    sess={email:email, admin:admin}; var p=findPerson(email); if(p) sess.person=p;
+    localStorage.setItem("dpmSession",JSON.stringify(sess));
+    sibg.classList.remove("open"); renderAll();
+  };
+  sibg.addEventListener("click",function(e){ if(e.target===sibg) sibg.classList.remove("open"); });
+  function signOut(){ sess=null; localStorage.removeItem("dpmSession"); closeDrawer(); renderAll(); }
+
+  /* ================= ADMIN DRAWER ================= */
+  var editTarget=null; // {type:"portal",id} | {type:"person",email}
+  function targetTiles(){ var cfg=C();
+    if(editTarget.type==="portal") return portalById(editTarget.id).tiles;
+    return cfg.people[editTarget.email].custom.tiles; }
+  function targetObj(){ if(editTarget.type==="portal") return portalById(editTarget.id);
+    return C().people[editTarget.email].custom; }
+  function openDrawer(){ if(!isAdmin()) return; document.body.classList.add("admin-open");
+    if(!editTarget) editTarget={type:"portal", id:C().portals[0].id};
+    buildDrawer(); sched(); }
+  function closeDrawer(){ document.body.classList.remove("admin-open"); document.body.classList.remove("previewing"); editTarget=null; renderAll(); sched(); }
+  document.getElementById("dr-close").onclick=closeDrawer;
+  function buildDrawer(){
+    var cfg=C();
+    var sel=document.getElementById("sel-portal");
+    sel.innerHTML=cfg.portals.map(function(p){return '<option value="'+p.id+'">'+p.title+'</option>';}).join("");
+    var customs=Object.keys(cfg.people).filter(function(e){return cfg.people[e].custom;});
+    if(customs.length) sel.innerHTML+='<optgroup label="Custom people">'+customs.map(function(e){return '<option value="person:'+e+'">'+e+'</option>';}).join("")+'</optgroup>';
+    sel.value=editTarget.type==="portal"?editTarget.id:("person:"+editTarget.email);
+    sel.onchange=function(){ var v=sel.value;
+      editTarget = v.indexOf("person:")===0 ? {type:"person",email:v.slice(7)} : {type:"portal",id:v};
+      document.getElementById("person-tools").innerHTML=""; buildDrawer(); };
+    document.getElementById("ptitle").value=targetObj().title||"";
+    document.getElementById("ptitle").oninput=function(){ saveDraft(); targetObj().title=this.value; preview(); };
+    buildTileList(); buildDup(); preview();
+  }
+  function preview(){ document.body.classList.add("previewing");
+    document.getElementById("preview-note").textContent="Previewing: "+(targetObj().title||editTarget.email||"");
+    var t=targetObj();
+    renderPortal({custom:true,title:t.title,tiles:targetTiles(),id:"preview"}, null); }
+  function buildTileList(){
+    var ul=document.getElementById("tilelist"); ul.innerHTML="";
+    var tiles=targetTiles();
+    tiles.forEach(function(id,idx){
+      var app=appById(id); if(!app) return;
+      var li=document.createElement("li"); li.draggable=true; li.dataset.idx=idx;
+      var ic=document.createElement("img"); ic.src=app.icon||("https://www.google.com/s2/favicons?domain="+encodeURIComponent(domainOf(app.url))+"&sz=32");
+      ic.onerror=function(){ this.style.visibility="hidden"; };
+      var nm=document.createElement("span"); nm.className="nm"; nm.textContent=app.name;
+      li.appendChild(ic); li.appendChild(nm);
+      if(idx===0){ var f=document.createElement("span"); f.className="feat"; f.textContent="FEATURED"; li.appendChild(f); }
+      var ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit app (all portals)";
+      ed.onclick=function(){ openEdit(app); };
+      var rm=document.createElement("button"); rm.textContent="✕"; rm.title="Remove from this portal";
+      rm.onclick=function(){ saveDraft(); targetTiles().splice(idx,1); buildTileList(); preview(); };
+      li.appendChild(ed); li.appendChild(rm);
+      li.addEventListener("dragstart",function(e){ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",idx); });
+      li.addEventListener("dragend",function(){ li.classList.remove("dragging"); });
+      li.addEventListener("dragover",function(e){ e.preventDefault(); });
+      li.addEventListener("drop",function(e){ e.preventDefault();
+        var from=+e.dataTransfer.getData("text/plain"), to=idx; if(from===to) return;
+        saveDraft(); var arr=targetTiles(); var m=arr.splice(from,1)[0]; arr.splice(to,0,m);
+        buildTileList(); preview(); });
+      ul.appendChild(li);
+    });
+  }
+  function buildDup(){ var cfg=C(); var d=document.getElementById("dup-target");
+    d.innerHTML=cfg.portals.map(function(p){return '<option value="'+p.id+'">'+p.title+'</option>';}).join("");
+    document.getElementById("btn-dup").onclick=function(){ saveDraft();
+      portalById(d.value).tiles=targetTiles().slice(); alert("Copied into "+portalById(d.value).title+"."); };
+  }
+  /* add / new / edit app */
+  function toggle(id){ var el=document.getElementById(id); var open=el.classList.contains("open");
+    ["addform","newform","editform"].forEach(function(x){document.getElementById(x).classList.remove("open");});
+    if(!open) el.classList.add("open"); }
+  document.getElementById("btn-add").onclick=function(){ toggle("addform"); renderLib(""); document.getElementById("libsearch").value=""; };
+  document.getElementById("btn-new").onclick=function(){ toggle("newform"); };
+  document.getElementById("libsearch").oninput=function(){ renderLib(this.value); };
+  function renderLib(q){ q=(q||"").toLowerCase(); var res=document.getElementById("libsearch-res"); res.innerHTML="";
+    var have=targetTiles();
+    C().apps.filter(function(a){ return have.indexOf(a.id)<0 && (!q || (a.name+" "+a.desc).toLowerCase().indexOf(q)>=0); })
+      .slice(0,30).forEach(function(a){
+        var d=document.createElement("div"); d.className="libitem"; d.textContent=a.name+"  ·  "+(a.desc||"");
+        d.onclick=function(){ saveDraft(); targetTiles().push(a.id); buildTileList(); preview(); };
+        res.appendChild(d); });
+  }
+  document.getElementById("nf-save").onclick=function(){
+    var nm=document.getElementById("nf-name").value.trim(), url=document.getElementById("nf-url").value.trim();
+    if(!nm||!/^https?:\/\//.test(url)){ alert("Name and a full https:// link are required."); return; }
+    saveDraft();
+    var id=nm.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"app"; var n=2;
+    while(appById(id)) id=id+"-"+(n++);
+    C().apps.push({id:id,name:nm,url:url,desc:document.getElementById("nf-desc").value.trim(),icon:document.getElementById("nf-icon").value.trim()});
+    targetTiles().push(id);
+    var ev=portalById("everything"); if(ev && ev.tiles.indexOf(id)<0) ev.tiles.push(id);
+    ["nf-name","nf-url","nf-desc","nf-icon"].forEach(function(x){document.getElementById(x).value="";});
+    toggle("newform"); buildTileList(); preview();
+  };
+  function openEdit(app){ toggle("editform");
+    document.getElementById("ef-id").value=app.id;
+    document.getElementById("ef-name").value=app.name; document.getElementById("ef-url").value=app.url;
+    document.getElementById("ef-desc").value=app.desc||""; document.getElementById("ef-icon").value=app.icon||"";
+  }
+  document.getElementById("ef-save").onclick=function(){ saveDraft();
+    var a=appById(document.getElementById("ef-id").value); if(!a) return;
+    a.name=document.getElementById("ef-name").value.trim(); a.url=document.getElementById("ef-url").value.trim();
+    a.desc=document.getElementById("ef-desc").value.trim(); a.icon=document.getElementById("ef-icon").value.trim();
+    toggle("editform"); buildTileList(); preview(); };
+  document.getElementById("ef-cancel").onclick=function(){ toggle("editform"); };
+  /* person search */
+  document.getElementById("psearch").oninput=function(){
+    var q=this.value.toLowerCase().trim(); var res=document.getElementById("psearch-res"); res.innerHTML="";
+    if(q.length<2) return;
+    dir.people.filter(function(p){return (p.name+" "+p.email).toLowerCase().indexOf(q)>=0;}).slice(0,8)
+      .forEach(function(p){ var d=document.createElement("div"); d.className="person-hit";
+        d.innerHTML="<span>"+p.name+"</span><small>"+p.email+"</small>";
+        d.onclick=function(){ selectPerson(p); res.innerHTML=""; }; res.appendChild(d); });
+    if(!dir.loaded){ var d=document.createElement("div"); d.className="person-hit"; d.innerHTML="<small>Directory still loading…</small>"; res.appendChild(d); }
+  };
+  function selectPerson(p){ var cfg=C(); var tools=document.getElementById("person-tools");
+    if(cfg.people[p.email] && cfg.people[p.email].custom){ editTarget={type:"person",email:p.email}; buildDrawer(); return; }
+    var base=resolveFor({email:p.email, person:p});
+    tools.innerHTML='<label>'+p.name+' — '+(p.title||"")+'</label>'+
+      '<button class="dbtn primary" id="mkcustom" style="width:100%">Create custom portal (copies '+(base.title||"")+')</button>';
+    document.getElementById("mkcustom").onclick=function(){ saveDraft();
+      C().people[p.email]={custom:{title:(p.title||"My")+"", tiles:(base.tiles||[]).slice()}};
+      editTarget={type:"person",email:p.email}; tools.innerHTML=""; buildDrawer(); };
+  }
+  /* publish / discard */
+  document.getElementById("btn-publish").onclick=function(){
+    var cfg=JSON.stringify(C()).replace(/</g,"\\u003c");
+    fetch(location.href,{cache:"no-store"}).then(function(r){return r.text();}).then(function(html){
+      html=html.replace(/(<script type="application\/json" id="portal-config">)[\s\S]*?(<\/script>)/, function(_,a,b){return a+cfg+b;});
+      var blob=new Blob([html],{type:"text/html"}); var a=document.createElement("a");
+      a.href=URL.createObjectURL(blob); a.download="index.html"; a.click();
+      document.body.classList.remove("dirty"); alert("Downloaded. Upload this index.html to GitHub to make it live for everyone.");
+    }).catch(function(){
+      var blob=new Blob([cfg],{type:"application/json"}); var a=document.createElement("a");
+      a.href=URL.createObjectURL(blob); a.download="portal-config.json"; a.click();
+      alert("Couldn't read the page source here — downloaded the config JSON instead. Send it to IT to paste into index.html.");
+    });
+  };
+  document.getElementById("btn-discard").onclick=function(){ if(!confirm("Discard all unpublished changes?")) return;
+    draft=null; localStorage.removeItem("dpmDraft"); document.body.classList.remove("dirty"); buildDrawer(); };
+
+  /* ================= BOOT ================= */
+  function renderAll(){
+    var cfg=C();
+    document.getElementById("footer-date").textContent=cfg.meta.updated;
+    document.getElementById("footer-ver").textContent="v"+cfg.meta.version;
+    renderCorner();
+    if(document.body.classList.contains("admin-open") && editTarget){ buildDrawer(); return; }
+    document.body.classList.remove("previewing");
+    renderPortal(resolveFor(sess), sess);
+  }
+  if(draft && isAdmin()) document.body.classList.add("dirty");
+  window.__portal={fit:fit, renderAll:renderAll, C:C, resolveFor:resolveFor, get sess(){return sess;}, set sess(v){sess=v;}};
+  document.addEventListener("click",function(e){ if(e.target.id!=="c-hello" && !cmenu.contains(e.target)) cmenu.style.display="none"; });
+  renderAll();
+  loadDirectory();
+  window.addEventListener("pageshow",function(e){ if(e.persisted) location.reload(); });
+  </script>
+</body>
+</html>
