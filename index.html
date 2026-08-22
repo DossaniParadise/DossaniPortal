@@ -809,8 +809,10 @@
      coordinators, staff accountants and future teams resolve without being
      hard-coded. Their FindMi title drives the portal name. */
   const ROLE_TITLE_FALLBACK={generalManagers:"General Manager",managers:"General Manager",
-    staff:"Team Member",repairTechnicians:"Repair Technician",vps:"VP of Operations",
+    staff:"Team Member",repairTechnicians:"Repair Technician",vps:"Support Staff",
     admins:"Administrator",directors:"Director of Operations",areaCoaches:"District Manager"};
+  /* FindMi keeps ALL support staff under `vps` for continuity, so that node
+     name says nothing about a person's job — their real title is jobTitle. */
   function directoryPerson(lc){
     if(!MASTER) return null;
     /* Scan each top-level group separately so the group name (generalManagers,
@@ -826,7 +828,7 @@
     for(const group in MASTER){
       const hit=scan(MASTER[group]);
       if(hit) return { name:hit.name,
-        title:(hit.title||hit.position||ROLE_TITLE_FALLBACK[group]||"").trim(),
+        title:(hit.jobTitle||hit.title||hit.position||hit.department||ROLE_TITLE_FALLBACK[group]||"").trim(),
         role:(group==="generalManagers"||group==="managers")?"gm":"staff",
         refId:hit.id||null };
     }
