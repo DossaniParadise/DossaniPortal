@@ -388,10 +388,22 @@
   .hero-position{font-family:var(--font-display);font-weight:600;font-size:.86rem;
       letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--navy-200);
       margin-top:.3rem;}
+  
+    #statusbar{position:fixed;top:8px;left:0;right:0;z-index:170;display:flex;justify-content:space-between;
+      align-items:flex-start;padding:0 12px;pointer-events:none;font-family:var(--font-sans);}
+    #statusbar .pill{pointer-events:auto;background:rgba(20,16,74,.55);color:#dcd9f6;
+      border:1px solid rgba(199,195,241,.22);border-radius:999px;padding:4px 11px;
+      font-size:11px;font-weight:700;letter-spacing:.01em;backdrop-filter:blur(6px);white-space:nowrap;}
+    #wx{display:none;align-items:center;gap:6px;}
+    #wx.show{display:inline-flex;}
+    #wx .t{font-size:12px;}
+    @media (max-width:560px){ #statusbar .pill{font-size:10px;padding:3px 8px;} }
+    html:not(.gate-off) #statusbar{display:none;}
   </style>
 </head>
 
 <body>
+  <div id="statusbar"><span class="pill" id="loadedat"></span><span class="pill" id="wx"></span></div>
   <div id="fit"><div id="stage">
   <header class="topbar">
     <div class="topbar-inner">
@@ -445,12 +457,12 @@
        SIGN-IN GATE — sits outside #fit so it is never scaled by the
        fit-to-window transform.
        ==================================================================== -->
-  <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" aria-describedby="gate-sub">
+  <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
     <button type="button" class="gate-cancel" id="gate-cancel" aria-label="Close sign in">&times;</button>
     <div class="gate-card">
       <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
       <h2 class="gate-title" id="gate-title">Dossani Paradise Web Portal</h2>
-      <p class="gate-sub" id="gate-sub">Sign in to see your notifications.</p>
+      
 
       <div class="gate-form">
         <div>
@@ -458,7 +470,7 @@
           <div class="gate-emailrow">
             <input class="gate-input" type="text" id="gate-email" autocomplete="username"
                    inputmode="text" spellcheck="false" autocapitalize="off" autocorrect="off"
-                   placeholder="firstname" aria-describedby="gate-domain" />
+                   placeholder="username" aria-describedby="gate-domain" />
             <span class="gate-domain" id="gate-domain">@dossaniparadise.com</span>
           </div>
         </div>
@@ -1172,7 +1184,7 @@
     SESSION.cstore=isCStoreUser();
     writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,
                  refId:sess.refId||null,cstore:SESSION.cstore});
-    closeGate(); renderWho(); renderBoard(); startNotifications(); _booted=true;
+    closeGate(); renderWho(); renderBoard(); startNotifications(); _booted=true; stampLoadedAt(); showWeather();
   }
 
   function signOut(){
@@ -1236,18 +1248,79 @@
     if(t) return /portal$/i.test(t)?t:t+" Portal";
     return PORTAL_DEFAULT;
   }
+  /* Local clock, so it matches the greeting people expect wherever they are.
+     Morning to noon, afternoon to 5, evening after that. */
+  function timeGreeting(d){
+    const hr=(d||new Date()).getHours();
+    if(hr<12) return "Good morning";
+    if(hr<17) return "Good afternoon";
+    return "Good evening";
+  }
+  /* Stores with no manager on file are greeted by store name, so the line
+     still reads naturally instead of "Good morning, Burger King #14429". */
+  function greetingLine(){
+    if(!SESSION) return "";
+    const anon=SESSION.isStore&&!SESSION.hasManager;
+    const first=anon ? SESSION.storeLabel
+                     : (((SESSION.name||"").trim().split(/\s+/)[0])||"there");
+    return timeGreeting()+", "+first;
+  }
+  
+  /* ---- Status bar ------------------------------------------------------
+     Left: when this copy of the page was loaded, so a stale tab is obvious
+     at a glance. Right: the store's ZIP and current conditions, for store
+     accounts only. Both are computed once per page load — no timers, so an
+     idle tab costs nothing. */
+  function stampLoadedAt(){
+    const el=document.getElementById("loadedat"); if(!el) return;
+    const d=new Date();
+    el.textContent="Loaded "+d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+
+      " · "+d.toLocaleDateString([],{month:"short",day:"numeric"});
+  }
+  const WX={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",48:"🌫",51:"🌦",53:"🌦",55:"🌦",
+    61:"🌧",63:"🌧",65:"🌧",71:"🌨",73:"🌨",75:"🌨",80:"🌦",81:"🌧",82:"🌧",
+    95:"⛈",96:"⛈",99:"⛈"};
+  function myStore(){
+    if(!SESSION||!SESSION.isStore||!MASTER) return null;
+    return (MASTER.restaurants||{})[SESSION.refId]||null;
+  }
+  function zipOf(s){
+    const m=String((s&&s.address)||"").match(/\b(\d{5})(?:-\d{4})?\b/);
+    return m?m[1]:"";
+  }
+  function showWeather(){
+    const el=document.getElementById("wx"); if(!el) return;
+    const s=myStore(); if(!s) return;
+    const zip=zipOf(s);
+    if(zip) { el.textContent=zip; el.classList.add("show"); }
+    const lat=s.latitude, lon=s.longitude;
+    if(!(lat&&lon)) return;
+    /* Keyless, no account needed; fails silently so a weather outage can
+       never affect the portal. */
+    fetch("https://api.open-meteo.com/v1/forecast?latitude="+encodeURIComponent(lat)+
+          "&longitude="+encodeURIComponent(lon)+
+          "&current=temperature_2m,weather_code&temperature_unit=fahrenheit")
+      .then(r=>r.ok?r.json():null).then(j=>{
+        const c=j&&j.current; if(!c) return;
+        const icon=WX[c.weather_code]||"";
+        el.textContent=(zip?zip+" · ":"")+Math.round(c.temperature_2m)+"°"+(icon?" "+icon:"");
+        el.classList.add("show");
+      }).catch(()=>{});
+  }
+
   function applyPortalIdentity(){
     const name=portalName();                         /* e.g. "General Manager Portal" */
-    const who=SESSION?((SESSION.isStore&&!SESSION.hasManager)?SESSION.storeLabel:SESSION.name):"";
     const h1=document.querySelector(".hero h1");
     const pos=document.getElementById("hero-position");
+    const hello=greetingLine();
     /* The person leads; their position is the supporting line. */
-    if(h1) h1.textContent=who||name;
-    if(pos) pos.textContent=who?name:"";
+    if(h1) h1.textContent=hello||name;
+    if(pos) pos.textContent=hello?name:"";
     const word=document.querySelector(".topbar-word"); if(word) word.textContent=name;
     const brand=document.querySelector(".topbar-brand"); if(brand) brand.setAttribute("aria-label",name+" home");
     document.title=SESSION?("Dossani · "+name):"Dossani Portal";
   }
+
 
   /* ---- Identity chip ---- */
   function renderWho(){
