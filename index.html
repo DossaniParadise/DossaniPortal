@@ -26,7 +26,7 @@
     (function(){
       try{
         var s=JSON.parse(localStorage.getItem("dpm_dm_portal_session")||"null");
-        if(s&&(s.guest||(s.email&&s.pw)))document.documentElement.classList.add("gate-off");
+        if(s&&s.email)document.documentElement.classList.add("gate-off");
       }catch(e){}
     })();
   </script>
@@ -381,6 +381,9 @@
     .gate-emailrow:focus-within .gate-domain{border-color:var(--navy-400);}
     @media (max-width:420px){ .gate-domain{font-size:.76rem;padding:.6rem .5rem;} }
       .who-store{opacity:.75;font-weight:600;}
+  .hero-position{font-family:var(--font-display);font-weight:600;font-size:.86rem;
+      letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--navy-200);
+      margin-top:.3rem;}
   </style>
 </head>
 
@@ -407,6 +410,7 @@
       <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
       <span class="eyebrow">Dossani Paradise Management</span>
       <h1>District Manager Portal</h1>
+      <div class="hero-position" id="hero-position"></div>
       <div class="who" id="who" hidden>
         <span class="who-dot" aria-hidden="true"></span>
         <span class="who-text" id="who-text"></span>
@@ -462,13 +466,7 @@
         <button type="button" class="gate-btn" id="gate-btn">Sign In</button>
       </div>
 
-      <div class="gate-or">or</div>
 
-      <button type="button" class="gate-guest" id="gate-guest">
-        Use this page not signed in
-      </button>
-
-      <p class="gate-foot">Not signed in, the portal works normally &mdash; you just won't see your notifications.</p>
     </div>
   </div>
 
@@ -478,16 +476,9 @@
     <header><b>EDIT PORTALS</b><button id="adm-x" aria-label="Close">✕</button></header>
     <div id="admb">
       <label>Preview board as</label>
-      <select id="adm-view">
-        <option value="coach">District Manager (BK)</option>
-        <option value="director">Director of Operations</option>
-        <option value="gm">General Manager</option>
-        <option value="staff">Staff / other positions</option>
-        <option value="admin">Overwatch</option>
-        <option value="cstore">C-Store operator</option>
-        <option value="guest">Not signed in</option>
-      </select>
+      <select id="adm-view"></select>
       <label>Tiles — drag to reorder (first is featured)</label>
+      <div id="alist-cap" style="font:600 11px var(--font-sans);color:var(--text-muted);margin-bottom:6px"></div>
       <ul id="alist"></ul>
       <div class="arow"><button class="abtn" id="adm-new">+ New app</button></div>
       <div class="aform" id="adm-newform">
@@ -748,7 +739,7 @@
   }
 
   /* ---- Stored choice ---------------------------------------------------
-     Either {guest:true} or {email,pw,...snapshot}. The snapshot lets a
+     Either null or {email,pw,...snapshot}. The snapshot lets a
      returning DM in instantly; the credentials let us silently re-verify
      against the directory afterwards, so someone removed from the DM list
      stops getting in. ---------------------------------------------------- */
@@ -990,7 +981,7 @@
   /* Deliberately fails toward the FULL board. Hiding a tool someone needs is
      worse than showing one they don't, so anything we can't classify — no
      session, no directory yet, no stores assigned — gets everything. */
-  function isCStoreUser(){
+  function isCStoreUser(){ if(true) return sessionDivision()!=="bk";
     if(window.__admForceCStore===true) return true;
     if(window.__admForceCStore===false && SESSION && SESSION.refId==="__preview__") return false;
     if(!SESSION) return false;
@@ -1004,15 +995,32 @@
 
   /* An app carrying only:"cstore" (or only:"bk") appears on that board alone.
      Everything without the flag shows on both. */
-  function appsForSession(){
-    const cstore=isCStoreUser();
-    const r=(SESSION&&SESSION.role)||null;
-  const base=APPS.filter(a=>(!a.only||a.only===(cstore?"cstore":"bk")) && (!a.roles||(r&&a.roles.indexOf(r)>=0)));
-    if(!cstore) return base;
-    const kept=base.filter(a=>!CSTORE_HIDE.includes(a.name));
-    const featured=kept.find(a=>a.name===CSTORE_FEATURE);
-    return featured?[featured,...kept.filter(a=>a!==featured)]:kept;
+  /* The board for one role in one division. `only` may name a single division
+     or several ("bk,subway"); no flag means every division. */
+  function appsFor(role,div){
+    const list=APPS.filter(a=>{
+      if(a.roles&&a.roles.length&&(!role||a.roles.indexOf(role)<0)) return false;
+      if(!a.only) return true;
+      return String(a.only).split(",").map(s=>s.trim()).indexOf(div)>=0;
+    });
+    if(div==="bk"||role==="admin") return list;
+    /* Non-BK divisions don't run the Burger King systems. */
+    const kept=list.filter(a=>!CSTORE_HIDE.includes(a.name));
+    const feat=kept.find(a=>a.name===CSTORE_FEATURE);
+    return feat?[feat,...kept.filter(a=>a!==feat)]:kept;
   }
+  function sessionDivision(){
+    if(window.__admDivision) return window.__admDivision;
+    if(!SESSION) return "bk";
+    if(SESSION.role==="admin") return "bk";
+    if(!MASTER) return SESSION.cstore===true?"cstore":"bk";
+    const stores=MASTER.restaurants||{}, ids=myStoreIds();
+    if(!ids.length) return "bk";
+    const divs=ids.map(id=>storeDivision(stores[id]));
+    if(divs.indexOf("bk")>=0) return "bk";       /* mixed patch = full board */
+    return divs[0]||"bk";
+  }
+  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision()); }
   function wantsEmergenciesOnly(){
     return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
   }
@@ -1100,7 +1108,7 @@
   const gPw=document.getElementById("gate-pw");
   const gErr=document.getElementById("gate-err");
   const gBtn=document.getElementById("gate-btn");
-  const gGuest=document.getElementById("gate-guest");
+  /* guest sign-in removed — the portal always requires an email */
   const gCancel=document.getElementById("gate-cancel");
 
   function gateOpen(){ return !document.documentElement.classList.contains("gate-off"); }
@@ -1127,7 +1135,7 @@
     gErr.classList.toggle("show",!!msg);
   }
   function busy(on){
-    gBtn.disabled=on; gEmail.disabled=on; gPw.disabled=on; gGuest.disabled=on;
+    gBtn.disabled=on; gEmail.disabled=on; gPw.disabled=on; 
     gBtn.innerHTML=on?'<span class="spin"></span>Checking…':"Sign In";
   }
 
@@ -1151,12 +1159,6 @@
     writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,
                  refId:sess.refId||null,cstore:SESSION.cstore});
     closeGate(); renderWho(); renderBoard(); startNotifications();
-  }
-
-  function useUnsigned(){
-    SESSION=null; stopNotifications(); clearBadges();
-    writeStored({guest:true});
-    closeGate(); renderWho(); renderBoard();
   }
 
   function signOut(){
@@ -1190,8 +1192,8 @@
   gEmail.addEventListener("change",syncPwField);
   syncPwField();
   gBtn.addEventListener("click",doSignIn);
-  gGuest.addEventListener("click",useUnsigned);
-  gCancel.addEventListener("click",()=>{ if(gateDismissable) closeGate(); });
+  
+  
   [gEmail,gPw].forEach(el=>el.addEventListener("keydown",e=>{
     if(e.key==="Enter"){ e.preventDefault(); doSignIn(); }
   }));
@@ -1199,7 +1201,7 @@
   /* Keep Tab inside the dialog while it owns the screen, and let Esc back out
      only when there is a previous choice to fall back to. */
   gateEl.addEventListener("keydown",e=>{
-    if(e.key==="Escape"&&gateDismissable){ e.preventDefault(); closeGate(); return; }
+    
     if(e.key!=="Tab") return;
     const f=[...gateEl.querySelectorAll("button,input")].filter(el=>!el.disabled&&el.offsetParent!==null);
     if(!f.length) return;
@@ -1221,13 +1223,15 @@
     return PORTAL_DEFAULT;
   }
   function applyPortalIdentity(){
-    const name=portalName();
+    const name=portalName();                         /* e.g. "General Manager Portal" */
+    const who=SESSION?((SESSION.isStore&&!SESSION.hasManager)?SESSION.storeLabel:SESSION.name):"";
     const h1=document.querySelector(".hero h1");
-    if(h1) h1.textContent=name;
-    const word=document.querySelector(".topbar-word");
-    if(word) word.textContent=name;
-    const brand=document.querySelector(".topbar-brand");
-    if(brand) brand.setAttribute("aria-label",name+" home");
+    const pos=document.getElementById("hero-position");
+    /* The person leads; their position is the supporting line. */
+    if(h1) h1.textContent=who||name;
+    if(pos) pos.textContent=who?name:"";
+    const word=document.querySelector(".topbar-word"); if(word) word.textContent=name;
+    const brand=document.querySelector(".topbar-brand"); if(brand) brand.setAttribute("aria-label",name+" home");
     document.title="Dossani · "+name;
   }
 
@@ -1243,14 +1247,8 @@
     if(SESSION){
       who.classList.remove("is-guest");
       const b=document.createElement("b");
-      const anon=SESSION.isStore&&!SESSION.hasManager;
-      b.textContent=anon ? SESSION.storeLabel
-                         : (((SESSION.name||"").trim().split(/\s+/)[0])||"there");
-      txt.append(document.createTextNode("Hello, "),b);
-      if(SESSION.isStore&&SESSION.storeLabel&&!anon){
-        const st=document.createElement("span"); st.className="who-store";
-        st.textContent=" · "+SESSION.storeLabel; txt.appendChild(st);
-      }
+      b.textContent=(SESSION.isStore&&SESSION.storeLabel)?SESSION.storeLabel:"Signed in";
+      txt.append(b);
       btn.textContent="Sign out";
       btn.onclick=signOut;
     }else{
@@ -1266,17 +1264,18 @@
   async function bootPortal(){
     const saved=readStored();
 
-    if(saved&&saved.guest){ closeGate(); renderWho(); return; }
+    
 
-    if(saved&&saved.email&&saved.pw){
+    if(saved&&saved.email){
       // Trust the stored snapshot immediately so the board is usable offline
       // and there is no login flash, then quietly confirm it still holds.
       SESSION={email:saved.email,role:saved.role||"coach",name:saved.name||"District Manager",
-               refId:saved.refId||null,cstore:saved.cstore===true};
+        refId:saved.refId||null,cstore:saved.cstore===true,title:saved.title||"",
+        isStore:!!saved.isStore,storeLabel:saved.storeLabel||"",hasManager:!!saved.hasManager};
       closeGate(); renderWho(); renderBoard(); startNotifications();
       try{
         await loadMaster();
-        const sess=resolveSession(saved.email,saved.pw);
+        const sess=resolveSession(saved.email,saved.pw||"");
         if(sess.error){                      // removed from the list, or password rotated
           SESSION=null; stopNotifications(); clearBadges(); clearStored();
           renderWho(); openGate(false); showErr(sess.error);
@@ -1397,17 +1396,50 @@
   function admIsAdmin(){ return !!SESSION && SESSION.role==="admin"; }
   function admSync(){ document.body.classList.toggle("is-admin", admIsAdmin()); }
 
-  /* Preview: temporarily pretend to be a role/division so the board redraws. */
-  function admApplyPreview(){
-    if(!admPreview){ renderBoard(); applyPortalIdentity(); return; }
-    const real=SESSION, realC=window.__admForceCStore;
-    if(admPreview==="guest"){ SESSION=null; window.__admForceCStore=false; }
-    else if(admPreview==="cstore"){ SESSION={role:"coach",name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__"}; window.__admForceCStore=true; }
-    else { SESSION={role:admPreview,name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__",
-            title:admPreview==="gm"?"General Manager":(admPreview==="staff"?"Staff":"")}; window.__admForceCStore=false; }
-    renderBoard(); applyPortalIdentity();
-    SESSION=real; window.__admForceCStore=realC;
+  /* Preview: pretend to be a role in a division (or a support-staff
+     department) so the board — and the tile list — redraw exactly as that
+     person would see them. */
+  const ADM_DIVLABEL={bk:"BK",subway:"Subway",cstore:"C-Store",carwash:"Car Wash"};
+  function admDepartments(){
+    const out=[], seen={};
+    const vps=(MASTER&&MASTER.vps)||{};
+    for(const id in vps){
+      const d=((vps[id]||{}).department||"").trim();
+      if(d&&!seen[d.toLowerCase()]){ seen[d.toLowerCase()]=1; out.push(d); }
+    }
+    return out.sort((a,b)=>a.localeCompare(b));
   }
+  function admBuildViews(){
+    const sel=document.getElementById("adm-view"); if(!sel) return;
+    const prev=sel.value;
+    const grp=(label,rows)=>'<optgroup label="'+label+'">'+rows.map(r=>
+      '<option value="'+r[0]+'">'+r[1]+'</option>').join("")+'</optgroup>';
+    let html="";
+    html+=grp("General Managers",["bk","subway","cstore","carwash"].map(d=>["gm|"+d,ADM_DIVLABEL[d]+" GM"]));
+    html+=grp("District Managers",["bk","cstore"].map(d=>["coach|"+d,ADM_DIVLABEL[d]+" DM"]));
+    html+=grp("Directors of Operations",["bk","cstore"].map(d=>["director|"+d,ADM_DIVLABEL[d]+" DO"]));
+    const deps=admDepartments();
+    html+=grp("Support Staff"+(deps.length?"":" (directory loading…)"),
+      (deps.length?deps:["All support staff"]).map(d=>["staff|bk|"+d,d]));
+    html+=grp("Company-wide",[["admin|bk","Overwatch"]]);
+    sel.innerHTML=html;
+    sel.value=prev&&sel.querySelector('option[value="'+prev+'"]')?prev:"gm|bk";
+  }
+  function admParse(){
+    const v=(document.getElementById("adm-view").value||"gm|bk").split("|");
+    return {role:v[0]||"gm", div:v[1]||"bk", dept:v[2]||""};
+  }
+  function admApplyPreview(){
+    const t=admParse();
+    const real=SESSION, realDiv=window.__admDivision;
+    window.__admDivision=t.div;
+    SESSION={role:t.role,name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__",
+      title:t.dept||(t.role==="gm"?"General Manager":"")};
+    renderBoard(); applyPortalIdentity();
+    SESSION=real; window.__admDivision=realDiv;
+  }
+  /* The editor lists exactly the tiles this role/division sees. */
+  function admVisible(){ const t=admParse(); return appsFor(t.role,t.div); }
 
   function admIconSrc(a){
     if(a.icon) return a.icon;
@@ -1416,27 +1448,36 @@
   }
   function admList(){
     const ul=document.getElementById("alist"); ul.innerHTML="";
-    APPS.forEach((a,idx)=>{
-      const li=document.createElement("li"); li.draggable=true;
+    const vis=admVisible();
+    const cap=document.getElementById("alist-cap");
+    if(cap) cap.textContent=vis.length+" of "+APPS.length+" tiles shown to this role";
+    vis.forEach((a,pos)=>{
+      const li=document.createElement("li"); li.draggable=true; li.dataset.pos=pos;
       const im=document.createElement("img"); im.src=admIconSrc(a); im.onerror=function(){this.style.visibility="hidden";};
       const nm=document.createElement("span"); nm.className="nm"; nm.textContent=a.name;
       li.append(im,nm);
-      if(idx===0){ const t=document.createElement("span"); t.className="tag f"; t.textContent="FEATURED"; li.appendChild(t); }
-      if(a.only){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.only.toUpperCase(); li.appendChild(t); }
+      if(pos===0){ const t=document.createElement("span"); t.className="tag f"; t.textContent="FEATURED"; li.appendChild(t); }
+      if(a.only){ const t=document.createElement("span"); t.className="tag"; t.textContent=String(a.only).toUpperCase(); li.appendChild(t); }
       if(a.roles){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.roles.join("/").toUpperCase(); li.appendChild(t); }
       if(a.tut){ const t=document.createElement("span"); t.className="tag"; t.textContent="?"; t.title="Has tutorial"; li.appendChild(t); }
-      const ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit"; ed.onclick=()=>admEdit(idx);
+      const ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit"; ed.onclick=()=>admEdit(APPS.indexOf(a));
       const rm=document.createElement("button"); rm.textContent="✕"; rm.title="Delete app";
-      rm.onclick=()=>{ if(!confirm('Delete "'+a.name+'" from every board?')) return; APPS.splice(idx,1); admChanged(); };
+      rm.onclick=()=>{ if(!confirm('Delete "'+a.name+'" from every board?')) return;
+        APPS.splice(APPS.indexOf(a),1); admChanged(); };
       li.append(ed,rm);
-      li.addEventListener("dragstart",e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",idx); });
+      li.addEventListener("dragstart",e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",pos); });
       li.addEventListener("dragend",()=>li.classList.remove("dragging"));
       li.addEventListener("dragover",e=>e.preventDefault());
       li.addEventListener("drop",e=>{ e.preventDefault();
-        const from=+e.dataTransfer.getData("text/plain"); if(from===idx) return;
-        APPS.splice(idx,0,APPS.splice(from,1)[0]); admChanged(); });
+        const from=+e.dataTransfer.getData("text/plain"); if(from===pos) return;
+        /* Move within the master list so the new order sticks for everyone. */
+        const moved=vis[from], target=vis[pos];
+        const gi=APPS.indexOf(moved); APPS.splice(gi,1);
+        APPS.splice(APPS.indexOf(target)+(from<pos?1:0),0,moved);
+        admChanged(); });
       ul.appendChild(li);
     });
+    if(!vis.length) ul.innerHTML='<li style="cursor:default;color:var(--text-muted)">No tiles for this role yet.</li>';
   }
   function admChanged(){ admDirty=true; admList(); admApplyPreview(); admNote(); }
 
@@ -1455,7 +1496,7 @@
     document.getElementById("ae-url").value=a.url||"";
     document.getElementById("ae-desc").value=a.desc||"";
     document.getElementById("ae-icon").value=a.icon||"";
-    admChips(document.getElementById("ae-div"), [["","Both"],["bk","BK only"],["cstore","C-Store only"]],
+    admChips(document.getElementById("ae-div"), [["","All"],["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]],
       v=>((a.only||"")===v), v=>{ if(v) a.only=v; else delete a.only; admChanged(); admEdit(i); });
     document.getElementById("ae-tutcap").value=a.tutCap||"";
     document.getElementById("ae-tuturl").value=a.tutUrl||"";
@@ -1542,10 +1583,10 @@
   document.getElementById("adm-reset").onclick=function(){
     if(!confirm("Discard changes and reload the published version?")) return; location.reload();
   };
-  document.getElementById("adm-view").onchange=function(){ admPreview=this.value; admApplyPreview(); };
+  document.getElementById("adm-view").onchange=function(){ admList(); admApplyPreview(); };
   document.getElementById("adm-open").onclick=function(){
     document.body.classList.add("adm-open");
-    admPreview=document.getElementById("adm-view").value;
+    admBuildViews();
     admList(); admNote(); admApplyPreview();
     if(window.__fit) window.__fit();
   };
