@@ -6,16 +6,31 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Dossani Portal</title>
-  <meta name="description" content="Dossani Paradise Management — one portal for every team." />
+  <title>Dossani · District Manager Portal</title>
+  <meta name="description" content="Dossani Paradise Management — District Manager Portal. Every operating system in one place." />
+
   <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-title" content="Dossani Portal" />
+  <meta name="apple-mobile-web-app-title" content="Dossani DM" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Decide the sign-in gate's opening state BEFORE first paint. Without this,
+       a returning District Manager sees the board flash behind the gate for a
+       frame. "gate-off" simply means "this browser already made a choice". -->
+  <script>
+    (function(){
+      try{
+        var s=JSON.parse(localStorage.getItem("dpm_dm_portal_session")||"null");
+        if(s&&(s.guest||(s.email&&s.pw)))document.documentElement.classList.add("gate-off");
+      }catch(e){}
+    })();
+  </script>
+
   <style>
     :root{
       --navy-950:#0d0a35; --navy-900:#14104a; --navy-800:#1b1660; --navy-700:#251d7f;
@@ -300,455 +315,1181 @@
       .gate-title{font-size:1.05rem;}
     }
   
-    /* ===== Overhaul: corner chip, sign-in, admin drawer ===== */
-    .ovl-btn{font-family:var(--font-sans);font-weight:700;border:none;cursor:pointer;border-radius:8px;}
-    #corner{position:fixed;top:10px;right:12px;z-index:200;display:flex;gap:8px;align-items:center;font-family:var(--font-sans);}
-    #corner .hello{color:#fff;background:rgba(20,16,74,.85);border:1px solid rgba(199,195,241,.3);padding:7px 12px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;}
-    #corner .signin{background:var(--accent);color:#fff;padding:8px 14px;font-size:13px;}
-    #cmenu{position:fixed;top:48px;right:12px;z-index:210;background:#fff;border:1px solid var(--border-subtle);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;display:none;min-width:180px;}
-    #cmenu button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 14px;font:600 13px var(--font-sans);color:var(--text-heading);cursor:pointer;}
-    #cmenu button:hover{background:var(--navy-50);}
-    .modal-bg{position:fixed;inset:0;background:linear-gradient(158deg,#14104a 0%,#1b1660 55%,#251d7f 100%);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;}
-    .gate-head{text-align:center;margin-bottom:16px;}
-    .gate-head h2{font-family:var(--font-display);color:#fff;font-size:1.65rem;letter-spacing:.05em;margin:.55rem 0 0;font-weight:700;}
-    .gate-head .eyebrow{margin-bottom:0;}
-    .guest{margin-top:16px;background:none;border:none;color:#9d97e6;font:600 12.5px var(--font-sans);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
-    .guest:hover{color:#fff;}
-    .modal-bg.open{display:flex;}
-    .modal{background:#fff;border-radius:14px;padding:22px 22px 18px;width:min(360px,92vw);box-shadow:var(--shadow-lg);font-family:var(--font-sans);}
-    .modal h3{font-family:var(--font-display);color:var(--text-heading);font-size:18px;margin-bottom:4px;}
-    .modal p{font-size:12.5px;color:var(--text-muted);margin-bottom:12px;}
-    .modal input{width:100%;padding:10px 12px;border:1px solid var(--gray-300);border-radius:8px;font:500 14px var(--font-sans);margin-bottom:10px;}
-    .modal .go{width:100%;padding:10px;background:var(--primary);color:#fff;font-size:14px;}
-    .modal .err{color:var(--accent);font-size:12px;margin:-4px 0 8px;display:none;}
-    #drawer{position:fixed;top:0;right:-390px;width:370px;height:100%;background:#fff;z-index:250;box-shadow:-10px 0 30px rgba(20,16,74,.18);transition:right .25s var(--ease);display:flex;flex-direction:column;font-family:var(--font-sans);}
-    body.admin-open #drawer{right:0;}
-    body.admin-open #fit{right:370px;}
-    #drawer header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
-    #drawer header b{font-family:var(--font-display);letter-spacing:.04em;font-size:14px;}
-    #drawer header .x{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
-    #dbody{flex:1;overflow-y:auto;padding:14px 16px 20px;}
-    #dbody label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin:14px 0 5px;}
-    #dbody select,#dbody input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:7px;font:500 13px var(--font-sans);}
-    #tilelist{list-style:none;margin:6px 0;padding:0;}
-    #tilelist li{display:flex;align-items:center;gap:8px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:6px 8px;margin-bottom:6px;cursor:grab;}
-    #tilelist li.dragging{opacity:.4;}
-    #tilelist li img{width:18px;height:18px;object-fit:contain;}
-    #tilelist li .nm{flex:1;font-size:13px;font-weight:700;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    #tilelist li .feat{font-size:9.5px;font-weight:800;color:var(--accent);letter-spacing:.05em;}
-    #tilelist li button{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:13px;padding:2px 4px;}
-    #tilelist li button:hover{color:var(--accent);}
-    .drow{display:flex;gap:8px;}
-    .dbtn{flex:1;padding:9px 10px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;font:700 12.5px var(--font-sans);color:var(--text-heading);cursor:pointer;}
-    .dbtn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
-    .dbtn.accent{background:var(--accent);border-color:var(--accent);color:#fff;}
-    #dirty{display:none;background:var(--red-50,#fff1f2);color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;margin-top:12px;}
-    body.dirty #dirty{display:block;}
-    .appform{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:10px;margin-top:8px;display:none;}
-    .appform.open{display:block;}
-    .appform input{margin-bottom:7px;}
-    #libsearch-res{max-height:150px;overflow-y:auto;margin-top:6px;}
-    .libitem,.person-hit{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-heading);}
-    .libitem:hover,.person-hit:hover{background:var(--navy-50);}
-    .person-hit small{color:var(--text-muted);font-weight:500;}
-    #preview-note{position:fixed;left:12px;top:10px;z-index:200;background:var(--accent);color:#fff;font:700 12px var(--font-sans);padding:6px 12px;border-radius:999px;display:none;}
-    body.previewing #preview-note{display:block;}
-    @media (max-width:760px){ #drawer{width:100%;right:-100%;} body.admin-open #fit{right:0;display:none;} }
-</style>
+    /* ---- Admin panel ---- */
+    #adm-open{position:fixed;left:12px;bottom:12px;z-index:180;background:var(--accent);color:#fff;
+      border:none;border-radius:999px;padding:9px 16px;font:800 12.5px var(--font-sans);cursor:pointer;
+      box-shadow:0 6px 18px rgba(198,8,25,.35);display:none;}
+    body.is-admin #adm-open{display:block;}
+    #adm{position:fixed;top:0;right:-400px;width:380px;max-width:100%;height:100%;background:#fff;z-index:400;
+      box-shadow:-10px 0 30px rgba(20,16,74,.2);transition:right .25s var(--ease);display:flex;flex-direction:column;
+      font-family:var(--font-sans);}
+    body.adm-open #adm{right:0;}
+    #adm header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+    #adm header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
+    #adm header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    #admb{flex:1;overflow-y:auto;padding:14px 16px 22px;}
+    #admb label{display:block;font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;
+      color:var(--text-muted);margin:14px 0 5px;}
+    #admb select,#admb input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);
+      border-radius:7px;font:500 13px var(--font-sans);}
+    #alist{list-style:none;margin:6px 0;padding:0;}
+    #alist li{display:flex;align-items:center;gap:7px;background:var(--gray-50);border:1px solid var(--gray-200);
+      border-radius:8px;padding:6px 8px;margin-bottom:5px;cursor:grab;}
+    #alist li.dragging{opacity:.4;}
+    #alist li img{width:17px;height:17px;object-fit:contain;}
+    #alist li .nm{flex:1;font:700 12.5px var(--font-sans);color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #alist li .tag{font:800 8.5px var(--font-sans);letter-spacing:.05em;color:#fff;background:var(--navy-400);
+      border-radius:4px;padding:1px 4px;}
+    #alist li .tag.f{background:var(--accent);}
+    #alist li button{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:12px;padding:1px 3px;}
+    #alist li button:hover{color:var(--accent);}
+    .arow{display:flex;gap:7px;margin-top:8px;}
+    .abtn{flex:1;padding:9px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;
+      font:700 12.5px var(--font-sans);color:var(--text-heading);cursor:pointer;}
+    .abtn.p{background:var(--primary);border-color:var(--primary);color:#fff;}
+    .abtn.a{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .aform{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:9px;padding:10px;margin-top:8px;display:none;}
+    .aform.open{display:block;}
+    .aform input{margin-bottom:6px;}
+    .chips{display:flex;flex-wrap:wrap;gap:5px;margin:3px 0 8px;}
+    .chip{font:700 11px var(--font-sans);padding:4px 9px;border-radius:999px;border:1px solid var(--gray-300);
+      background:#fff;color:var(--text-muted);cursor:pointer;}
+    .chip.on{background:var(--navy-700);border-color:var(--navy-700);color:#fff;}
+    #adm-note{margin-top:12px;border-radius:8px;padding:10px 11px;font:600 12px var(--font-sans);line-height:1.45;}
+    #adm-note.send{background:#fff1f2;border:1px solid var(--accent);color:var(--alert-ink,#8a0b17);}
+    #adm-note.upload{background:var(--navy-50);border:1px solid var(--navy-200);color:var(--navy-800);}
+    body.adm-open #fit{right:380px;}
+    @media (max-width:800px){ #adm{width:100%;right:-100%;} body.adm-open #fit{display:none;} }
+  
+    /* ---- Tutorial helper on a tile ---- */
+    .tile-tut{position:absolute;top:6px;right:6px;z-index:3;width:19px;height:19px;border-radius:50%;
+      display:grid;place-items:center;background:var(--navy-100);color:var(--navy-700);
+      font:800 12px var(--font-sans);line-height:1;cursor:pointer;border:1px solid var(--navy-200);
+      transition:background .15s ease,color .15s ease,transform .15s ease;text-decoration:none;}
+    .tile-tut:hover{background:var(--navy-700);color:#fff;transform:scale(1.12);}
+    .tile-tut:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+    .tile.has-alerts .tile-tut{background:#fff;border-color:rgba(198,8,25,.25);}
+  </style>
 </head>
+
 <body>
   <div id="fit"><div id="stage">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="topbar-brand" href="#top" aria-label="District Manager Portal home">
+        <span class="plate mini"><span class="dpm">DPM</span></span>
+        <span class="topbar-word">District Manager Portal</span>
+      </a>
+      <div class="topbar-search">
+        <label class="field" aria-label="Search systems">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="search" id="search-top" placeholder="Search systems…" autocomplete="off" />
+          <span class="slash">/</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
   <section class="hero" id="top">
     <div class="hero-inner">
       <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
       <span class="eyebrow">Dossani Paradise Management</span>
-      <h1 id="portal-title">Dossani Portal</h1>
+      <h1>District Manager Portal</h1>
+      <div class="who" id="who" hidden>
+        <span class="who-dot" aria-hidden="true"></span>
+        <span class="who-text" id="who-text"></span>
+        <button type="button" class="who-btn" id="who-btn"></button>
+      </div>
     </div>
   </section>
-  <main id="app-root"></main>
+
+  <main id="app-root">
+    <div class="no-results" id="no-results">
+      No systems match <strong id="nr-q"></strong>. Try another term.
+    </div>
+  </main>
+
   <footer>
     <a class="f-brand" href="https://dossaniparadise.com" target="_blank" rel="noopener noreferrer">
       <span class="plate mini"><span class="dpm">DPM</span></span>
       <span class="name">Dossani Paradise Management</span>
     </a>
     <div class="foot-right">
-      <div class="updated">Updated<span class="tag" id="footer-date"></span></div>
-      <div class="version" id="footer-ver"></div>
+      <div class="updated">Updated<span class="tag" id="footer-date">August 2026</span></div>
+      <div class="version">v3.4</div>
     </div>
   </footer>
   </div></div>
 
-  <div id="preview-note">Previewing</div>
-  <div id="corner"></div>
-  <div id="cmenu"></div>
+  <!-- ====================================================================
+       SIGN-IN GATE — sits outside #fit so it is never scaled by the
+       fit-to-window transform.
+       ==================================================================== -->
+  <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" aria-describedby="gate-sub">
+    <button type="button" class="gate-cancel" id="gate-cancel" aria-label="Close sign in">&times;</button>
+    <div class="gate-card">
+      <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
+      <h2 class="gate-title" id="gate-title">Dossani Paradise Web Portal</h2>
+      <p class="gate-sub" id="gate-sub">Sign in to see your notifications.</p>
 
-  <div class="modal-bg" id="signin-bg">
-  <div class="gate-head">
-    <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
-    <div><span class="eyebrow">Dossani Paradise Management</span></div>
-    <h2>Dossani Portal</h2>
-  </div>
-  <div class="modal">
-    <h3>Sign in</h3><p>Use your work email. Admins will be asked for the admin password.</p>
-    <input type="email" id="si-email" placeholder="you@dossaniparadise.com" autocomplete="email" />
-    <input type="password" id="si-pass" placeholder="Admin password" style="display:none" />
-    <div class="err" id="si-err"></div>
-    <button class="ovl-btn go" id="si-go">Continue</button>
-  </div>
-  <button class="guest" id="si-guest">Continue without signing in</button>
-  <div style="display:none">
-  </div></div>
+      <div class="gate-form">
+        <div>
+          <label class="gate-label" for="gate-email">Work email</label>
+          <input class="gate-input" type="email" id="gate-email" autocomplete="username"
+                 inputmode="email" spellcheck="false" autocapitalize="off" autocorrect="off"
+                 placeholder="you@dossaniparadise.com" />
+        </div>
+        <div>
+          <label class="gate-label" for="gate-pw">Password</label>
+          <input class="gate-input" type="password" id="gate-pw" autocomplete="current-password"
+                 placeholder="Your password" />
+        </div>
+        <div class="gate-err" id="gate-err" role="alert" aria-live="polite"></div>
+        <button type="button" class="gate-btn" id="gate-btn">Sign In</button>
+      </div>
 
-  <aside id="drawer">
-    <header><b>EDIT PORTALS</b><button class="x" id="dr-close">✕</button></header>
-    <div id="dbody">
-      <label>Portal</label>
-      <select id="sel-portal"></select>
-      <label>Or find a person</label>
-      <input type="text" id="psearch" placeholder="Search name or email…" autocomplete="off" />
-      <div id="psearch-res"></div>
-      <div id="person-tools"></div>
-      <label>Portal title</label>
-      <input type="text" id="ptitle" />
-      <label>Tiles <span style="font-weight:500;text-transform:none;letter-spacing:0">(drag to reorder — first is the big featured tile)</span></label>
-      <ul id="tilelist"></ul>
-      <div class="drow">
-        <button class="dbtn" id="btn-add">+ Add app</button>
-        <button class="dbtn" id="btn-new">+ New app</button>
+      <div class="gate-or">or</div>
+
+      <button type="button" class="gate-guest" id="gate-guest">
+        Use this page not signed in
+      </button>
+
+      <p class="gate-foot">Not signed in, the portal works normally &mdash; you just won't see your notifications.</p>
+    </div>
+  </div>
+
+  
+  <button id="adm-open">✎ Edit Portals</button>
+  <aside id="adm" aria-label="Portal editor">
+    <header><b>EDIT PORTALS</b><button id="adm-x" aria-label="Close">✕</button></header>
+    <div id="admb">
+      <label>Preview board as</label>
+      <select id="adm-view">
+        <option value="coach">District Manager (BK)</option>
+        <option value="director">Director of Operations</option>
+        <option value="gm">General Manager</option>
+        <option value="staff">Staff / other positions</option>
+        <option value="admin">Overwatch</option>
+        <option value="cstore">C-Store operator</option>
+        <option value="guest">Not signed in</option>
+      </select>
+      <label>Tiles — drag to reorder (first is featured)</label>
+      <ul id="alist"></ul>
+      <div class="arow"><button class="abtn" id="adm-new">+ New app</button></div>
+      <div class="aform" id="adm-newform">
+        <input type="text" id="an-name" placeholder="App name" />
+        <input type="text" id="an-url" placeholder="https://link" />
+        <input type="text" id="an-desc" placeholder="Caption" />
+        <input type="text" id="an-icon" placeholder="Icon image URL (optional)" />
+        <button class="abtn p" id="an-save" style="width:100%">Add app</button>
       </div>
-      <div class="appform" id="addform">
-        <input type="text" id="libsearch" placeholder="Search the app library…" />
-        <div id="libsearch-res"></div>
+      <div class="aform" id="adm-editform">
+        <input type="hidden" id="ae-i" />
+        <input type="text" id="ae-name" placeholder="App name" />
+        <input type="text" id="ae-url" placeholder="https://link" />
+        <input type="text" id="ae-desc" placeholder="Caption" />
+        <input type="text" id="ae-icon" placeholder="Icon image URL" />
+        <label style="margin-top:4px">Division</label>
+        <div class="chips" id="ae-div"></div>
+        <label>Show only for these positions <span style="font-weight:500;text-transform:none;letter-spacing:0">(none = everyone)</span></label>
+        <div class="chips" id="ae-roles"></div>
+        <label>Tutorial</label>
+        <div class="chips" id="ae-tut"></div>
+        <input type="text" id="ae-tutcap" placeholder="Tutorial caption (default: Tutorial Video)" />
+        <input type="text" id="ae-tuturl" placeholder="Tutorial video link (https://…)" />
+        <div class="arow"><button class="abtn p" id="ae-save">Save</button><button class="abtn" id="ae-cancel">Cancel</button></div>
       </div>
-      <div class="appform" id="newform">
-        <input type="text" id="nf-name" placeholder="App name" />
-        <input type="text" id="nf-url" placeholder="https://link" />
-        <input type="text" id="nf-desc" placeholder="Caption" />
-        <input type="text" id="nf-icon" placeholder="Icon image URL (optional)" />
-        <button class="dbtn primary" id="nf-save" style="width:100%">Add to this portal</button>
-      </div>
-      <div class="appform" id="editform">
-        <input type="hidden" id="ef-id" />
-        <input type="text" id="ef-name" placeholder="App name" />
-        <input type="text" id="ef-url" placeholder="https://link" />
-        <input type="text" id="ef-desc" placeholder="Caption" />
-        <input type="text" id="ef-icon" placeholder="Icon image URL or data URI" />
-        <div class="drow"><button class="dbtn primary" id="ef-save">Save app</button><button class="dbtn" id="ef-cancel">Cancel</button></div>
-      </div>
-      <label>Copy this portal's tiles into…</label>
-      <div class="drow"><select id="dup-target" style="flex:1"></select><button class="dbtn" id="btn-dup">Copy</button></div>
-      <div id="dirty">Unpublished changes (only on this device). Publish, then upload the downloaded file to GitHub.</div>
-      <div class="drow" style="margin-top:12px">
-        <button class="dbtn accent" id="btn-publish">Publish (download index.html)</button>
-        <button class="dbtn" id="btn-discard">Discard</button>
-      </div>
+      <div id="adm-note"></div>
+      <div class="arow"><button class="abtn a" id="adm-pub">Publish (download index.html)</button></div>
+      <div class="arow"><button class="abtn" id="adm-reset">Discard changes</button></div>
     </div>
   </aside>
 
-  <script type="application/json" id="portal-config">{"meta": {"version": "4.0", "updated": "August 2026"}, "adminEmails": ["itsupport@dossaniparadise.com", "deisy@dossaniparadise.com", "rahim@dossaniparadise.com"], "adminPass": "T3ZlcndhdGNoQDc2MDUx", "api": "https://alignment-api-khaki.vercel.app/api/dpm-alignment", "apps": [{"id": "rbi-okta", "name": "RBI · Okta", "url": "https://rbi.okta.com/oauth2/v1/authorize?client_id=okta.2b1959c8-bcc0-56eb-a589-cfcfb7422f26&code_challenge=fKhiRUJKNzaAxiLUo2FjGbMC0tdE9NsV9YmnLf4Ixs4&code_challenge_method=S256&nonce=yT1a93Zrw3LAP31SfZcEFvhAwbcz73Sbdv4vdEn6cUtfq5wxIY0jt2tFpLuZWwGc&redirect_uri=https%3A%2F%2Frbi.okta.com%2Fenduser%2Fcallback&response_type=code&state=xeUHcVZ8S8EAvFQdPfkGR4tRcZwOlAUzoichNtilEXPxTeqoDNkC6886YIHtJ6XQ&scope=openid%20profile%20email%20okta.users.read.self%20okta.users.manage.self%20okta.internal.enduser.read%20okta.internal.enduser.manage%20okta.enduser.dashboard.read%20okta.enduser.dashboard.manage%20okta.myAccount.sessions.manage%20okta.internal.navigation.enduser.read", "desc": "Restaurant Brands sign-on", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACEElEQVR4nHRTPUgcQRT+ZnbvDj2bI3BFcomSQP4IKZREkiIhXplUIQQUA4FUgUCaQCTXCBIhSZEiIaQRCwsbbcTGwuMKFfxDRMHGxj/Ef1RO8W5vx2929+7m0HvL2337zXtv3nvzjQ1THn6Jwgm/hFKvAdFMJBGsrFOniPchGkljtvOkGCJKwQ9S11FQHbRaqTFcLnuMGETO6cLyT50UlgffTl0D1F9a7dQaVJdaaiMseQvxpxPYGT+00NRZC6fQzcxtFRUBWeoGkQN+bWrEqPoOICOoT2YksmcthN4YwS51lBW1wxLP4Yhn7L2Nmg7WiklacZp7ZUOId/y5UtpXqQyE/ICl7hWjmg3cSy1wsYd2MsBietiSxmPD8Zj6G0vfVy5072HenLJlUDTrBInyP3bgyjlUE0vO8r1tIAlZ4aCYwnasqglkXnuoCgg+SYoSh5KNVRPkQ48YHjeQNSZQkwYQZR+fOLD6C8F3Oxro+5lWnYFOC9z/9pZZ/6PMPtc/CfxBqDADNyRQcJu8xMCLoGote/R7b6MmPIyTXD+Bj/DPV/JoW6BPx7G36URMxP3qSqL4DOh7YWEzkyctFxl3Ex7DSoQKB1XFArscDAzBFV+x2LXvT5ycxtUnYxyg7q8BPucvE03rXjI0RV4Yl0nL1vgRbiTTvGnzbMEOSq6DT99VbjzCXX8hnPuHhR+7xbBzAAAA///iqZUFAAAABklEQVQDABEknSsJ0Li/AAAAAElFTkSuQmCC"}, {"id": "genius-back-office", "name": "Genius Back Office", "url": "https://xbo.xenial.com/", "desc": "RTIConnect / Xenial", "icon": "https://play-lh.googleusercontent.com/Frmm1zrtTeDo_6WhQplleLKFkLaodTlWHQCX3lus8Ox-GrqYnmnprzghCXNESdXdbvsWnLruoA8qN4_0obAi"}, {"id": "c-store-pro", "name": "C-Store Pro", "url": "https://secure.cstorepro.com/EmagineNETCOSM/login.aspx", "desc": "C-Store Back Office", "icon": "https://www.google.com/s2/favicons?domain=cstorepro.com&sz=64"}, {"id": "outlook", "name": "Outlook", "url": "https://outlook.office365.com", "desc": "Email", "icon": "https://www.google.com/s2/favicons?domain=outlook.com&sz=64"}, {"id": "par-pos", "name": "PAR POS", "url": "https://admin25.parpos.com/Public/Login?ReturnUrl=%2f", "desc": "Point-of-sale admin", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAB9klEQVR4nJRSz0tUURS+97x7Z+4I/RSmGLAC90XUqv6ACFcWJFZIJAw0mDEFE7QqSiopo0Xgrl9gtAgGQlq0EXEhoht1M4Ki82QcdXBmdMb34773rue9N4Loau7mvfud75x7vu8cdunqLdLMAdLkAaXUIegocjDEKKX48TwkKfzXNC2Mua5HKQlyFYIY8jxEKEO2BiAEx7vruruGJaIRZMdiUeSG5QzDDBHHcZlhWNevXX4/kBaxqGXaP0f+fhj62pe6+6CnM58vtLefa2kRudzyl+Ffs/M5JV3AwkJE4vHWb9+z4xPT6cc93V0dmWe9Z+OtiUT85Iljnz7/aGs786Tvfr1mAKBL2Kjna1gtbOh6URE18Kp/cUnfKG1hP9Xt2sjv0dzCCmYG7RGgKIr40t69Sfc+vC2lY9r2n+x/AJBSnj51fG4me+F84vXb4UA0MC8QDUCTqZdCRIcGM1ipP3WPc4bJ5cp2obCJMianZhlDA5VPtSxZXC+Vy9XuOzdH/43d6Eg+zQzm9bVSqayvFp+/+BiJ8EfJLtuWaDS9eKVT04Bzjsah+mp1B71D47FqaGu9bmACXmu13cbgkCqlSYGapoXvMsYC7y0S6ONccxynUtnBuo3BBQOm/p74XZJwohjeXwfia4TGyvgvHFqYo8hBvOlt3QMAAP//h93/vQAAAAZJREFUAwB/3/lNzvjOcAAAAABJRU5ErkJggg=="}, {"id": "sicom", "name": "SICOM", "url": "https://bkdmb.sicomasp.com/login.php", "desc": "Store systems & kitchen", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB0ElEQVR4nJSTy0sbURTGfzNOCKFGBC2FpIpQi7GrLmq7LVa6NbZ7bTbtwnbfx67Q17r2sSiIdqeg/gG+FooSBUXxgUsxWYgLGaPgK9d7cs04TgzoB5dz7p17vvOdc+baSqkGvSbUzbEgsZY4wEN82D/OM7V5wCmK2ojD3WiIlbTDg2aIx/w3mRQC5T8ZXHYZXssRq64gcTvE/ZowajvMmy6Htlb49fMSAY5/8298n975HPfqbTqaojyKRwg7FqoO3nbDkxZK4CnI7uRp/7xLXb3iz+tqIlYFY6OwlYXmBLQ940p4Cv4OHJF3HXpSlZzkbJKvIJOBqipwXUPS32v2fthFZ23VorE2RKzGpq/fBH98D3Mz0NWpv6/D6HipAo9gdcmm8U6o4Lt75kyaJkg0GSukZQlu6Zrzh1bBL46q778JGjvPLGUE4TWxMwXrG4r0tFVQkHx5OeOLJHz7UkrgNTHZDh8+WQyNmEZJ8HcdEI+frxhXwvFnSM/p4OjF5a8/IFoJezlt9XmHTvKuu0wJfrQ+N7aoQMbY81snSOupzJZREISUIOWImkzWqBOyIETBhLZPg8EyAZm9QHryuMWUEPiRFoWgQTvDBF7kNTCpV+oMAAD//2QjS+UAAAAGSURBVAMAimXXhSkxEI0AAAAASUVORK5CYII="}, {"id": "findmi", "name": "FindMi", "url": "https://dossaniparadise.github.io/DPM-FindMi/", "desc": "Company Directory", "icon": "data:image/png;base64,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"}, {"id": "fixmi", "name": "FixMi", "url": "https://dossaniparadise.github.io/DPM-FixMi/", "desc": "Submit R&M Tickets", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAQHRFWHRTb2Z0d2FyZQBSZWFsRmF2aWNvbkdlbmVyYXRvciAoaHR0cHM6Ly9yZWFsZmF2aWNvbmdlbmVyYXRvci5uZXQpmZlW4QAADqVJREFUeJztXWuQFcUVnkVIfGEigrA73X16Zq6skmhMYUopYwU1ahL9IUHURKNRkUSUGOB23wVTsFWJ+ZEopXlZRhOSWDGKSaySh7vTs648VJIQ46t8i0RF5Q2C+AD2Juc+5O69d+bOzJ3HbsGPo0XtzNyZ7+v++vTp06e1fD6vHbT0LPUXONAt9Rc40C31Fxgolpmx7NOsY8nRMLertXX2UoDscoN1OCbv6OW6XEbGzFk2atT0RUdqnfkhBwmIyEZnu4+gwjmDSHUDkeqXVNgPUaH+SaV6mUr7TZpTb1HpvE6leoYIp4dI9Scmu6/knb2HHiSgCdPnOMfo0p5NpHqSSLWBSvUhlSrf0ITaQrI9k7Qpiw45SEDQD+3MD0F5odKZTqXzpi/Aq8BnWXVx5O8V5OLRo0cfYTLzAouxK0xKv5Q2qH6tbdriw3XpXFmSl2DAF20tEWpyLA3D74W6rh9jMnjAAr7VBNhlAn/bYlxqmjY0bYC9bNT83iOJcO4hUr0XEvwtunQu0hblI5OdwAQcj+AD/70FfK8FPF9hH1hg3Mw5/2zaQNd8WGfnEDbHGUeleiIk8AXw45CdQATo+8H/uAr8sn1oMb7QMAxIG/R+7y3sk4l0HqNS7QsrO9jyY28ojcC3gD9Yp+VX2z4T+GpDN76QNvBo6MdTqZ6nQvUNRNnxRYCH7HgYPAs6TNA0LdLJShCj0m6j0vlHaNmJydsJRIAP2XE3xt8wAa4mhByWNPg4sSI55zYq1ccDzdvxTUAA2fGy7SZj85ImgYiur4X2dnCSJdRkrbM3Ua+u3z/CyY6r7TUBbv0cISOS+JCiu2m/EFp2csnJTl0CmpIdb3vQJORETdNaYm39Us0fLLJTQwD68Rbwv0fU8ms8JAv4Gotan48N/JldGSrtV8J5O90XJS07NQTgoGkBfz8G8CsGZ9hsMnb2uHHjPhXpB2j5Fiq7p1OpPggGvv1RWrLT//01rcVkrNMC3hcrAUXbaDE2I8rBOTNj2VFUqvuDtn4i1CZt2pphqROA/7GYca0FfHcCBGBP2GkCLNA0LZJJDi6YlGL2AeXH6WMd3eMHBAGEkBEm492JEFAyE+CvGV0nzQ7OVNjnhp10kZzqSBzwzt6hJLv01Ha5ani+0gvinHMTYGVyJMAei/EuzvnJTREg1U9Cz3qlY0e5uNLIcNmTCnUdusut0j4lXz0PQE/FAv5cgj0BY0hrOecTmyDg4fAEqNfaZnXTpFo+gk+ls5VKtZ2Irsk1BKAcWAQmWcA3JClHGeBbLMovCTMuUGmH0P9PbDPNqfMSAT/XfSkCX/rdD6lwrq8hoETCUJPz64qx/iTHBP6CZVmBWmPRBQ3qfvazj6jononPiVt2KsBH26cLZ25dAtDGjx8/DFe7YpqY1TcGezKMjQvycWTm44c1AX5xIJbOXficBGSn/2/n1I+1fL7F9eb29vbhJhh3W2DsSYCAPgvgX+2UtiVPgP2YMdcZnYDsVBHg3IyJAp4PAQDDAnASkJ+1FoGvBx0D0IOhUu1pigShtvDZ3ccnIDv95iAkq+a7SlClGa0GmIy/HKP0bAIoLOKEcgdLeT3N9IK+KEMSnrKzn4CPadae5YuAAqMAX7SAr4un9cP0ZlbQqFSrIpChuxORnf22iwl1hW8CJmoTh5oAl5kAW2MgYUOGscvDprdQoX7TLAHoyjab89lYdvrZRj3bfZZvAtAwimkAZGOSoo0lEgKDQHLq200TIFQf5n3is8IMyP5kpz/hxuweCERA2QwGv7CAfxRHTzABzg9KQpt8pJ0Kta35XlCWo0Iay79JVv2MZZ2vYoZ02+zFI8dNWVQ3jB5Advb/hnB6MG8pFAGFNWPG7zMB4pgjBJajttm9I6lQKioCaqyQIW3bRNi3EWFPbRP26WRm14gQslPZ4677hMAwescYM03gT8ckRxuCyBG6okQ486hQe2MjYb/tplK9S6V6iUj7b1So3/mXnbI5O1nHyqObIqDAPmPjLIC34iLBrxxp0+4cRoWaWQInbgKal7gO5/Z+7x+WgHwxhH1eXO6pXzmiQl1NpVqfNrA+bT2mTEZGwEQM3FH+fVzlqgsirgMD3NPEcqenHBX0V9g7BgCwja2YJvlrMnPRYZERkC9HTxm/DYNpFcD1YXghAzAhk8kcZTH4bch0F3zOagBorSM7Vw8a8AuGy6bFRZhICUBra2s73GT8jvK6MoaWTYBvlMMLnPMxJRKC9oTXLKiNEQ0y2clTYe/F+D9GP2MhAK195MjhAHAmLqzg8mY1aNgTDM5v900Cg02c81PrgD94ZKdkuAEQXda6ChIVAb5Iam8fbjF+ZwM56istU55WIzuy56rAPneqZu8jUi3FuYqrhCdJgB85KoSm68lOEfzBIztFe5Rmuz0zAhMnwFOOirJzWl3ZGVQtv+D1dONehUZYpEJAmYQK78hddgadt6N2UWnfzX/4oK99c6kRUCVHg9/bQT9f2M/qOed7Zk59xi8GqRJQ7gmmaY4d5N7ObirUAip6rHKUc9AQUPNCscuOgzPSt6l0nqNSbSLh15TfJ1Ktozl7YatUJ4T+3rQBr7a4ZYdI+02StSeNlKuG69I+mwp7LhXOIiqdp0oDvdvOyj1UqLeosB/FkAK+J65FNJvamDrgVeDHLDvOdl06Z1ZuyMClyMz81UeRm3p0fZYzloquM/Rs18W6cKZhXYm2rLpKz6nzSdY5CRdnRme7j3WbVA1aApKQHWz5CH7Nb8e8dWpQEJCU7FRvRULPywI4K6q9CoOSgDRkpwA+5ZdawDdbAK+mWfklNeDTkh0MnxvMmGJiRvb+Wfi7SEIaPSHNlp+K7JTAf702DgWvGpSemzQJaYGfmuxUtfx+Udg05ChR4AeY7LhZonKUdMsfYLLjZsnJUZLgD0TZcV0USkqO4u9iA1F2MIGAwXOYTGAy/pAFfIeHHJ0SZ/2j6B+oaS04VcfipoU9XANQdkzGV+C6db4YEj8UN6qbAPV7CYNX4pSjSB4yZs6KUcWykM7CUmnI54lQLxCpnk5DdkzKv+UlOybjP61s1QiuCTDZBF4v/b4PScCeMKAIwASjQmE8Yd9FCqtAcYEckez0a9X8D6NGjTqy6t5DMmBM9bj3nTjkKJTEFMrDCLUggu1BiclO1cL/FiwaUg0m7oHIAExNUo4C34AhWyLU400sZMQiO4G9HSwawniumgQE1wKY5EJC5N5RgJafbxkze9k4JtS6lICPYpJVQ4LB2IzqGkZFOYJrLIDNcU/WfF9YqEIr7DXpgB9KdvaawP+TAf5n3INcqtxVD8yNBsAN1T1hvKYNQxJcBmacrJXlqKkxwddFo6YXCuLdRWWDTRA5Z2dh2S4h2Wng7TwxljGzfWT7cPy/xfj9riRgdnexDnaNHBnMuChO78jXRUTYX6E5tbMBUNuosK9HkHCc0LPOLCKVUyymYW8Nt4PFVXaGWJxf6OlqUn5V5T2U0jaTcduLBOwJ9eSoOE+IxztqfEFn55CGe7CE2oHZv/y7Cw+tevmW1tk9oAvnAppVN1FpL4tCdrCWhcn4jSbwXe6eDsyq/hYkAXuCyVz3t22oJ0dISomE+nKE3hFj54QhoeEFmNPuWQ5AqB1Edl/WqPIgpmbjvKFQIqYJ2Slb8SwDNs9jkH3RJOaJ1fcVk8H4fV49wc07Kk7WXLyjkHLkh4BbPUDaVsh791n2ETMKCgmrIWTHzUzG57v1BJPz5aZpHlevJ5RKtEUqRxng649rhUA5Qt5/nLZmGM2p1fUHXLWD5mplx8swRlQ4LKeYHBVIdtysuDmEzXMjIYMkEFLTE3DXTWG7rbsceXlHU7E8s8t9vdbo0cdGQgDMXdGKZb1cgHogTMFTVsi3cd/RqAt7StDnlknwkKMn65HQlBwVS33Wc093Zhj7TjQESHUCleoNF7DWhskK06U6jUr1jhsBbM4jpwd9ZtmakKPA3pHBjHNcCWf8DoyyNk0Abi4onKflJhdZ56SgII0oFlp9xrUHSPvssAQUB+YGJNTpCUG9I03ThpX2xLn1uIexEHrTBBBhH0ek+q+7B2TPDQMUkepOd1K7Tw1LQCUJIeXIe7IG8BeL8R+YxTrbrjX1TMaXW5blaxzw/CMe7cek86L7gOks1xYFk6G2zsWHE2nf7vLMfXhkYDMElK3hwFxHjnBg9vSOfJoJsIT4LNvv/Uct30I86nIS6azDXhIE/P/PKW6iLusHRKhXowA/H6931Mhwt88Cv0XKG8uFUDM8/PbtRKpv+gVFl84cN/BpaTtnVATsJyEGOfK2bRjO9vuODS/A5UYi3eJA9j4q7Fu46B3jdcAltvwS+F4TsN2QdSZESUDZwnhHeCwXzqaDy4+xBImPjIB8MaXk5+4DMYYibDyv6w7Mp2c59WUcOyrB95KdinnFMtL5eCzHnYT1jkyAewOBz/iKDKVWkHfzJx2zlo4lUr3k3YIL9kGpns7zWAJMFz1TiLDnNQZfvUeyzuX1tvJHTYJfOSpkSwA85p8AWIl73YK+l7+LCkWR7BtjqsmDYYn7o9x14mUm452uAzMeRkfpGQBwAmZO+D1TARd+wh5i5/tClJVoKhTWjCM2mdmjJwF+RU9wJQGPZiyFnX0WFoGVhhH+BMFAF+NxIUQ4v2rifMZq6XkEt3YmBX4VCV5y5Fd2VhmG0d7MuwR/+cIx4PbNVNhbmgAft3guGdPxME8a/ErzGph9yM5TzR4+EYqAfLlaoHQuJFItJtIJcnIdbvVcjacejSwd4ZGmNfKOvFp+FOCHJqBsWP1P7+g5i+acPxbWB7y8o5zqosK5BOcMzVapjYOEIN5Os7ITGQGVhr1CzzoTSFZdi4cTUNHzI1wtY9I5R7/e8RUZTNNMxm60gK93m/1iLzGB93DOI620nvqHDxSbOHHiUIux0y2AW3BihhlwxZNh+VMWwL0GwDWMsaOj/t3UP3ygWSEDwrKOxVBEO4AxlhAdK33FtaE79Q8+0C31FzjQLfUXONDtf0QSM+ab+1YrAAAAAElFTkSuQmCC"}, {"id": "paymi", "name": "PayMi", "url": "https://dossaniparadise.github.io/DPM-Paymi/", "desc": "Invoice tracking", "icon": "data:image/png;base64,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"}, {"id": "rsi-web", "name": "RSI Web", "url": "https://www.rsiweb.com/net/public/PubIndex.aspx?ReturnUrl=%2fNet%2fhome%2fhome.aspx", "desc": "Restaurant reporting", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACG0lEQVR4nJxTTUhUURT+3vV2eYWEZIpMwhTYMEa0NCKyolVIMrNxVxEEEtEiRFrF4NLFINJChKRFBDHRFC5sMcsW7VzLBDHJJILZYhiG967P+zrnvp8Zd+WBw7n33PN95+edJ0AShmGBtBH+u3BsgbFOfPiktUYiQgiriRhjrEa+rl9KUWSCRudHI6u3t20QRUHl85ADA3wEu3SzCdPcgRzNkI7CtFoI6lsUdwmSiLKdahXe6mrK3CF1SyWo6Wno9XV4Cwvpmzs3B5HLoTM7i9NraxCepxFwGi7p6zfILzWIyUkL0jqAVy5DzMzYN/WyRG+3EIfbiqVJbrEDJogu/f1d/8ZGNJupezDDw9ROM43vToQdN6/DTN2F2dyEXFy0Q3NXqLWREZhKBfrhfeilMnqTHiHA8itgbAxot4FW2w5R0kDdt+8gP3y0rTFRD56T0CeLedyJCdsnS7C8RNNuw5t/Dv1iHtjdjRBUTfKFLdZ1FfpILQHZU1cuQ9GEGRBU3kPevgPU6wiePbXWpaEqJVMC3oPQ87x0eZL+ess80nOcno0l8H0/LBQewPejTazVqtjqc3CCzgek+cNDPHr8BENDZ7G39xtvXq/g6rUbOJfJ4NcOLZdSKgUnzAw+eTEHfK/bLAy+cD6bVsDg8fG8vXMzweDgGbm//ycl4cwMPojvnLnXcubEpj8TjidF4TjOZz6Q/vwPIMcWGfsXAAD//306wc4AAAAGSURBVAMAmVcYQOseJLwAAAAASUVORK5CYII="}, {"id": "360iq", "name": "360iQ", "url": "https://id.go360iq.com/web/login?ReturnUrl=https:%2F%2Fid.go360iq.com%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3D360IQWebClient%26redirect_uri%3Dhttps%253A%252F%252Fapp.go360iq.com%252Fen-US%252FAccount%252FLogon%26response_type%3Dcode%26scope%3Dopenid%2520profile%2520user%2520offline_access%2520web-microservices%26code_challenge%3DvJ5UZ3bDdwJPs70a4T7PZrJnnEZp3VPEUOoMT9t1aNQ%26code_challenge_method%3DS256%26state%3DOpenIdConnect.AuthenticationProperties%253DEPkb9tpcLx8E7utuCkUVp5PJuSqvBW0gsh7inkQ4luyqSb2Sps5dY0ZuI830STXrhK5R31Y_PTcDzECxOULKFD92RkHU7qgn3kl2wDmKGmpojrPAjiV9mw-bkG2m_QtvpF7QCc3IqnakBrgyk9UvluceNGPjKkb1OgMGmLzmvH4uK7E3imaoc1QGUiCoJFTTfYBMLEM2j2yuLePalRLTUmKpIDQvLkob6r1B-W0KIhxKoYF1rsf2V_Rri2BCkqkM76bTuJL10jkWxJsM7_2BfY2JUJpZCAe5rjLEst5xi54m8dQfxoEhAkAtzM7lZv3jjcyhZe-0C3PCUzUkXLnZvg%26response_mode%3Dform_post%26ApplicationType%3DWeb%26ui_locales%3Den-US%26Username%26x-client-SKU%3DID_NET461%26x-client-ver%3D5.3.0.0#/healthdashboard", "desc": "Cameras", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACJ0lEQVR4nGRSzWsTQRSfmZ3NR7PbfJTa0lCw2pYUj3705MGriOJB8Ch4aPEvEKEI3jwEFD1WchGh0pt4Ej+uQkAwKdVgjVgMtdE2TZqv3Z33fLO7iYW+mYF5j/fxe7/3JCKygSAoLgxEYIyThMaBikwfSQFaUS7jwvcmVZBf220q8KQwR0zbD0PO9JF+AgG7Zff9fXFuOTJ/eb/3+9XWamX/kwLHNKILY4tXZm5bkTQgcJ0VdT2mHNGsRfptB5wXmw8/bK+TLRkbB1Rvfjx/WXkE6FF6wsRBKR3hdvfaP+sSpFL54nIuc/7WmRXLTB44f1dLK9utyt0LhSlrBgAE+r01mfP4y4N3W4W+6jqqN51cGOWW+/FpOjaRtefJ0nFbqPtAETTdcRv1w2pMJngAEIGssPsZyutK9YkGzkPihKYIUXBDGlFNm76Cux0sr0HvAKtvORB67eMPADWDA8rJ379coNcVO6WYaRtWVpt8FH7TXA7HxplBxKXjEyNGYqNZyuVupiKpem9ns7Zmm6lU9ARHHSS5TsnItafaLbcxmTh5afrG6+qzJ9/zNARdELzrs3fG4pPBHGSAx45kLmavZe05qn51dmnKOvV1r0jk/Dr89qdbixqJcE0ICGg+2P91CuAOpNrYyBeXRqPj9xYLNBbqR+qlYjxgIFwyrQA92q2sfXouc9ZTDoHRHqgrQOAUtu6nP6p2vTZ94jIRGPnR9T4uQ4TDzz8AAAD//ycG2IcAAAAGSURBVAMAzn43nWAm+MwAAAAASUVORK5CYII="}, {"id": "safetyculture", "name": "SafetyCulture", "url": "https://app.safetyculture.com/templates", "desc": "Inspections & audits", "icon": "https://www.google.com/s2/favicons?domain=safetyculture.com&sz=64"}, {"id": "rti-oil", "name": "RTI Oil", "url": "https://rtitom.com/LogIn.aspx?ReturnUrl=%2f", "desc": "Oil management", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWklEQVR4nIxTv08UURCeefPe3e6dKCCxojJWxEotLsFCEiNwNDYkxBgt/Qus4RIbG1sbYqwMgcTEggTEBIjhlxj/ARJ6CQQC3u3d7r55ztu7vYsmRCe7+37ONzPfN6uhY1P7+zdZFW64ZsvqAmKStPcJEYG4dXJ8fLhXrZ7DX4bgHAKiq37/8dbowrO0Xo9RITlmBKWcP5M5oKIjIHq/vPzpNczNpTmAykDEOEkGdblcwoLpV0HQp8LSFZKRisWrOgiuAvMtE4avpsar893g+cfbxNbujDKmws0okagq25TsnHVMhcI1WT12NhmgsERxK370+X5lTTJROgdYGa0syLAAl9jk7v4qUvGDB1fgJmVrDUZGsAvwYH1dh8PDBAcHfzhGYYgXfX02Pku/GmMbWUlaD2WH09PcBdgYG/PEpJdlMLH97bYCDD2h1vKvnIcuwPjW3pRCd5dT1xRpyOsDmQaWHdF1An5irTWEAbLjjcxpaUkAnBNgZEX4NBwcmolPz0BpnXn7B5Tw7KM2GiyqyNhcWf3S/NiR33q2XaYn6XoaRY5t2rRJnPiX41bKcRyz7ypFSpIBcesffWhCn5v30/mEbfyGI7UIBKn0EVpPh0THhB2QGpR2eimX7plyqVK+sNPi8g4WFwnhP218Z+cOsdqmMDBJFM2L7C98+V0Ss5p8Y9VqnY1ZeWUuWvtV6xSPiuUk0lgqCEdB7tUDaJfiejHnesByxpub/q8SFS04a9v3arWejJdahyMA4c2w0dJYAmraSc66fwN0rH7+86Q0MPQ8bTQCi3yYg/8GAAD//zqbwRcAAAAGSURBVAMAEscLd/UHSesAAAAASUVORK5CYII="}, {"id": "onedrive", "name": "OneDrive", "url": "https://alsinvestments-my.sharepoint.com/shared?id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FFast%20Food%20Ops%20Files%2FAbove%20Restaurant%20Leader%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments&viewid=45f7a3c5%2Dddce%2D472c%2Da9e0%2D09b9e6167324&ga=1", "desc": "Ops Files", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACCElEQVR4nKRTwWoUQRB91dOz2U10sxsJQTQ4uShEMDGoSE5B8L7ePPoDsuMX6B/oJ+QPcvDowehZXDzpLeYiMYLr7MzO9Mx0d1m7imiCh7AFDd1V9V69KqoVZjSFGU3/L3D3Zb1jWq5nF6itm/aQ5tTuYL11eDKPTjoe7nGUON77HvJG1nCEeY+gxdwI5O7di3e3F5+cUhDFg446Un2TpXE5KjpVowVTA2VN0IJTNagmRqg43nr1De/vL/8hoc34oFMXbjA6HkbRjRV0rq3iSwn+ISBBQ4WetbYIlCXV9vDiswtq59N2982EQJms6udJGnm2aAv4OAfSnMnnDm7oUB/V8EORcaWJ8lIT5nILfkXvXz9In09byIfpozzJcLV3B1/HwMgwqkoqFdJDUQHSe7DVRiGCTAlYB4RytPZx9DFNdF6UUXN1GWPdQj4FM1MuHaclbFLg3PZ5lHMBEgPkE8khIdSEIAhAxH29dO/WZwZFaWbhnNwqB5+W7EaGnBf5awtIRYyEUXol01SsFCMgLyy0qM3Y7nrGU6GDcp7YWHLjil1uoG92kSaYEpTu19S9DJ6ltOVg8vxAUTzsVCG/ZsYmOWaWTF+UhIvzcOtLyH6D+e/lIUjidIceTBepIySNysRsXc9b3kBXJr12AWORbaWk/wcNFtBbDvEMj2n/1Cae1Wb+TDMT/AQAAP//jwuVcgAAAAZJREFUAwCO3BAlPrGgJAAAAABJRU5ErkJggg=="}, {"id": "onedrive-2", "name": "OneDrive 2", "url": "https://alsinvestments-my.sharepoint.com/shared?ga=1&id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FC%2DStore%20Ops%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments", "desc": "Ops Files", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACCElEQVR4nKRTwWoUQRB91dOz2U10sxsJQTQ4uShEMDGoSE5B8L7ePPoDsuMX6B/oJ+QPcvDowehZXDzpLeYiMYLr7MzO9Mx0d1m7imiCh7AFDd1V9V69KqoVZjSFGU3/L3D3Zb1jWq5nF6itm/aQ5tTuYL11eDKPTjoe7nGUON77HvJG1nCEeY+gxdwI5O7di3e3F5+cUhDFg446Un2TpXE5KjpVowVTA2VN0IJTNagmRqg43nr1De/vL/8hoc34oFMXbjA6HkbRjRV0rq3iSwn+ISBBQ4WetbYIlCXV9vDiswtq59N2982EQJms6udJGnm2aAv4OAfSnMnnDm7oUB/V8EORcaWJ8lIT5nILfkXvXz9In09byIfpozzJcLV3B1/HwMgwqkoqFdJDUQHSe7DVRiGCTAlYB4RytPZx9DFNdF6UUXN1GWPdQj4FM1MuHaclbFLg3PZ5lHMBEgPkE8khIdSEIAhAxH29dO/WZwZFaWbhnNwqB5+W7EaGnBf5awtIRYyEUXol01SsFCMgLyy0qM3Y7nrGU6GDcp7YWHLjil1uoG92kSaYEpTu19S9DJ6ltOVg8vxAUTzsVCG/ZsYmOWaWTF+UhIvzcOtLyH6D+e/lIUjidIceTBepIySNysRsXc9b3kBXJr12AWORbaWk/wcNFtBbDvEMj2n/1Cae1Wb+TDMT/AQAAP//jwuVcgAAAAZJREFUAwCO3BAlPrGgJAAAAABJRU5ErkJggg=="}, {"id": "hr-portal", "name": "HR Portal", "url": "https://dossaniparadise.github.io/HR-Landing-Page/", "desc": "HR forms & quick links", "icon": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23251d7f%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%229%22%20cy%3D%228%22%20r%3D%223.1%22%2F%3E%3Cpath%20d%3D%22M3.6%2019.4c0-3.2%202.4-5.4%205.4-5.4s5.4%202.2%205.4%205.4%22%2F%3E%3Ccircle%20cx%3D%2217.2%22%20cy%3D%228.9%22%20r%3D%222.3%22%2F%3E%3Cpath%20d%3D%22M15.4%2014.3c2.5.3%204.1%202.4%204.1%205.1%22%2F%3E%3C%2Fsvg%3E"}, {"id": "paycom", "name": "Paycom", "url": "https://www.paycomonline.net/", "desc": "Payroll & HR", "icon": "https://e7.pngegg.com/pngimages/420/762/png-clipart-paycom-thumbnail-tech-companies-thumbnail.png"}, {"id": "screenconnect", "name": "ScreenConnect", "url": "https://dpisupport.screenconnect.com", "desc": "Remote store support", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACRElEQVR4nKRTO0xTURj+zjn3Fm65vVIELoIoSmMMJJJoYiQiGtKhxOBg1OCgbAZGohvRycFNEwclMjF1UhwAnXQSJ2MhMIFIgSAIhT5vH/ec421D1aZj/+E8/vPl+x/ffygqNIoKTSm5tVw8Cpc1AklVEMnK0IJJSBFEOLRYdJESwImODqjVixACDrA8HHESlnwJKesGdpZXygkAE+3nf2F/9wEi4Tf/+V043qEXTm5VM8ceDal1tV82BgY+K76ZGcMCnjDDcKW+hep3n7209ds3bzWM3D+bOzhQlGo3pG1PrfX0fCqyqcfMRifLqQvj4w2KZVkGa2p6CCnBamqiyOUoqzMu8XjiMtJZcNsphdKAGQwObQ8Ofi20Qog0Y+zIlsNFqaKIQs0Qo9bE+GnoHhoNvhsLX+nVNwIBfd3v19sJ6dx++iKAU1338gQMgkvOOfV65V8VZCzBYnNzEbSdu6s2md6Wt5O11sJCDqaJjM8nkONeSEzqw8MfidutyFRaFmQUtk0VVXXeDhv6cz7Y+Gq2m+/vz7uam1ud+rG5vsaNvh4Se/8Bnt6rW0RzU6TSEJpGFE3TYtlkMo6qqupiNpv9/XNtodAdQqRfxOOguptkd373gbFrPJF8LdKZCCEkekbXs4WordPTvamVte695xOzgJ0psKzOx501fcjJUe97DI8+itXveTmt8kGq83XCqJl1orTmFSkfIgcquLPnTuLHUrjo/jfKkeVF1Hb5nWZch7DLCQQRoCQDj7JXwosKreLf+AcAAP//mp1C+QAAAAZJREFUAwDmhd/awi5O+wAAAABJRU5ErkJggg=="}, {"id": "cash-connect", "name": "Cash Connect", "url": "https://www.cashtrack.cashconnect.com/Account/Login.aspx?ReturnUrl=%2f", "desc": "Smart safes", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWklEQVR4nKRSS2sTURT+5j4mkzRt2hilRSiFIkbbCEWrtGJ9IELBhTTiY6O4EdRGcO1KpL/AmoXtRlxYMO1GEATRiuhGBOmixIL4QClqEm3aThKTmfGcmfoHmjtzhm/OOd+53zn3CjS5BJpc6j+4NjmWc1037cFDHQZ2Uu3Mnm4/dmfhKz7AhaaYQY8QYvbu+Nxpjhn8Gc+OPTwyePRcsnc3HNeFIyS63r1CvKvhFygtKyzvPQTpOpBCIP9xEfNvX8xMXp07L2/cO5vbl+w705noQHn1F1bXSijbJfR9ykP0b4PRomEtfsFCNAR7rYj19SKiYROt4XB/z3BnShnw0umhK2g4dRIIePSpC5Y5ABFJBP0NFDDYvR3apRaMQPb+Ho33S9fTSkgqAQeZ7CVIehJbEqhSwq2VFeiDSZ9ff53H7VgMFuFCsUDZDrKZ+2CuUkKh7v5FvC2GVqsFx4ePoUrbiKePSUE4OCrTwsmRE7BI3rM3z2HXKj6HuYKHUnNr2NqewOjIKDk0mUnD0jC06Rtj9nGMc+KxuM9hrlBSUv9VmEykijNPZqH8ZAmhN4ww+zjGOZzLHOX7uQD1ZFkhaG3hwqmLNAPB0mCYMmiBsBCmH1O0q2VZPoe5gQL6+UHDmcpNQVG/ygzRznTHNowx+zg2/Wga335+h2M4gQItFTy60EM7UihXbBQ+L5ECg9SYcCLaVyAJsz9M53VgVwpRTYgGrZWCMfHg8nykzTrsHzARXUqqELrpAo2OSHDff9uYoE34TCTleXxZ6LXLlZfM6iVrx+bWHwNNrn8AAAD//zI/iy4AAAAGSURBVAMAEHa78AyLrXwAAAAASUVORK5CYII="}, {"id": "flowers", "name": "Flowers", "url": "https://omsi.flocorp.com/omsi/clientportal/apps/cplogin.html?p=Km530c8XSlYiXYABAQY6Y53vyTnsGDiiyfOmqbodyug%3d&utm_source=Supply+Updates+-+Template&utm_medium=newsletter&utm_campaign=Flowers+Ordering+Portal+Update", "desc": "Bread orders", "icon": "https://www.google.com/s2/favicons?domain=flowersfoods.com&sz=64"}, {"id": "bitrix24", "name": "Bitrix24", "url": "https://dossaniparadise.bitrix24.com/extranet/workgroups/group/12/disk/path/?viewMode=grid", "desc": "Paperwork and Receipts", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB+ElEQVR4nKRTzUtUURT/3fveOE/fmL4oZTKssFHCiqCIiIqWfa5atJhFixYRtOkPaFerIKhVi2gXRuTOnQjiRvd+gIriF6Pgxyg68+bNvPuu59xxxlF3znmcdy/3nt85v985XFtrLbpHshFOYTOPPClSw1sadZjUBK/1J+caMHS3BZMPPfy6kUBHXOJ4TK2LrqHNKoPn7Q343ps4UmHFj9C/FiCINP5lAmyXjhIWXYMb1ZOBe63oSVhmr+h0NqdgCeCqa4EWLPkKL8d2kFeHSWx90D4OZDBfTe4qfJzaw6JfvkxRgh+9Lq40SrxOxvF7qVDTA6JmE+xTtwtG+6HGu/EyePaxZ4KYyYeJHCIt8OZSI16QVMaxS62A95ebkO50wPVGt0OsF09OdS6vML4bIulIfLvZjGdtcTDWMHh10THU2blZtcYsKkyCCNW4t522YWDzr80RVL0MvNNqw5ECBTpPDWeric7GBK6foZHyR/OjVhxKmKemRayJcni2wOeeJpOkYgnq8NdrLuJCmJigpJAhSYw1DH5O5/DllguLQJaUeHo+htstzRjNhuA8D7wYvJgwlUsqgh+U8HexWJEA9C8UYNEmTbraHZiZs993ygzCfBHrB2w2qRH/l0P0LYRGtOjoW63rLRgJ9Zjg53zhz+qpnnMmnZT7AAAA//9PvO61AAAABklEQVQDAHd694Xfwx4YAAAAAElFTkSuQmCC"}, {"id": "zenput", "name": "Zenput", "url": "https://www.zenput.com/mobile/", "desc": "Store audits", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACVElEQVR4nIRTO2hUQRQ98968/RnMR0jhgihoqqRQERFS+Cksgo3EKCKE+AuIGgQ1YIKINrHSxlSioJ2FtnYKFoFNoqspsgpGMWJE0KhZN5v3u947md24sujA7Gfm3nvOPfeMJqJxAFt5x1EUuUqpmM8c1Fmu65o7ieG/ivek4gOSZHug8M9F4GjiApUDpSvJvu+r5/lpWuJvx1EwZTmOYgIzQyqVxLYtHeR5GoJpi8SKL8lxHMzP/6CdXb3q67fv5GlPUhHGMTKpFNLpJH4u/MLVoTM4cnAfgiCE1q6hoDlZsJBIeIovqVgsKZcvoyjGqkwaL15No/B6Bg0NGWTXtppYAWQGpn0VxzFVG1K1Esx9/oJjpy+j8GYGg+eOo7+vx7QjBSpL/5kQhmG1v4ViCQODI3g5VcDhA1040dttkv8GqRmXpSbjwvWbtzE2nkfnjs24dP4k6rGU3zUFIhZNa4079x/iwaPHWL8ui2tDZ9Hc1AhutYZ6pVC1BRHN4+Snz3K4MXoP6WQSwxf60bZpA/wggGZWRiyZryQTrRSIDbKLd+8/4srILR5TgIsDR7F3T6fRJOF5FoYto5ZZEOewoyCjEHsaAftODSM3OYWWptWqo70NjqXJzoJfLqPn0H6MfspQoxvhbnc72PfQMsplFgRxWYZNw27FWC4PWDfKR1hexPbdu+jJ2yXVrEM2GUEkEQaRFJFVWizTh9k5aVHVCgYEYYRsawtm/QQl2YQb16T51bGV7WMiO///PKaVRRZVYCbsWEwR0URErbel00hgOcZiTfwGAAD//3g9XNcAAAAGSURBVAMALfQstKPK27oAAAAASUVORK5CYII="}, {"id": "onedrive-arl-files", "name": "OneDrive · ARL Files", "url": "https://alsinvestments-my.sharepoint.com/shared?id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FFast%20Food%20Ops%20Files%2FAbove%20Restaurant%20Leader%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments&ga=1", "desc": "Above-restaurant files", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACiklEQVR4nFxTO2hUQRQ9d9687MbEGNAogmAgVcBa1MaQQlIqqFgEgiAiWMQgNqlSapVoo1iYUiujhSI2FoJikEAKwVRGiyj4CZvs++2bmeudmXzEXS4zb96cz/08ja3fwpeZwd/Umv/BxemcmOCArJ1juLuJo/v60AYjB3POTLXsa4W5mwN3p9Q2wd5GOkugEescWZa/sTDGYEjAAgwEG+xoE45bEpvOTXqc3iZQpM4ys2gwO+uIHcNagzIqh8hikIG/F3E7BHLmjyHa5FfnXIhKXlXyXHAkMVvXCf8RbKnDKztYMelvEQoh6cjtjgd7WTnzS/Ynj0Qnnl+fMB0zVxVVf13WMJWBsgwlRextEPb3ZOi1JUqplgmc5M1idXkNK7OfSGdZMVMKuFNUsKUod2oJFwhyaca63G6tfAYlYJ0mFB14qzELlWfFYNEuMDE8hndXHqCHmlicfITJUxeRtTLk7RJKE3RDU9LQ0M2E025Nfg0EVS7KYvvh+wVsFG08nbgNX4A7L+bh5LwSAkqUJ2HdpdDVTClt6kASCGxHSiOWXe3wZOk1jh0ewuMPr8AdG8IUNRIBqlTJmiBpKHiwRGw/l5acJxG1qyfP4eXyW1w6PoY+vQcspJDQAtSN3QhEXTqmEMCidGt0HF9/fcf4/Wl8+7mGa6PnQwqutpK3jjUQoEoF7N2kKqRAh6bPrNvS9DtvufZdiNb93qeWitDAUB1ceAJSsf6+HcvTS6RkLm/I8K9GgJWJiWBvPSGHvoOOo22pg3RRaVHXCcnK/04kDlw48kbYR0K+YlmKxLKSB3uQ74JKFIW9Chb449Si2vkadWIuy3g8452PY5ecKEwgid+Qgm8rqeSef/cXAAD//9fqixgAAAAGSURBVAMAcwJxhBCdv/wAAAAASUVORK5CYII="}, {"id": "rapid-pay-card", "name": "Rapid Pay Card", "url": "https://www.rapidadmin.com/login", "desc": "Pay cards", "icon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6d3TbmaS4YYEIadUdvO9xa4VBQjzIAd5cR2XEFfL89Q&s"}, {"id": "bitrix24-my-drive", "name": "Bitrix24 · My Drive", "url": "https://dossaniparadise.bitrix24.com/company/personal/user/4/disk/path/Fast%20Food/", "desc": "Paperwork and Receipts", "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB+ElEQVR4nKRTzUtUURT/3fveOE/fmL4oZTKssFHCiqCIiIqWfa5atJhFixYRtOkPaFerIKhVi2gXRuTOnQjiRvd+gIriF6Pgxyg68+bNvPuu59xxxlF3znmcdy/3nt85v985XFtrLbpHshFOYTOPPClSw1sadZjUBK/1J+caMHS3BZMPPfy6kUBHXOJ4TK2LrqHNKoPn7Q343ps4UmHFj9C/FiCINP5lAmyXjhIWXYMb1ZOBe63oSVhmr+h0NqdgCeCqa4EWLPkKL8d2kFeHSWx90D4OZDBfTe4qfJzaw6JfvkxRgh+9Lq40SrxOxvF7qVDTA6JmE+xTtwtG+6HGu/EyePaxZ4KYyYeJHCIt8OZSI16QVMaxS62A95ebkO50wPVGt0OsF09OdS6vML4bIulIfLvZjGdtcTDWMHh10THU2blZtcYsKkyCCNW4t522YWDzr80RVL0MvNNqw5ECBTpPDWeric7GBK6foZHyR/OjVhxKmKemRayJcni2wOeeJpOkYgnq8NdrLuJCmJigpJAhSYw1DH5O5/DllguLQJaUeHo+htstzRjNhuA8D7wYvJgwlUsqgh+U8HexWJEA9C8UYNEmTbraHZiZs993ygzCfBHrB2w2qRH/l0P0LYRGtOjoW63rLRgJ9Zjg53zhz+qpnnMmnZT7AAAA//9PvO61AAAABklEQVQDAHd694Xfwx4YAAAAAElFTkSuQmCC"}], "portals": [{"id": "everything", "title": "Dossani Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24", "zenput", "onedrive-arl-files", "rapid-pay-card", "bitrix24-my-drive"]}, {"id": "burger-king", "title": "Burger King Portal", "tiles": ["rbi-okta", "genius-back-office", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "subway", "title": "Subway Portal", "tiles": ["rbi-okta", "genius-back-office", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "c-store", "title": "C-Store Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "car-wash", "title": "Car Wash Portal", "tiles": ["rbi-okta", "genius-back-office", "outlook", "rsi-web", "360iq", "zenput", "onedrive-arl-files", "hr-portal", "paycom", "rapid-pay-card", "cash-connect", "flowers", "bitrix24-my-drive"]}, {"id": "district-managers", "title": "District Manager Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24"]}, {"id": "directors", "title": "Director of Operations Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24"]}, {"id": "support-staff", "title": "Support Staff Portal", "tiles": ["rbi-okta", "genius-back-office", "c-store-pro", "outlook", "par-pos", "sicom", "findmi", "fixmi", "paymi", "rsi-web", "360iq", "safetyculture", "rti-oil", "onedrive", "onedrive-2", "hr-portal", "paycom", "screenconnect", "cash-connect", "flowers", "bitrix24", "zenput", "onedrive-arl-files", "rapid-pay-card", "bitrix24-my-drive"]}], "people": {}, "roleMap": {"admins": "support-staff", "vps": "directors", "directors": "directors", "areaCoaches": "district-managers", "repairTechnicians": "support-staff"}, "entityMap": [{"match": ["burger", "bk"], "portal": "burger-king"}, {"match": ["subway"], "portal": "subway"}, {"match": ["c-store", "cstore", "c store", "conven"], "portal": "c-store"}, {"match": ["car wash", "carwash", "wash"], "portal": "car-wash"}]}</script>
   <script>
-  "use strict";
-  /* ================= CONFIG / DRAFT ================= */
-  var PUB = JSON.parse(document.getElementById("portal-config").textContent);
-  var draft = null; try{ draft = JSON.parse(localStorage.getItem("dpmDraft")||"null"); }catch(e){}
-  var sess = null; try{ sess = JSON.parse(localStorage.getItem("dpmSession")||"null"); }catch(e){}
-  function isAdmin(){ return !!(sess && sess.admin); }
-  function C(){ return (isAdmin() && draft) ? draft : PUB; }
-  function saveDraft(){ if(!draft){ draft = JSON.parse(JSON.stringify(PUB)); } localStorage.setItem("dpmDraft", JSON.stringify(draft)); document.body.classList.add("dirty"); }
-  function appById(id){ return C().apps.find(function(a){return a.id===id;}); }
-  function portalById(id){ return C().portals.find(function(p){return p.id===id;}); }
+  /* ======================================================================
+     EDIT YOUR LINKS HERE
+     ----------------------------------------------------------------------
+     Each tile is one line: { name, url, desc }.
+       • The FIRST entry is the large featured tile on top.
+       • The rest fill the grid left-to-right, top-to-bottom, in this order.
+       • To move a tile, just move its line. To add one, copy a line.
+     Icons load automatically from each link's website. To force a specific
+     icon, add   icon:"https://…/logo.png"   to that line (see Paycom).
+     The bulky embedded favicons live in the ICONS map just below this list.
+     ====================================================================== */
+  const APPS = [
+    { name:"Zenput", url:"https://www.zenput.com/mobile/", desc:"Store audits", roles:["gm"] },
+    { name:"Rapid Pay Card", url:"https://www.rapidadmin.com/login", desc:"Pay cards", roles:["gm"], icon:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6d3TbmaS4YYEIadUdvO9xa4VBQjzIAd5cR2XEFfL89Q&s" },
+    { name:"Cash Connect", url:"https://www.cashtrack.cashconnect.com/Account/Login.aspx?ReturnUrl=%2f", desc:"Smart safes", roles:["gm"] },
+    { name:"RBI · Okta", url:"https://rbi.okta.com/oauth2/v1/authorize?client_id=okta.2b1959c8-bcc0-56eb-a589-cfcfb7422f26&code_challenge=fKhiRUJKNzaAxiLUo2FjGbMC0tdE9NsV9YmnLf4Ixs4&code_challenge_method=S256&nonce=yT1a93Zrw3LAP31SfZcEFvhAwbcz73Sbdv4vdEn6cUtfq5wxIY0jt2tFpLuZWwGc&redirect_uri=https%3A%2F%2Frbi.okta.com%2Fenduser%2Fcallback&response_type=code&state=xeUHcVZ8S8EAvFQdPfkGR4tRcZwOlAUzoichNtilEXPxTeqoDNkC6886YIHtJ6XQ&scope=openid%20profile%20email%20okta.users.read.self%20okta.users.manage.self%20okta.internal.enduser.read%20okta.internal.enduser.manage%20okta.enduser.dashboard.read%20okta.enduser.dashboard.manage%20okta.myAccount.sessions.manage%20okta.internal.navigation.enduser.read", desc:"Restaurant Brands sign-on" },
+    { name:"Genius Back Office", url:"https://xbo.xenial.com/", desc:"RTIConnect / Xenial", icon:"https://play-lh.googleusercontent.com/Frmm1zrtTeDo_6WhQplleLKFkLaodTlWHQCX3lus8Ox-GrqYnmnprzghCXNESdXdbvsWnLruoA8qN4_0obAi" },
+    { name:"C-Store Pro", url:"https://secure.cstorepro.com/EmagineNETCOSM/login.aspx", desc:"C-Store Back Office", only:"cstore", icon:"https://www.google.com/s2/favicons?domain=cstorepro.com&sz=64" },
+    { name:"Outlook", url:"https://outlook.office365.com", desc:"Email", icon:"https://www.google.com/s2/favicons?domain=outlook.com&sz=64" },
+    { name:"PAR POS", url:"https://admin25.parpos.com/Public/Login?ReturnUrl=%2f", desc:"Point-of-sale admin" },
+    { name:"SICOM", url:"https://bkdmb.sicomasp.com/login.php", desc:"Store systems & kitchen" },
+    { name:"FindMi", url:"https://dossaniparadise.github.io/DPM-FindMi/", desc:"Company Directory", tut:true, tutCap:"Tutorial Video", tutUrl:"https://www.youtube.com/watch?v=JwKBDG21OfI&list=PLIgZfiTI7RVU&index=1" },
+    { name:"FixMi", url:"https://dossaniparadise.github.io/DPM-FixMi/", desc:"Submit R&M Tickets" },
+    { name:"PayMi", url:"https://dossaniparadise.github.io/DPM-Paymi/", desc:"Invoice tracking" },
+    { name:"RSI Web", url:"https://www.rsiweb.com/net/public/PubIndex.aspx?ReturnUrl=%2fNet%2fhome%2fhome.aspx", desc:"Restaurant reporting" },
+    { name:"360iQ", url:"https://id.go360iq.com/web/login?ReturnUrl=https:%2F%2Fid.go360iq.com%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3D360IQWebClient%26redirect_uri%3Dhttps%253A%252F%252Fapp.go360iq.com%252Fen-US%252FAccount%252FLogon%26response_type%3Dcode%26scope%3Dopenid%2520profile%2520user%2520offline_access%2520web-microservices%26code_challenge%3DvJ5UZ3bDdwJPs70a4T7PZrJnnEZp3VPEUOoMT9t1aNQ%26code_challenge_method%3DS256%26state%3DOpenIdConnect.AuthenticationProperties%253DEPkb9tpcLx8E7utuCkUVp5PJuSqvBW0gsh7inkQ4luyqSb2Sps5dY0ZuI830STXrhK5R31Y_PTcDzECxOULKFD92RkHU7qgn3kl2wDmKGmpojrPAjiV9mw-bkG2m_QtvpF7QCc3IqnakBrgyk9UvluceNGPjKkb1OgMGmLzmvH4uK7E3imaoc1QGUiCoJFTTfYBMLEM2j2yuLePalRLTUmKpIDQvLkob6r1B-W0KIhxKoYF1rsf2V_Rri2BCkqkM76bTuJL10jkWxJsM7_2BfY2JUJpZCAe5rjLEst5xi54m8dQfxoEhAkAtzM7lZv3jjcyhZe-0C3PCUzUkXLnZvg%26response_mode%3Dform_post%26ApplicationType%3DWeb%26ui_locales%3Den-US%26Username%26x-client-SKU%3DID_NET461%26x-client-ver%3D5.3.0.0#/healthdashboard", desc:"Cameras" },
+    { name:"SafetyCulture", url:"https://app.safetyculture.com/templates", desc:"Inspections & audits", icon:"https://www.google.com/s2/favicons?domain=safetyculture.com&sz=64" },
+    { name:"RTI Oil", url:"https://rtitom.com/LogIn.aspx?ReturnUrl=%2f", desc:"Oil management" },
+    /* Same tile, same name — the board shows whichever one matches. */
+    { name:"OneDrive", url:"https://alsinvestments-my.sharepoint.com/shared?id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FFast%20Food%20Ops%20Files%2FAbove%20Restaurant%20Leader%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments&viewid=45f7a3c5%2Dddce%2D472c%2Da9e0%2D09b9e6167324&ga=1", desc:"Ops Files", only:"bk" },
+    { name:"OneDrive", url:"https://alsinvestments-my.sharepoint.com/shared?ga=1&id=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments%2FC%2DStore%20Ops%20Files&listurl=%2Fpersonal%2Fsam%5Fdossaniparadise%5Fcom%2FDocuments", desc:"Ops Files", only:"cstore" },
+    { name:"HR Portal", url:"https://dossaniparadise.github.io/HR-Landing-Page/", desc:"HR forms & quick links" },
+    { name:"Paycom", url:"https://www.paycomonline.net/", desc:"Payroll & HR", icon:"https://e7.pngegg.com/pngimages/420/762/png-clipart-paycom-thumbnail-tech-companies-thumbnail.png" },
+    { name:"ScreenConnect", url:"https://dpisupport.screenconnect.com", desc:"Remote store support" },
+    { name:"Cash Connect", url:"https://www.cashtrack.cashconnect.com/Account/Login.aspx?ReturnUrl=%2f", desc:"Smart safes" },
+    { name:"Flowers", url:"https://omsi.flocorp.com/omsi/clientportal/apps/cplogin.html?p=Km530c8XSlYiXYABAQY6Y53vyTnsGDiiyfOmqbodyug%3d&utm_source=Supply+Updates+-+Template&utm_medium=newsletter&utm_campaign=Flowers+Ordering+Portal+Update", desc:"Bread orders", icon:"https://www.google.com/s2/favicons?domain=flowersfoods.com&sz=64" },
+    { name:"Bitrix24", url:"https://dossaniparadise.bitrix24.com/extranet/workgroups/group/12/disk/path/?viewMode=grid", desc:"Paperwork and Receipts" },
+  ];
 
-  /* ================= DIRECTORY (FindMi) ================= */
-  var dir = {people:[], entities:[], loaded:false};
-  var ROLE_TITLES={admins:"Admin",vps:"VP of Operations",directors:"Director of Operations",areaCoaches:"Area Coach",repairTechnicians:"Repair Technician",staff:"Team Member",generalManagers:"General Manager"};
-  function normalizeDir(data){
-    var people=[], entities=[];
-    (function walk(node,key,entityId){
-      if(Array.isArray(node)){ for(var i=0;i<node.length;i++) walk(node[i],key,entityId); return; }
-      if(node && typeof node==="object"){
-        var ent = (node.entityId!==undefined && node.entityId!==null) ? node.entityId : entityId;
-        if(key==="entities" && node.name!==undefined && node.id!==undefined) entities.push({id:node.id,name:String(node.name)});
-        if(node.email && node.name){
-          people.push({name:String(node.name), email:String(node.email).toLowerCase().trim(),
-            title: node.title||node.role||ROLE_TITLES[key]||"", roleKey:key||"", entityId:ent});
-        }
-        for(var k in node){ var v=node[k]; if(v && typeof v==="object") walk(v,k,ent); }
-      }
-    })(data,"",null);
-    return {people:people, entities:entities};
-  }
-  function loadDirectory(){
-    try{ var cached=JSON.parse(localStorage.getItem("dpmDir")||"null");
-      if(cached && Date.now()-cached.t < 864e5){ dir=cached.d; dir.loaded=true; onDir(); } }catch(e){}
-    fetch(C().api+"?_="+Date.now(), {cache:"no-store"}).then(function(r){return r.json();}).then(function(j){
-      var d=normalizeDir(j); if(d.people.length){ dir={people:d.people,entities:d.entities,loaded:true};
-        localStorage.setItem("dpmDir", JSON.stringify({t:Date.now(), d:dir})); onDir(); }
-    }).catch(function(){});
-  }
-  function findPerson(email){ email=(email||"").toLowerCase().trim();
-    return dir.people.find(function(p){return p.email===email;})||null; }
-  function onDir(){ if(sess && sess.email){ var p=findPerson(sess.email); if(p){ sess.person=p; localStorage.setItem("dpmSession",JSON.stringify(sess)); } } renderAll(); }
+  /* ======================================================================
+     ICON IMAGES  (keyed by the exact name above)
+     ----------------------------------------------------------------------
+     These are the embedded logos — large data blobs, kept down here so the
+     link list above stays short and easy to scroll. You rarely need to edit
+     these; change the links above instead. To give a tile a new embedded
+     icon, paste a data: URL here under its name.
+     ====================================================================== */
+  const ICONS = {
+    "RBI · Okta": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACEElEQVR4nHRTPUgcQRT+ZnbvDj2bI3BFcomSQP4IKZREkiIhXplUIQQUA4FUgUCaQCTXCBIhSZEiIaQRCwsbbcTGwuMKFfxDRMHGxj/Ef1RO8W5vx2929+7m0HvL2337zXtv3nvzjQ1THn6Jwgm/hFKvAdFMJBGsrFOniPchGkljtvOkGCJKwQ9S11FQHbRaqTFcLnuMGETO6cLyT50UlgffTl0D1F9a7dQaVJdaaiMseQvxpxPYGT+00NRZC6fQzcxtFRUBWeoGkQN+bWrEqPoOICOoT2YksmcthN4YwS51lBW1wxLP4Yhn7L2Nmg7WiklacZp7ZUOId/y5UtpXqQyE/ICl7hWjmg3cSy1wsYd2MsBietiSxmPD8Zj6G0vfVy5072HenLJlUDTrBInyP3bgyjlUE0vO8r1tIAlZ4aCYwnasqglkXnuoCgg+SYoSh5KNVRPkQ48YHjeQNSZQkwYQZR+fOLD6C8F3Oxro+5lWnYFOC9z/9pZZ/6PMPtc/CfxBqDADNyRQcJu8xMCLoGote/R7b6MmPIyTXD+Bj/DPV/JoW6BPx7G36URMxP3qSqL4DOh7YWEzkyctFxl3Ex7DSoQKB1XFArscDAzBFV+x2LXvT5ycxtUnYxyg7q8BPucvE03rXjI0RV4Yl0nL1vgRbiTTvGnzbMEOSq6DT99VbjzCXX8hnPuHhR+7xbBzAAAA///iqZUFAAAABklEQVQDABEknSsJ0Li/AAAAAElFTkSuQmCC",
+    "PAR POS": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAB9klEQVR4nJRSz0tUURS+97x7Z+4I/RSmGLAC90XUqv6ACFcWJFZIJAw0mDEFE7QqSiopo0Xgrl9gtAgGQlq0EXEhoht1M4Ki82QcdXBmdMb34773rue9N4Loau7mvfud75x7vu8cdunqLdLMAdLkAaXUIegocjDEKKX48TwkKfzXNC2Mua5HKQlyFYIY8jxEKEO2BiAEx7vruruGJaIRZMdiUeSG5QzDDBHHcZlhWNevXX4/kBaxqGXaP0f+fhj62pe6+6CnM58vtLefa2kRudzyl+Ffs/M5JV3AwkJE4vHWb9+z4xPT6cc93V0dmWe9Z+OtiUT85Iljnz7/aGs786Tvfr1mAKBL2Kjna1gtbOh6URE18Kp/cUnfKG1hP9Xt2sjv0dzCCmYG7RGgKIr40t69Sfc+vC2lY9r2n+x/AJBSnj51fG4me+F84vXb4UA0MC8QDUCTqZdCRIcGM1ipP3WPc4bJ5cp2obCJMianZhlDA5VPtSxZXC+Vy9XuOzdH/43d6Eg+zQzm9bVSqayvFp+/+BiJ8EfJLtuWaDS9eKVT04Bzjsah+mp1B71D47FqaGu9bmACXmu13cbgkCqlSYGapoXvMsYC7y0S6ONccxynUtnBuo3BBQOm/p74XZJwohjeXwfia4TGyvgvHFqYo8hBvOlt3QMAAP//h93/vQAAAAZJREFUAwB/3/lNzvjOcAAAAABJRU5ErkJggg==",
+    "SICOM": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB0ElEQVR4nJSTy0sbURTGfzNOCKFGBC2FpIpQi7GrLmq7LVa6NbZ7bTbtwnbfx67Q17r2sSiIdqeg/gG+FooSBUXxgUsxWYgLGaPgK9d7cs04TgzoB5dz7p17vvOdc+baSqkGvSbUzbEgsZY4wEN82D/OM7V5wCmK2ojD3WiIlbTDg2aIx/w3mRQC5T8ZXHYZXssRq64gcTvE/ZowajvMmy6Htlb49fMSAY5/8298n975HPfqbTqaojyKRwg7FqoO3nbDkxZK4CnI7uRp/7xLXb3iz+tqIlYFY6OwlYXmBLQ940p4Cv4OHJF3HXpSlZzkbJKvIJOBqipwXUPS32v2fthFZ23VorE2RKzGpq/fBH98D3Mz0NWpv6/D6HipAo9gdcmm8U6o4Lt75kyaJkg0GSukZQlu6Zrzh1bBL46q778JGjvPLGUE4TWxMwXrG4r0tFVQkHx5OeOLJHz7UkrgNTHZDh8+WQyNmEZJ8HcdEI+frxhXwvFnSM/p4OjF5a8/IFoJezlt9XmHTvKuu0wJfrQ+N7aoQMbY81snSOupzJZREISUIOWImkzWqBOyIETBhLZPg8EyAZm9QHryuMWUEPiRFoWgQTvDBF7kNTCpV+oMAAD//2QjS+UAAAAGSURBVAMAimXXhSkxEI0AAAAASUVORK5CYII=",
+    "FindMi": "data:image/png;base64,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",
+    "FixMi": "data:image/png;base64,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",
+    "PayMi": "data:image/png;base64,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",
+    "RSI Web": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACG0lEQVR4nJxTTUhUURT+3vV2eYWEZIpMwhTYMEa0NCKyolVIMrNxVxEEEtEiRFrF4NLFINJChKRFBDHRFC5sMcsW7VzLBDHJJILZYhiG967P+zrnvp8Zd+WBw7n33PN95+edJ0AShmGBtBH+u3BsgbFOfPiktUYiQgiriRhjrEa+rl9KUWSCRudHI6u3t20QRUHl85ADA3wEu3SzCdPcgRzNkI7CtFoI6lsUdwmSiLKdahXe6mrK3CF1SyWo6Wno9XV4Cwvpmzs3B5HLoTM7i9NraxCepxFwGi7p6zfILzWIyUkL0jqAVy5DzMzYN/WyRG+3EIfbiqVJbrEDJogu/f1d/8ZGNJupezDDw9ROM43vToQdN6/DTN2F2dyEXFy0Q3NXqLWREZhKBfrhfeilMnqTHiHA8itgbAxot4FW2w5R0kDdt+8gP3y0rTFRD56T0CeLedyJCdsnS7C8RNNuw5t/Dv1iHtjdjRBUTfKFLdZ1FfpILQHZU1cuQ9GEGRBU3kPevgPU6wiePbXWpaEqJVMC3oPQ87x0eZL+ess80nOcno0l8H0/LBQewPejTazVqtjqc3CCzgek+cNDPHr8BENDZ7G39xtvXq/g6rUbOJfJ4NcOLZdSKgUnzAw+eTEHfK/bLAy+cD6bVsDg8fG8vXMzweDgGbm//ycl4cwMPojvnLnXcubEpj8TjidF4TjOZz6Q/vwPIMcWGfsXAAD//306wc4AAAAGSURBVAMAmVcYQOseJLwAAAAASUVORK5CYII=",
+    "360iQ": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACJ0lEQVR4nGRSzWsTQRSfmZ3NR7PbfJTa0lCw2pYUj3705MGriOJB8Ch4aPEvEKEI3jwEFD1WchGh0pt4Ej+uQkAwKdVgjVgMtdE2TZqv3Z33fLO7iYW+mYF5j/fxe7/3JCKygSAoLgxEYIyThMaBikwfSQFaUS7jwvcmVZBf220q8KQwR0zbD0PO9JF+AgG7Zff9fXFuOTJ/eb/3+9XWamX/kwLHNKILY4tXZm5bkTQgcJ0VdT2mHNGsRfptB5wXmw8/bK+TLRkbB1Rvfjx/WXkE6FF6wsRBKR3hdvfaP+sSpFL54nIuc/7WmRXLTB44f1dLK9utyt0LhSlrBgAE+r01mfP4y4N3W4W+6jqqN51cGOWW+/FpOjaRtefJ0nFbqPtAETTdcRv1w2pMJngAEIGssPsZyutK9YkGzkPihKYIUXBDGlFNm76Cux0sr0HvAKtvORB67eMPADWDA8rJ379coNcVO6WYaRtWVpt8FH7TXA7HxplBxKXjEyNGYqNZyuVupiKpem9ns7Zmm6lU9ARHHSS5TsnItafaLbcxmTh5afrG6+qzJ9/zNARdELzrs3fG4pPBHGSAx45kLmavZe05qn51dmnKOvV1r0jk/Dr89qdbixqJcE0ICGg+2P91CuAOpNrYyBeXRqPj9xYLNBbqR+qlYjxgIFwyrQA92q2sfXouc9ZTDoHRHqgrQOAUtu6nP6p2vTZ94jIRGPnR9T4uQ4TDzz8AAAD//ycG2IcAAAAGSURBVAMAzn43nWAm+MwAAAAASUVORK5CYII=",
+    "RTI Oil": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWklEQVR4nIxTv08UURCeefPe3e6dKCCxojJWxEotLsFCEiNwNDYkxBgt/Qus4RIbG1sbYqwMgcTEggTEBIjhlxj/ARJ6CQQC3u3d7r55ztu7vYsmRCe7+37ONzPfN6uhY1P7+zdZFW64ZsvqAmKStPcJEYG4dXJ8fLhXrZ7DX4bgHAKiq37/8dbowrO0Xo9RITlmBKWcP5M5oKIjIHq/vPzpNczNpTmAykDEOEkGdblcwoLpV0HQp8LSFZKRisWrOgiuAvMtE4avpsar893g+cfbxNbujDKmws0okagq25TsnHVMhcI1WT12NhmgsERxK370+X5lTTJROgdYGa0syLAAl9jk7v4qUvGDB1fgJmVrDUZGsAvwYH1dh8PDBAcHfzhGYYgXfX02Pku/GmMbWUlaD2WH09PcBdgYG/PEpJdlMLH97bYCDD2h1vKvnIcuwPjW3pRCd5dT1xRpyOsDmQaWHdF1An5irTWEAbLjjcxpaUkAnBNgZEX4NBwcmolPz0BpnXn7B5Tw7KM2GiyqyNhcWf3S/NiR33q2XaYn6XoaRY5t2rRJnPiX41bKcRyz7ypFSpIBcesffWhCn5v30/mEbfyGI7UIBKn0EVpPh0THhB2QGpR2eimX7plyqVK+sNPi8g4WFwnhP218Z+cOsdqmMDBJFM2L7C98+V0Ss5p8Y9VqnY1ZeWUuWvtV6xSPiuUk0lgqCEdB7tUDaJfiejHnesByxpub/q8SFS04a9v3arWejJdahyMA4c2w0dJYAmraSc66fwN0rH7+86Q0MPQ8bTQCi3yYg/8GAAD//zqbwRcAAAAGSURBVAMAEscLd/UHSesAAAAASUVORK5CYII=",
+    "OneDrive": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACCElEQVR4nKRTwWoUQRB91dOz2U10sxsJQTQ4uShEMDGoSE5B8L7ePPoDsuMX6B/oJ+QPcvDowehZXDzpLeYiMYLr7MzO9Mx0d1m7imiCh7AFDd1V9V69KqoVZjSFGU3/L3D3Zb1jWq5nF6itm/aQ5tTuYL11eDKPTjoe7nGUON77HvJG1nCEeY+gxdwI5O7di3e3F5+cUhDFg446Un2TpXE5KjpVowVTA2VN0IJTNagmRqg43nr1De/vL/8hoc34oFMXbjA6HkbRjRV0rq3iSwn+ISBBQ4WetbYIlCXV9vDiswtq59N2982EQJms6udJGnm2aAv4OAfSnMnnDm7oUB/V8EORcaWJ8lIT5nILfkXvXz9In09byIfpozzJcLV3B1/HwMgwqkoqFdJDUQHSe7DVRiGCTAlYB4RytPZx9DFNdF6UUXN1GWPdQj4FM1MuHaclbFLg3PZ5lHMBEgPkE8khIdSEIAhAxH29dO/WZwZFaWbhnNwqB5+W7EaGnBf5awtIRYyEUXol01SsFCMgLyy0qM3Y7nrGU6GDcp7YWHLjil1uoG92kSaYEpTu19S9DJ6ltOVg8vxAUTzsVCG/ZsYmOWaWTF+UhIvzcOtLyH6D+e/lIUjidIceTBepIySNysRsXc9b3kBXJr12AWORbaWk/wcNFtBbDvEMj2n/1Cae1Wb+TDMT/AQAAP//jwuVcgAAAAZJREFUAwCO3BAlPrGgJAAAAABJRU5ErkJggg==",
+    "HR Portal": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23251d7f%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%229%22%20cy%3D%228%22%20r%3D%223.1%22%2F%3E%3Cpath%20d%3D%22M3.6%2019.4c0-3.2%202.4-5.4%205.4-5.4s5.4%202.2%205.4%205.4%22%2F%3E%3Ccircle%20cx%3D%2217.2%22%20cy%3D%228.9%22%20r%3D%222.3%22%2F%3E%3Cpath%20d%3D%22M15.4%2014.3c2.5.3%204.1%202.4%204.1%205.1%22%2F%3E%3C%2Fsvg%3E",
+    "ScreenConnect": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACRElEQVR4nKRTO0xTURj+zjn3Fm65vVIELoIoSmMMJJJoYiQiGtKhxOBg1OCgbAZGohvRycFNEwclMjF1UhwAnXQSJ2MhMIFIgSAIhT5vH/ec421D1aZj/+E8/vPl+x/ffygqNIoKTSm5tVw8Cpc1AklVEMnK0IJJSBFEOLRYdJESwImODqjVixACDrA8HHESlnwJKesGdpZXygkAE+3nf2F/9wEi4Tf/+V043qEXTm5VM8ceDal1tV82BgY+K76ZGcMCnjDDcKW+hep3n7209ds3bzWM3D+bOzhQlGo3pG1PrfX0fCqyqcfMRifLqQvj4w2KZVkGa2p6CCnBamqiyOUoqzMu8XjiMtJZcNsphdKAGQwObQ8Ofi20Qog0Y+zIlsNFqaKIQs0Qo9bE+GnoHhoNvhsLX+nVNwIBfd3v19sJ6dx++iKAU1338gQMgkvOOfV65V8VZCzBYnNzEbSdu6s2md6Wt5O11sJCDqaJjM8nkONeSEzqw8MfidutyFRaFmQUtk0VVXXeDhv6cz7Y+Gq2m+/vz7uam1ud+rG5vsaNvh4Se/8Bnt6rW0RzU6TSEJpGFE3TYtlkMo6qqupiNpv9/XNtodAdQqRfxOOguptkd373gbFrPJF8LdKZCCEkekbXs4WordPTvamVte695xOzgJ0psKzOx501fcjJUe97DI8+itXveTmt8kGq83XCqJl1orTmFSkfIgcquLPnTuLHUrjo/jfKkeVF1Hb5nWZch7DLCQQRoCQDj7JXwosKreLf+AcAAP//mp1C+QAAAAZJREFUAwDmhd/awi5O+wAAAABJRU5ErkJggg==",
+    "Cash Connect": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWklEQVR4nKRSS2sTURT+5j4mkzRt2hilRSiFIkbbCEWrtGJ9IELBhTTiY6O4EdRGcO1KpL/AmoXtRlxYMO1GEATRiuhGBOmixIL4QClqEm3aThKTmfGcmfoHmjtzhm/OOd+53zn3CjS5BJpc6j+4NjmWc1037cFDHQZ2Uu3Mnm4/dmfhKz7AhaaYQY8QYvbu+Nxpjhn8Gc+OPTwyePRcsnc3HNeFIyS63r1CvKvhFygtKyzvPQTpOpBCIP9xEfNvX8xMXp07L2/cO5vbl+w705noQHn1F1bXSijbJfR9ykP0b4PRomEtfsFCNAR7rYj19SKiYROt4XB/z3BnShnw0umhK2g4dRIIePSpC5Y5ABFJBP0NFDDYvR3apRaMQPb+Ho33S9fTSkgqAQeZ7CVIehJbEqhSwq2VFeiDSZ9ff53H7VgMFuFCsUDZDrKZ+2CuUkKh7v5FvC2GVqsFx4ePoUrbiKePSUE4OCrTwsmRE7BI3rM3z2HXKj6HuYKHUnNr2NqewOjIKDk0mUnD0jC06Rtj9nGMc+KxuM9hrlBSUv9VmEykijNPZqH8ZAmhN4ww+zjGOZzLHOX7uQD1ZFkhaG3hwqmLNAPB0mCYMmiBsBCmH1O0q2VZPoe5gQL6+UHDmcpNQVG/ygzRznTHNowx+zg2/Wga335+h2M4gQItFTy60EM7UihXbBQ+L5ECg9SYcCLaVyAJsz9M53VgVwpRTYgGrZWCMfHg8nykzTrsHzARXUqqELrpAo2OSHDff9uYoE34TCTleXxZ6LXLlZfM6iVrx+bWHwNNrn8AAAD//zI/iy4AAAAGSURBVAMAEHa78AyLrXwAAAAASUVORK5CYII=",
+    "Bitrix24": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB+ElEQVR4nKRTzUtUURT/3fveOE/fmL4oZTKssFHCiqCIiIqWfa5atJhFixYRtOkPaFerIKhVi2gXRuTOnQjiRvd+gIriF6Pgxyg68+bNvPuu59xxxlF3znmcdy/3nt85v985XFtrLbpHshFOYTOPPClSw1sadZjUBK/1J+caMHS3BZMPPfy6kUBHXOJ4TK2LrqHNKoPn7Q343ps4UmHFj9C/FiCINP5lAmyXjhIWXYMb1ZOBe63oSVhmr+h0NqdgCeCqa4EWLPkKL8d2kFeHSWx90D4OZDBfTe4qfJzaw6JfvkxRgh+9Lq40SrxOxvF7qVDTA6JmE+xTtwtG+6HGu/EyePaxZ4KYyYeJHCIt8OZSI16QVMaxS62A95ebkO50wPVGt0OsF09OdS6vML4bIulIfLvZjGdtcTDWMHh10THU2blZtcYsKkyCCNW4t522YWDzr80RVL0MvNNqw5ECBTpPDWeric7GBK6foZHyR/OjVhxKmKemRayJcni2wOeeJpOkYgnq8NdrLuJCmJigpJAhSYw1DH5O5/DllguLQJaUeHo+htstzRjNhuA8D7wYvJgwlUsqgh+U8HexWJEA9C8UYNEmTbraHZiZs993ygzCfBHrB2w2qRH/l0P0LYRGtOjoW63rLRgJ9Zjg53zhz+qpnnMmnZT7AAAA//9PvO61AAAABklEQVQDAHd694Xfwx4YAAAAAElFTkSuQmCC",
+  };
 
-  /* ================= PORTAL RESOLUTION ================= */
-  function resolveFor(session){
-    var cfg=C();
-    if(session && session.email){
-      var ov=cfg.people[session.email];
-      if(ov){ if(ov.custom) return {custom:true, title:ov.custom.title, tiles:ov.custom.tiles, id:"person:"+session.email};
-              if(ov.portal && portalById(ov.portal)) return portalById(ov.portal); }
-      var p=session.person;
-      if(p){
-        var rm=cfg.roleMap[p.roleKey]; if(rm && portalById(rm)) return portalById(rm);
-        if(p.entityId!==undefined && p.entityId!==null){
-          var ent=dir.entities.find(function(e){return String(e.id)===String(p.entityId);});
-          if(ent){ var nm=ent.name.toLowerCase();
-            var em=cfg.entityMap.find(function(m){return m.match.some(function(w){return nm.indexOf(w)>=0;});});
-            if(em && portalById(em.portal)) return portalById(em.portal); } }
-      }
-    }
-    return portalById("everything");
-  }
-  function heroTitleFor(portal, session){
-    if(portal.custom && portal.title) return portal.title;
-    if(session && session.person && session.person.title) return session.person.title;
-    return portal.title || "Dossani Portal";
-  }
+  /* ---- Rendering (you shouldn't need to change anything below) ---- */
+  const root = document.getElementById("app-root");
+  const noResults = document.getElementById("no-results");
+  function domainOf(url){ try{ return new URL(url).hostname.replace(/^www\./,""); }catch{ return ""; } }
+  function iconFor(app){ if(app.icon) return app.icon; if(ICONS[app.name]) return ICONS[app.name]; return null; }
 
-  /* ================= RENDERER + FIT ================= */
-  var root=document.getElementById("app-root");
-  function domainOf(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return ""; } }
   function buildIcon(app){
-    var wrap=document.createElement("div"); wrap.className="tile-icon";
-    var srcs=[]; if(app.icon) srcs.push(app.icon);
-    var d=domainOf(app.url); if(d) srcs.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
-    if(!srcs.length){ return letter(wrap,app.name); }
-    var img=document.createElement("img"); img.alt=""; img.loading="lazy"; var i=0; img.src=srcs[0];
-    img.addEventListener("error",function(){ i++; if(i<srcs.length) img.src=srcs[i]; else letter(wrap,app.name); });
+    const wrap=document.createElement("div"); wrap.className="tile-icon";
+    const sources=[]; const primary=iconFor(app); if(primary) sources.push(primary);
+    const d=domainOf(app.url);
+    if(d) sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
+    if(!sources.length) return letter(wrap,app.name);
+    const img=document.createElement("img"); img.alt=""; img.loading="lazy"; let i=0; img.src=sources[0];
+    img.addEventListener("error",()=>{ i++; if(i<sources.length) img.src=sources[i]; else letter(wrap,app.name); });
     wrap.appendChild(img); return wrap;
   }
-  function letter(wrap,name){ wrap.innerHTML=""; wrap.classList.add("letter"); wrap.textContent=(name||"?").trim().charAt(0).toUpperCase(); return wrap; }
+  function letter(wrap,name){ wrap.innerHTML=""; wrap.classList.add("letter");
+    wrap.textContent=(name||"?").trim().charAt(0).toUpperCase(); return wrap; }
+
   function tile(app){
-    var a=document.createElement("a"); a.className="tile"; a.href=app.url; a.target="_blank"; a.rel="noopener noreferrer";
-    a.appendChild(buildIcon(app));
-    var body=document.createElement("div"); body.className="tile-body";
-    var nm=document.createElement("div"); nm.className="tile-name"; nm.textContent=app.name;
-    var ds=document.createElement("div"); ds.className="tile-desc"; ds.textContent=app.desc||domainOf(app.url);
-    body.appendChild(nm); body.appendChild(ds); a.appendChild(body); return a;
-  }
-  var viewPortal=null;
-  function renderPortal(portal, session){
-    viewPortal=portal;
-    document.getElementById("portal-title").textContent=heroTitleFor(portal,session);
-    root.innerHTML="";
-    var board=document.createElement("div"); board.className="board";
-    var top=document.createElement("div"); top.className="board-top";
-    var grid=document.createElement("div"); grid.className="board-grid";
-    var tiles=(portal.tiles||[]).map(appById).filter(Boolean);
-    if(tiles.length) top.appendChild(tile(tiles[0]));
-    tiles.slice(1).forEach(function(ap){ grid.appendChild(tile(ap)); });
-    board.appendChild(top); board.appendChild(grid); root.appendChild(board);
-    fit();
-  }
-  var stage=document.getElementById("stage"), fitEl=document.getElementById("fit");
-  function fit(){
-    var availW=fitEl.clientWidth-4, availH=fitEl.clientHeight-4;
-    var n=stage.querySelectorAll(".board-grid .tile").length;
-    var maxC=Math.min(8, Math.max(2, n||2)); var best=null;
-    for(var c=2;c<=maxC;c++){ stage.style.setProperty("--cols",c);
-      var w=stage.offsetWidth,h=stage.offsetHeight; var s=Math.min(availW/w, availH/h);
-      if(!best||s>best.s) best={c:c,s:s}; }
-    stage.style.setProperty("--cols",best.c);
-    stage.style.transform="scale("+Math.min(best.s,3)+")";
-  }
-  var raf; function sched(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(fit); }
-  window.addEventListener("resize",sched); window.addEventListener("orientationchange",sched);
-  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit);
-  window.addEventListener("load",fit);
+    const a=document.createElement("a"); a.className="tile"; a.href=app.url;
+    a.target="_blank"; a.rel="noopener noreferrer";
+    a.dataset.search=(app.name+" "+(app.desc||"")+" "+domainOf(app.url)).toLowerCase();
 
-  /* ================= CORNER / SIGN-IN ================= */
-  var corner=document.getElementById("corner"), cmenu=document.getElementById("cmenu");
-  function firstName(){ if(sess&&sess.person&&sess.person.name) return sess.person.name.split(" ")[0];
-    if(sess&&sess.email) return sess.email.split("@")[0].split(/[._]/)[0].replace(/^./,function(c){return c.toUpperCase();}); return ""; }
-  function renderCorner(){
-    cmenu.style.display="none";
-    if(!sess){ corner.innerHTML='<button class="ovl-btn signin" id="c-signin">Sign in</button>';
-      document.getElementById("c-signin").onclick=openSignin; return; }
-    corner.innerHTML='<button class="hello" id="c-hello">Hello, '+firstName()+' ▾</button>';
-    document.getElementById("c-hello").onclick=function(){ 
-      cmenu.innerHTML=(isAdmin()?'<button id="m-edit">✎ Edit Portals</button>':'')+'<button id="m-out">Sign out</button>';
-      cmenu.style.display=cmenu.style.display==="block"?"none":"block";
-      var me=document.getElementById("m-edit"); if(me) me.onclick=openDrawer;
-      document.getElementById("m-out").onclick=signOut; };
+    // Icon goes in a non-clipping wrapper so a corner badge can overhang it.
+    if(app.tut&&app.tutUrl){
+      const q=document.createElement("a");
+      q.className="tile-tut"; q.textContent="?"; q.href=app.tutUrl;
+      q.target="_blank"; q.rel="noopener noreferrer";
+      const cap=app.tutCap||"Tutorial Video";
+      q.title=cap; q.setAttribute("aria-label",app.name+" — "+cap);
+      q.addEventListener("click",e=>e.stopPropagation());
+      a.appendChild(q);
+    }
+    const iconWrap=document.createElement("div"); iconWrap.className="tile-iconwrap";
+    iconWrap.appendChild(buildIcon(app));
+    const bKey=badgeKeyFor(app);
+    if(bKey){
+      a.id="tile-"+bKey;
+      TILE_BASE_LABEL[bKey]=app.name+(app.desc?" — "+app.desc:"");
+      const badge=document.createElement("span");
+      badge.className="tile-badge"; badge.id="badge-"+bKey; badge.hidden=true;
+      iconWrap.appendChild(badge);
+    }
+    a.appendChild(iconWrap);
+
+    const body=document.createElement("div"); body.className="tile-body";
+    const nm=document.createElement("div"); nm.className="tile-name"; nm.textContent=app.name;
+    const ds=document.createElement("div"); ds.className="tile-desc"; ds.textContent=app.desc||domainOf(app.url);
+    body.append(nm,ds); a.appendChild(body);
+    return a;
   }
-  var sibg=document.getElementById("signin-bg"), siE=document.getElementById("si-email"), siP=document.getElementById("si-pass"), siErr=document.getElementById("si-err");
-  function openSignin(){ sibg.classList.add("open"); siE.value=""; siP.value=""; siP.style.display="none"; siErr.style.display="none"; siE.focus(); }
-  siE.addEventListener("input",function(){ var admin=C().adminEmails.indexOf(siE.value.toLowerCase().trim())>=0;
-    siP.style.display=admin?"block":"none"; });
-  document.getElementById("si-go").onclick=function(){
-    var email=siE.value.toLowerCase().trim();
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ siErr.textContent="Enter a valid email."; siErr.style.display="block"; return; }
-    var admin=C().adminEmails.indexOf(email)>=0;
-    if(admin && btoa(siP.value)!==C().adminPass){ siErr.textContent="Wrong admin password."; siErr.style.display="block"; return; }
-    sess={email:email, admin:admin}; var p=findPerson(email); if(p) sess.person=p;
-    localStorage.setItem("dpmSession",JSON.stringify(sess));
-    sibg.classList.remove("open"); renderAll();
+
+  function render(list){
+    const apps=list||APPS;
+    const old=root.querySelector(".board");
+    if(old) old.remove();
+    const board=document.createElement("div"); board.className="board";
+    const top=document.createElement("div"); top.className="board-top";
+    const grid=document.createElement("div"); grid.className="board-grid";
+    if(apps.length) top.appendChild(tile(apps[0]));
+    apps.slice(1).forEach(a=>grid.appendChild(tile(a)));
+    board.append(top,grid);
+    root.insertBefore(board,noResults);
+  }
+
+  /* Rebuild the board for the current session, then put back the things a
+     rebuild would otherwise throw away: badge counts and the live search. */
+  function renderBoard(){
+    if(typeof admSync==="function") admSync();
+    if(typeof applyPublishedApps==="function" && !admDirty) applyPublishedApps();
+    render(appsForSession());
+    for(const k in BADGE_TILES) setBadge(k,COUNTS[k]||0);
+    if(sTop&&sTop.value.trim()) filter(sTop.value);
+    if(window.__fit) window.__fit();
+  }
+
+  const sTop=document.getElementById("search-top");
+  function filter(q){
+    q=q.trim().toLowerCase(); let any=false;
+    document.querySelectorAll(".tile").forEach(t=>{
+      const m=!q||t.dataset.search.includes(q);
+      t.style.display=m?"":"none"; if(m) any=true;
+    });
+    const top=document.querySelector(".board-top");
+    if(top){ const t=top.querySelector(".tile"); top.style.display=(t&&t.style.display!=="none")?"":"none"; }
+    noResults.classList.toggle("show",!any);
+    document.getElementById("nr-q").textContent='"'+q+'"';
+  }
+  sTop.addEventListener("input",e=>filter(e.target.value));
+  document.addEventListener("keydown",e=>{
+    // While the sign-in gate owns the screen it also owns the keyboard.
+    if(!document.documentElement.classList.contains("gate-off")) return;
+    if(e.key==="/"&&document.activeElement.tagName!=="INPUT"){e.preventDefault();sTop.focus();}
+    else if(e.key==="Escape"&&document.activeElement===sTop){ sTop.value=""; filter(""); sTop.blur(); }
+  });
+
+  /* ======================================================================
+     PORTAL SIGN-IN  +  NOTIFICATION BADGES
+     ----------------------------------------------------------------------
+     Identity comes from the SAME alignment master the rest of the suite
+     uses, so one person has one identity everywhere. Three roles sign in
+     here, each with the shared password FixMi already uses:
+
+       District Manager  DM@76051         stored as an "areaCoach"
+       Director of Ops   DO@76051         stored as a "director"
+       Overwatch         Overwatch@76051  Rahim / IT Support
+
+     The portal renames itself to match whoever signed in.
+
+     Today's notifications:
+       PayMi  pending invoice approvals, from PayMi's Firestore
+       FixMi  open R&M jobs, from the alignment master's ticket node
+
+     PayMi's approval chains embed the signer's directory id, which is the
+     same id this sign-in resolves, so no extra mapping is needed. FixMi's
+     tickets belong to STORES, not people, so its count is scoped exactly
+     the way FixMi scopes its own views: by store assignment.
+
+     Both reads are read-only and fail soft — an outage means no badge
+     rather than a broken page. To add a third notification, add its tile to
+     BADGE_TILES, a phrase to BADGE_PHRASE, and a counter to refreshBadges.
+     ====================================================================== */
+
+  /* ---- Things you might actually want to change ---- */
+  const ALIGNMENT_API="https://alignment-api-khaki.vercel.app/api/dpm-alignment";
+  const PAYMI_FS="https://firestore.googleapis.com/v1/projects/gen-lang-client-0357067758/databases/(default)/documents/invoices?pageSize=300&key=AIzaSyAxW6wajL9PH1Wlw3_QuBXgAMFgYWjkJp8";
+  const ROLE_PASSWORDS={ coach:"DM@76051", director:"DO@76051", admin:"Overwatch@76051" };
+  const ADMIN_EMAILS=["itsupport@dossaniparadise.com","rahim@dossaniparadise.com","deisy@dossaniparadise.com"];
+  /* What the portal calls itself, per role. Anyone not signed in sees the
+     default. */
+  const PORTAL_NAMES={ coach:"District Manager Portal",
+                       director:"Director of Operations Portal",
+                       admin:"Overwatch Portal" };
+  const PORTAL_DEFAULT="District Manager Portal";
+  /* Which tiles wear a badge: key -> exact tile name in APPS above. */
+  const BADGE_TILES={ paymi:"PayMi", fixmi:"FixMi" };
+  /* C-Store operators don't run Burger King systems. These come off their
+     board, and Bitrix24 takes the featured slot RBI holds for BK. */
+  const CSTORE_HIDE=["RBI · Okta","Genius Back Office","PAR POS","SICOM",
+                     "RSI Web","RTI Oil","Flowers"];
+  const CSTORE_FEATURE="Bitrix24";
+  const FIXMI_TICKETS_NODE="maintenanceTickets";
+  /* FixMi calls a ticket "active" until it's Closed, which includes ones a
+     tech already marked Finished. Those are done work awaiting paperwork, so
+     they're deliberately left out of this badge — add "finished" back here to
+     match FixMi's own Open tile exactly. */
+  const FIXMI_OPEN_STATUSES=["unassigned","assigned","dispatched","waiting","in_progress"];
+  const SESS_KEY="dpm_dm_portal_session"; // must match the pre-paint script in <head>
+  const REFRESH_MS=5*60*1000;             // background re-check
+  const FOCUS_MIN_GAP_MS=60*1000;         // don't re-check on every tab focus
+  const MASTER_TTL_MS=60*1000;            // reuse a recent directory pull
+
+  let SESSION=null, MASTER=null, masterAt=0, pollTimer=null, lastCheck=0, gateDismissable=false;
+  const TILE_BASE_LABEL={};   // badge key -> "PayMi — Invoice tracking"
+  const COUNTS={};            // badge key -> last known count, survives a re-render
+
+  function badgeKeyFor(app){
+    const n=((app&&app.name)||"").trim().toLowerCase();
+    for(const k in BADGE_TILES) if(BADGE_TILES[k].toLowerCase()===n) return k;
+    return null;
+  }
+
+  /* ---- Stored choice ---------------------------------------------------
+     Either {guest:true} or {email,pw,...snapshot}. The snapshot lets a
+     returning DM in instantly; the credentials let us silently re-verify
+     against the directory afterwards, so someone removed from the DM list
+     stops getting in. ---------------------------------------------------- */
+  function readStored(){ try{ return JSON.parse(localStorage.getItem(SESS_KEY)||"null"); }catch(e){ return null; } }
+  function writeStored(o){ try{ localStorage.setItem(SESS_KEY,JSON.stringify(o)); }catch(e){} }
+  function clearStored(){ try{ localStorage.removeItem(SESS_KEY); }catch(e){} }
+
+  /* ---- Directory ---- */
+  async function fetchMaster(){
+    const bust=(ALIGNMENT_API.includes("?")?"&":"?")+"_="+Date.now();
+    const ctl=new AbortController();
+    const timer=setTimeout(()=>ctl.abort(),15000);
+    try{
+      const res=await fetch(ALIGNMENT_API+bust,{cache:"no-store",signal:ctl.signal});
+      if(!res.ok) throw new Error("Directory returned HTTP "+res.status);
+      return await res.json();
+    } finally { clearTimeout(timer); }
+  }
+  /* One pull serves both sign-in and the FixMi count, so a fresh copy is
+     reused rather than re-fetched. */
+  async function loadMaster(){ MASTER=await fetchMaster(); masterAt=Date.now(); return MASTER; }
+  async function ensureMaster(){
+    if(MASTER&&Date.now()-masterAt<MASTER_TTL_MS) return MASTER;
+    return await loadMaster();
+  }
+
+  /* Mirrors FixMi's resolveSession — same order, same passwords — so one
+     person gets one identity suite-wide. Admin is checked first: Rahim and
+     IT Support must never resolve as anything else. */
+  function resolveSession(email,pw){
+    const lc=(email||"").trim().toLowerCase();
+    if(!lc) return {error:"Enter your work email."};
+    /* Password is only required for the three privileged roles; everyone
+       else in the directory signs in with their email alone. */
+    const emailIs=(obj,id)=>(((obj[id]||{}).email)||"").trim().toLowerCase()===lc;
+
+    const admins=(MASTER&&MASTER.admins)||{};
+    if(ADMIN_EMAILS.includes(lc)||Object.keys(admins).some(id=>emailIs(admins,id))){
+      if(!pw) return {error:"Enter the Overwatch password."};
+      if(pw!==ROLE_PASSWORDS.admin) return {error:"That password doesn't match the Overwatch role."};
+      const a=Object.values(admins).find(x=>(((x||{}).email)||"").trim().toLowerCase()===lc);
+      const known={"rahim@dossaniparadise.com":"Rahim Virani","itsupport@dossaniparadise.com":"IT Support","deisy@dossaniparadise.com":"Deisy"}[lc];
+      return {email:lc,role:"admin",name:(a&&a.name)||known||"Administrator"};
+    }
+
+    const dirs=(MASTER&&MASTER.directors)||{};
+    const dId=Object.keys(dirs).find(id=>emailIs(dirs,id));
+    if(dId){
+      if(!pw) return {error:"Enter the Director of Operations password."};
+      if(pw!==ROLE_PASSWORDS.director) return {error:"That password doesn't match the Director of Operations role."};
+      return {email:lc,role:"director",name:dirs[dId].name||"Director of Operations",refId:dId};
+    }
+
+    const coaches=(MASTER&&MASTER.areaCoaches)||{};
+    const cId=Object.keys(coaches).find(id=>emailIs(coaches,id));
+    if(cId){
+      if(!pw) return {error:"Enter the District Manager password."};
+      if(pw!==ROLE_PASSWORDS.coach) return {error:"That password doesn't match the District Manager role."};
+      return {email:lc,role:"coach",name:coaches[cId].name||"District Manager",refId:cId};
+    }
+
+    /* Anyone else in the directory (GMs, coordinators, accountants…) signs in
+       with just their work email — no shared password to circulate. */
+    const person=directoryPerson(lc);
+    if(person) return {email:lc, role:person.role, name:person.name, title:person.title, refId:person.refId};
+    return {error:"We couldn't find that email in the Dossani directory. Check it's the address on file, or continue without signing in below."};
+  }
+
+
+  /* ---- Everyone else in the directory ----------------------------------
+     Walks the whole alignment master for a matching email so GMs, marketing
+     coordinators, staff accountants and future teams resolve without being
+     hard-coded. Their FindMi title drives the portal name. */
+  const ROLE_TITLE_FALLBACK={generalManagers:"General Manager",managers:"General Manager",
+    staff:"Team Member",repairTechnicians:"Repair Technician",vps:"VP of Operations",
+    admins:"Administrator",directors:"Director of Operations",areaCoaches:"District Manager"};
+  function directoryPerson(lc){
+    if(!MASTER) return null;
+    /* Scan each top-level group separately so the group name (generalManagers,
+       staff, …) survives however deep the member records are nested. */
+    function scan(node){
+      if(!node||typeof node!=="object") return null;
+      if(Array.isArray(node)){ for(const n of node){ const r=scan(n); if(r) return r; } return null; }
+      const em=((node.email||"")+"").trim().toLowerCase();
+      if(em&&em===lc&&node.name) return node;
+      for(const k in node){ const v=node[k]; if(v&&typeof v==="object"){ const r=scan(v); if(r) return r; } }
+      return null;
+    }
+    for(const group in MASTER){
+      const hit=scan(MASTER[group]);
+      if(hit) return { name:hit.name,
+        title:(hit.title||hit.position||ROLE_TITLE_FALLBACK[group]||"").trim(),
+        role:(group==="generalManagers"||group==="managers")?"gm":"staff",
+        refId:hit.id||null };
+    }
+    return null;
+  }
+
+  /* ---- PayMi ----------------------------------------------------------- */
+  /* Which PayMi ids this session answers to. DMs and Directors sign with
+     their directory id; Rahim and IT Support sign PayMi's Rate Verification
+     step under fixed ids. */
+  function paymiIdsFor(sess){
+    if(!sess) return [];
+    if(sess.role==="coach"||sess.role==="director") return sess.refId?[sess.refId]:[];
+    if(sess.role==="admin"){
+      const e=(sess.email||"").toLowerCase();
+      if(e==="rahim@dossaniparadise.com") return ["rate:rahim"];
+      if(e==="itsupport@dossaniparadise.com") return ["rate:it","admin:itsupport@dossaniparadise.com"];
+    }
+    return [];
+  }
+
+  /* Firestore REST hands back typed JSON ({stringValue:…}). Decode enough of it. */
+  function fsVal(v){
+    if(v==null) return null;
+    if("stringValue"  in v) return v.stringValue;
+    if("integerValue" in v) return Number(v.integerValue);
+    if("doubleValue"  in v) return v.doubleValue;
+    if("booleanValue" in v) return v.booleanValue;
+    if("nullValue"    in v) return null;
+    if("mapValue"     in v){ const o={}, f=(v.mapValue&&v.mapValue.fields)||{};
+      for(const k in f) o[k]=fsVal(f[k]); return o; }
+    if("arrayValue"   in v) return ((v.arrayValue&&v.arrayValue.values)||[]).map(fsVal);
+    return null;
+  }
+
+  /* One invoice counts once, however many of its chains are waiting on me. */
+  function paymiCountFor(myIds,docs){
+    const ids=Array.isArray(myIds)?myIds:[myIds];
+    let n=0;
+    docs.forEach(d=>{
+      const chains=fsVal((d.fields||{}).chains)||[];
+      const waiting=chains.some(c=>{
+        if(!c||c.status!=="PENDING") return false;
+        const step=(c.steps||[]).find(st=>st&&st.role===c.currentStage);
+        return !!step&&(step.userIds||[]).some(u=>ids.includes(u));
+      });
+      if(waiting) n++;
+    });
+    return n;
+  }
+
+  async function refreshPaymiCount(){
+    const myIds=paymiIdsFor(SESSION);
+    if(!myIds.length){ setBadge("paymi",0); return; }
+    try{
+      const res=await fetch(PAYMI_FS,{cache:"no-store"});
+      if(!res.ok){
+        console.warn("[PayMi] Firestore read failed: HTTP "+res.status+" — no badge shown.");
+        return; // leave the last known count rather than flashing to zero
+      }
+      const data=await res.json();
+      const docs=data.documents||[];
+      const n=paymiCountFor(myIds,docs);
+      console.log("[PayMi] "+docs.length+" invoices in DB · pending on me: "+n+" · me="+myIds.join("|"));
+      setBadge("paymi",n);
+    }catch(e){
+      console.warn("[PayMi] check failed: "+((e&&e.message)||e));
+    }
+  }
+
+  /* ---- FixMi -----------------------------------------------------------
+     Tickets are anchored to STORES, not to people, so "my open jobs" means
+     "open jobs at my stores". This mirrors FixMi's own myStoreIds() exactly
+     — keep the two in sync if store assignment ever changes shape.
+
+       District Manager  stores where assignedAreaCoachId is me
+       Director          stores stamped with my id, PLUS every store under a
+                         DM who reports to me (FixMi's roll-up)
+       Overwatch         everything, company-wide
+
+     DMs see all open jobs; Directors and Overwatch see only emergencies,
+     since at their scope the total is noise and the emergencies are not. */
+  function myStoreIds(){
+    const stores=(MASTER&&MASTER.restaurants)||{};
+    if(!SESSION) return [];
+    if(SESSION.role==="admin") return Object.keys(stores);
+    if(SESSION.role==="director"){
+      const coaches=(MASTER&&MASTER.areaCoaches)||{};
+      const mine=new Set(Object.keys(coaches)
+        .filter(cid=>(coaches[cid]||{}).assignedDirectorId===SESSION.refId));
+      return Object.keys(stores).filter(r=>{
+        const s=stores[r]||{};
+        return s.assignedDirectorId===SESSION.refId||mine.has(s.assignedAreaCoachId);
+      });
+    }
+    if(SESSION.role==="coach")
+      return Object.keys(stores).filter(r=>(stores[r]||{}).assignedAreaCoachId===SESSION.refId);
+    return [];
+  }
+
+  /* ---- Division / C-Store board ----------------------------------------
+     Rather than keeping a list of C-Store people in sync by hand, the board
+     is derived: if none of the stores you're responsible for is a Burger
+     King, you get the C-Store board. Add or move a store in FindMi and this
+     follows automatically.
+
+     storeDivision() is copied from FindMi so all three apps classify a store
+     identically — division is a real field on the record, with name-matching
+     only as a fallback for stores nobody has tagged yet. KEEP IN SYNC. */
+  const DIVISION_KEYS=["bk","cstore","carwash","subway","other"];
+  const DIVISION_RULES=[
+    { key:"bk",      test:n=>/burger\s*king|\bbk\b/i.test(n) },
+    { key:"subway",  test:n=>/subway/i.test(n) },
+    { key:"carwash", test:n=>/car\s*wash|\bwash\b/i.test(n) },
+    { key:"cstore",  test:n=>/\bstop\b|quick\s*stop|travel\s*stop|truck\s*stop/i.test(n) },
+  ];
+  function storeDivision(rest){
+    const d=((rest&&rest.division)||"").trim();
+    if(d&&DIVISION_KEYS.includes(d)) return d;
+    const n=((rest&&rest.storeName)||"").trim();
+    for(const r of DIVISION_RULES) if(r.test(n)) return r.key;
+    return "other";
+  }
+
+  /* Deliberately fails toward the FULL board. Hiding a tool someone needs is
+     worse than showing one they don't, so anything we can't classify — no
+     session, no directory yet, no stores assigned — gets everything. */
+  function isCStoreUser(){
+    if(window.__admForceCStore===true) return true;
+    if(window.__admForceCStore===false && SESSION && SESSION.refId==="__preview__") return false;
+    if(!SESSION) return false;
+    if(SESSION.role==="admin") return false;          // Overwatch spans both
+    if(!MASTER) return SESSION.cstore===true;         // restored verdict, pre-fetch
+    const stores=MASTER.restaurants||{};
+    const ids=myStoreIds();
+    if(!ids.length) return false;
+    return !ids.some(id=>storeDivision(stores[id])==="bk");
+  }
+
+  /* An app carrying only:"cstore" (or only:"bk") appears on that board alone.
+     Everything without the flag shows on both. */
+  function appsForSession(){
+    const cstore=isCStoreUser();
+    const r=(SESSION&&SESSION.role)||null;
+  const base=APPS.filter(a=>(!a.only||a.only===(cstore?"cstore":"bk")) && (!a.roles||(r&&a.roles.indexOf(r)>=0)));
+    if(!cstore) return base;
+    const kept=base.filter(a=>!CSTORE_HIDE.includes(a.name));
+    const featured=kept.find(a=>a.name===CSTORE_FEATURE);
+    return featured?[featured,...kept.filter(a=>a!==featured)]:kept;
+  }
+  function wantsEmergenciesOnly(){
+    return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
+  }
+
+  function fixmiCount(){
+    if(!SESSION||!MASTER) return 0;
+    const tickets=MASTER[FIXMI_TICKETS_NODE]||{};
+    const emergencyOnly=wantsEmergenciesOnly();
+    // Overwatch is company-wide, so no store filter at all — that also catches
+    // any ticket whose store has since been removed from the directory.
+    const companyWide=SESSION.role==="admin";
+    const mine=companyWide?null:new Set(myStoreIds());
+    if(mine&&!mine.size) return 0;
+    let n=0;
+    for(const id in tickets){
+      const t=tickets[id]||{};
+      if(!FIXMI_OPEN_STATUSES.includes(t.status)) continue;
+      if(emergencyOnly&&t.priority!=="emergency") continue;
+      if(mine&&!mine.has(t.storeId)) continue;
+      n++;
+    }
+    return n;
+  }
+
+  async function refreshFixmiCount(){
+    if(!SESSION){ setBadge("fixmi",0); return; }
+    try{
+      await ensureMaster();
+      const n=fixmiCount();
+      console.log("[FixMi] "+(wantsEmergenciesOnly()?"open emergencies":"open jobs")+
+                  " for "+SESSION.role+": "+n);
+      setBadge("fixmi",n);
+    }catch(e){
+      console.warn("[FixMi] count failed: "+((e&&e.message)||e));
+    }
+  }
+
+  /* ---- Badges ---- */
+  const BADGE_PHRASE={
+    paymi:n=>n===1?"1 invoice pending your approval":n+" invoices pending your approval",
+    fixmi:n=>wantsEmergenciesOnly()
+      ?(n===1?"1 open emergency":n+" open emergencies")
+      :(n===1?"1 open job":n+" open jobs"),
   };
-  /* gate cannot be dismissed by clicking outside */
-  function signOut(){ sess=null; localStorage.removeItem("dpmSession"); sessionStorage.removeItem("dpmGuest"); closeDrawer(); renderAll(); openSignin(); }
 
-  /* ================= ADMIN DRAWER ================= */
-  var editTarget=null; // {type:"portal",id} | {type:"person",email}
-  function targetTiles(){ var cfg=C();
-    if(editTarget.type==="portal") return portalById(editTarget.id).tiles;
-    return cfg.people[editTarget.email].custom.tiles; }
-  function targetObj(){ if(editTarget.type==="portal") return portalById(editTarget.id);
-    return C().people[editTarget.email].custom; }
-  function openDrawer(){ if(!isAdmin()) return; document.body.classList.add("admin-open");
-    if(!editTarget) editTarget={type:"portal", id:C().portals[0].id};
-    buildDrawer(); sched(); }
-  function closeDrawer(){ document.body.classList.remove("admin-open"); document.body.classList.remove("previewing"); editTarget=null; renderAll(); sched(); }
-  document.getElementById("dr-close").onclick=closeDrawer;
-  function buildDrawer(){
-    var cfg=C();
-    var sel=document.getElementById("sel-portal");
-    sel.innerHTML=cfg.portals.map(function(p){return '<option value="'+p.id+'">'+p.title+'</option>';}).join("");
-    var customs=Object.keys(cfg.people).filter(function(e){return cfg.people[e].custom;});
-    if(customs.length) sel.innerHTML+='<optgroup label="Custom people">'+customs.map(function(e){return '<option value="person:'+e+'">'+e+'</option>';}).join("")+'</optgroup>';
-    sel.value=editTarget.type==="portal"?editTarget.id:("person:"+editTarget.email);
-    sel.onchange=function(){ var v=sel.value;
-      editTarget = v.indexOf("person:")===0 ? {type:"person",email:v.slice(7)} : {type:"portal",id:v};
-      document.getElementById("person-tools").innerHTML=""; buildDrawer(); };
-    document.getElementById("ptitle").value=targetObj().title||"";
-    document.getElementById("ptitle").oninput=function(){ saveDraft(); targetObj().title=this.value; preview(); };
-    buildTileList(); buildDup(); preview();
+  function setBadge(key,n){
+    const count=Number(n)||0;
+    COUNTS[key]=count;
+    const badge=document.getElementById("badge-"+key);
+    const tile=document.getElementById("tile-"+key);
+    if(badge){
+      if(count<1){ badge.hidden=true; badge.textContent=""; }
+      else{ badge.hidden=false; badge.textContent=count>99?"99+":String(count); }
+    }
+    if(tile){
+      tile.classList.toggle("has-alerts",count>0);
+      const base=TILE_BASE_LABEL[key]||tile.textContent.trim();
+      const phrase=count<1?"":(BADGE_PHRASE[key]||(x=>x+" waiting"))(count);
+      tile.setAttribute("aria-label",base+(phrase?" — "+phrase:""));
+      if(phrase) tile.title=phrase; else tile.removeAttribute("title");
+    }
   }
-  function preview(){ document.body.classList.add("previewing");
-    document.getElementById("preview-note").textContent="Previewing: "+(targetObj().title||editTarget.email||"");
-    var t=targetObj();
-    renderPortal({custom:true,title:t.title,tiles:targetTiles(),id:"preview"}, null); }
-  function buildTileList(){
-    var ul=document.getElementById("tilelist"); ul.innerHTML="";
-    var tiles=targetTiles();
-    tiles.forEach(function(id,idx){
-      var app=appById(id); if(!app) return;
-      var li=document.createElement("li"); li.draggable=true; li.dataset.idx=idx;
-      var ic=document.createElement("img"); ic.src=app.icon||("https://www.google.com/s2/favicons?domain="+encodeURIComponent(domainOf(app.url))+"&sz=32");
-      ic.onerror=function(){ this.style.visibility="hidden"; };
-      var nm=document.createElement("span"); nm.className="nm"; nm.textContent=app.name;
-      li.appendChild(ic); li.appendChild(nm);
-      if(idx===0){ var f=document.createElement("span"); f.className="feat"; f.textContent="FEATURED"; li.appendChild(f); }
-      var ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit app (all portals)";
-      ed.onclick=function(){ openEdit(app); };
-      var rm=document.createElement("button"); rm.textContent="✕"; rm.title="Remove from this portal";
-      rm.onclick=function(){ saveDraft(); targetTiles().splice(idx,1); buildTileList(); preview(); };
-      li.appendChild(ed); li.appendChild(rm);
-      li.addEventListener("dragstart",function(e){ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",idx); });
-      li.addEventListener("dragend",function(){ li.classList.remove("dragging"); });
-      li.addEventListener("dragover",function(e){ e.preventDefault(); });
-      li.addEventListener("drop",function(e){ e.preventDefault();
-        var from=+e.dataTransfer.getData("text/plain"), to=idx; if(from===to) return;
-        saveDraft(); var arr=targetTiles(); var m=arr.splice(from,1)[0]; arr.splice(to,0,m);
-        buildTileList(); preview(); });
+  function clearBadges(){ for(const k in BADGE_TILES) setBadge(k,0); }
+
+  function startNotifications(){
+    stopNotifications();
+    refreshBadges();
+    pollTimer=setInterval(refreshBadges,REFRESH_MS);
+  }
+  function stopNotifications(){ if(pollTimer) clearInterval(pollTimer); pollTimer=null; }
+  function refreshBadges(){
+    lastCheck=Date.now();
+    refreshPaymiCount();
+    refreshFixmiCount();
+  }
+
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"&&SESSION&&
+       Date.now()-lastCheck>FOCUS_MIN_GAP_MS) refreshBadges();
+  });
+
+  /* ---- Gate ------------------------------------------------------------ */
+  const gateEl=document.getElementById("gate");
+  const gEmail=document.getElementById("gate-email");
+  const gPw=document.getElementById("gate-pw");
+  const gErr=document.getElementById("gate-err");
+  const gBtn=document.getElementById("gate-btn");
+  const gGuest=document.getElementById("gate-guest");
+  const gCancel=document.getElementById("gate-cancel");
+
+  function gateOpen(){ return !document.documentElement.classList.contains("gate-off"); }
+
+  function openGate(canCancel){
+    gateDismissable=!!canCancel;
+    gateEl.classList.toggle("can-cancel",gateDismissable);
+    document.documentElement.classList.remove("gate-off");
+    const fit=document.getElementById("fit");
+    if(fit){ fit.setAttribute("aria-hidden","true"); try{ fit.inert=true; }catch(e){} }
+    showErr("");
+    setTimeout(()=>{ (gEmail.value?gPw:gEmail).focus(); },60);
+  }
+
+  function closeGate(){
+    document.documentElement.classList.add("gate-off");
+    const fit=document.getElementById("fit");
+    if(fit){ fit.removeAttribute("aria-hidden"); try{ fit.inert=false; }catch(e){} }
+    gPw.value="";
+  }
+
+  function showErr(msg){
+    gErr.textContent=msg||"";
+    gErr.classList.toggle("show",!!msg);
+  }
+  function busy(on){
+    gBtn.disabled=on; gEmail.disabled=on; gPw.disabled=on; gGuest.disabled=on;
+    gBtn.innerHTML=on?'<span class="spin"></span>Checking…':"Sign In";
+  }
+
+  async function doSignIn(){
+    if(gBtn.disabled) return;
+    const email=gEmail.value.trim().toLowerCase(), pw=gPw.value;
+    showErr("");
+    if(!email){ showErr("Enter your work email."); return; }  /* password requirement is decided per-role by resolveSession */
+    busy(true);
+    try{ await loadMaster(); }
+    catch(e){
+      busy(false);
+      showErr("Couldn't reach the directory to check your sign-in. Check your connection and try again, or continue without signing in.");
+      return;
+    }
+    const sess=resolveSession(email,pw);
+    busy(false);
+    if(sess.error){ showErr(sess.error); gPw.select(); return; }
+    SESSION=sess;
+    SESSION.cstore=isCStoreUser();
+    writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,
+                 refId:sess.refId||null,cstore:SESSION.cstore});
+    closeGate(); renderWho(); renderBoard(); startNotifications();
+  }
+
+  function useUnsigned(){
+    SESSION=null; stopNotifications(); clearBadges();
+    writeStored({guest:true});
+    closeGate(); renderWho(); renderBoard();
+  }
+
+  function signOut(){
+    SESSION=null; MASTER=null; masterAt=0; stopNotifications(); clearBadges();
+    clearStored();
+    document.documentElement.classList.remove("gate-off");
+    gEmail.value=""; gPw.value="";
+    renderWho(); renderBoard();
+    openGate(false);
+  }
+
+  gBtn.addEventListener("click",doSignIn);
+  gGuest.addEventListener("click",useUnsigned);
+  gCancel.addEventListener("click",()=>{ if(gateDismissable) closeGate(); });
+  [gEmail,gPw].forEach(el=>el.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){ e.preventDefault(); doSignIn(); }
+  }));
+
+  /* Keep Tab inside the dialog while it owns the screen, and let Esc back out
+     only when there is a previous choice to fall back to. */
+  gateEl.addEventListener("keydown",e=>{
+    if(e.key==="Escape"&&gateDismissable){ e.preventDefault(); closeGate(); return; }
+    if(e.key!=="Tab") return;
+    const f=[...gateEl.querySelectorAll("button,input")].filter(el=>!el.disabled&&el.offsetParent!==null);
+    if(!f.length) return;
+    const first=f[0], last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
+  });
+
+  /* ---- Portal identity ---------------------------------------------------
+     The portal takes the name of whoever is signed in. The hero heading is
+     the one that matters visually — the top bar is hidden by the
+     fit-to-window stage — but the tab title and top bar follow along so a
+     bookmarked tab and a non-scaled view read correctly too. */
+  function portalName(){
+    if(!SESSION) return PORTAL_DEFAULT;
+    if(PORTAL_NAMES[SESSION.role]) return PORTAL_NAMES[SESSION.role];
+    const t=(SESSION.title||"").trim();
+    if(t) return /portal$/i.test(t)?t:t+" Portal";
+    return PORTAL_DEFAULT;
+  }
+  function applyPortalIdentity(){
+    const name=portalName();
+    const h1=document.querySelector(".hero h1");
+    if(h1) h1.textContent=name;
+    const word=document.querySelector(".topbar-word");
+    if(word) word.textContent=name;
+    const brand=document.querySelector(".topbar-brand");
+    if(brand) brand.setAttribute("aria-label",name+" home");
+    document.title="Dossani · "+name;
+  }
+
+  /* ---- Identity chip ---- */
+  function renderWho(){
+    applyPortalIdentity();
+    const who=document.getElementById("who");
+    const txt=document.getElementById("who-text");
+    const btn=document.getElementById("who-btn");
+    if(!who) return;
+    who.hidden=false;
+    txt.textContent="";
+    if(SESSION){
+      who.classList.remove("is-guest");
+      const b=document.createElement("b"); b.textContent=SESSION.name;
+      txt.append(document.createTextNode("Signed in as "),b);
+      btn.textContent="Sign out";
+      btn.onclick=signOut;
+    }else{
+      who.classList.add("is-guest");
+      txt.textContent="Not signed in";
+      btn.textContent="Sign in";
+      btn.onclick=()=>openGate(true);
+    }
+    if(window.__fit) window.__fit();
+  }
+
+  /* ---- Boot ------------------------------------------------------------ */
+  async function bootPortal(){
+    const saved=readStored();
+
+    if(saved&&saved.guest){ closeGate(); renderWho(); return; }
+
+    if(saved&&saved.email&&saved.pw){
+      // Trust the stored snapshot immediately so the board is usable offline
+      // and there is no login flash, then quietly confirm it still holds.
+      SESSION={email:saved.email,role:saved.role||"coach",name:saved.name||"District Manager",
+               refId:saved.refId||null,cstore:saved.cstore===true};
+      closeGate(); renderWho(); renderBoard(); startNotifications();
+      try{
+        await loadMaster();
+        const sess=resolveSession(saved.email,saved.pw);
+        if(sess.error){                      // removed from the list, or password rotated
+          SESSION=null; stopNotifications(); clearBadges(); clearStored();
+          renderWho(); openGate(false); showErr(sess.error);
+        }else{
+          // Directory may have moved this person, or re-tagged their stores.
+          const was=SESSION.cstore;
+          SESSION=sess; SESSION.cstore=isCStoreUser();
+          writeStored({email:sess.email,pw:saved.pw,name:sess.name,role:sess.role,
+                       refId:sess.refId||null,cstore:SESSION.cstore});
+          renderWho();
+          if(SESSION.cstore!==was) renderBoard();
+          refreshBadges();
+        }
+      }catch(e){
+        console.warn("[Portal] Couldn't re-verify sign-in (offline?) — keeping the saved session.");
+      }
+      return;
+    }
+
+    renderWho();
+    openGate(false);
+  }
+
+  renderBoard();
+  bootPortal();
+
+  /* ---- Scale the stage to fill the window; pick the best column count ---- */
+  (function(){
+    var stage=document.getElementById('stage');
+    var MAXS=3, MARGIN=4;
+    function fit(){
+      if(!stage) return;
+      var availW=window.innerWidth-MARGIN, availH=window.innerHeight-MARGIN;
+      var n=0; stage.querySelectorAll('.board-grid .tile').forEach(function(t){if(t.style.display!=='none')n++;});
+      var maxC=Math.min(8, Math.max(2, n||2));
+      var best=null;
+      for(var c=2;c<=maxC;c++){
+        stage.style.setProperty('--cols',c);
+        var w=stage.offsetWidth, h=stage.offsetHeight;
+        var s=Math.min(availW/w, availH/h);
+        if(!best||s>best.s){best={c:c,s:s};}
+      }
+      stage.style.setProperty('--cols',best.c);
+      stage.style.transform='scale('+Math.min(best.s,MAXS)+')';
+    }
+    var raf; function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(fit);}
+    window.addEventListener('resize',schedule);
+    window.addEventListener('orientationchange',schedule);
+    if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fit);}
+    window.addEventListener('load',fit);
+    window.__fit=fit; fit(); setTimeout(fit,150);
+  })();
+
+  </script>
+  <script>window.addEventListener("pageshow",function(e){if(e.persisted)location.reload();});
+  /* ======================================================================
+     ADMIN PANEL — itsupport@, rahim@, deisy@
+     Edits the APPS list live (order, links, icons, who sees what) and
+     publishes by downloading a new index.html with APPS rewritten.
+     Deisy and Rahim are reminded to send the file to IT Support to upload.
+     ====================================================================== */
+
+  /* ======================================================================
+     SAVING TO THE ALIGNMENT DATABASE
+     ----------------------------------------------------------------------
+     Everything the portal owns lives under ONE node, portalConfig, so it can
+     never collide with the directory or FixMi's tickets:
+
+       portalConfig/apps       the tile list (array)
+       portalConfig/updatedAt  ISO timestamp
+       portalConfig/updatedBy  who published
+       portalConfig/schema     bumped if the tile shape ever changes
+
+     One write per publish, one path, whole node replaced — no partial state
+     and nothing scattered across the tree. Reads fail soft: if the node is
+     missing or malformed the portal quietly uses the built-in list below,
+     so a bad save can never leave anyone with a blank board.
+     ====================================================================== */
+  const PORTAL_NODE="portalConfig";
+  const PORTAL_SCHEMA=1;
+  /* Must match a write role the alignment API accepts (FixMi uses its own). */
+  const PORTAL_WRITE_PASSWORD="rm123";
+
+  function portalConfigFromMaster(){
+    const n=MASTER&&MASTER[PORTAL_NODE];
+    if(!n||!Array.isArray(n.apps)||!n.apps.length) return null;
+    const clean=n.apps.filter(a=>a&&typeof a.name==="string"&&typeof a.url==="string"&&/^https?:\/\//.test(a.url));
+    return clean.length?clean:null;
+  }
+  /* Swap the built-in tiles for the published ones, in place, so every
+     existing reference to APPS keeps working. */
+  function applyPublishedApps(){
+    const saved=portalConfigFromMaster();
+    if(!saved) return false;
+    APPS.length=0; saved.forEach(a=>APPS.push(a));
+    return true;
+  }
+  async function savePortalConfig(who){
+    const payload={ schema:PORTAL_SCHEMA, apps:APPS.map(a=>{
+        const o={name:a.name,url:a.url,desc:a.desc||""};
+        if(a.icon) o.icon=a.icon;
+        if(a.only) o.only=a.only;
+        if(a.roles&&a.roles.length) o.roles=a.roles.slice();
+        if(a.tut){ o.tut=true; o.tutUrl=a.tutUrl||""; if(a.tutCap) o.tutCap=a.tutCap; }
+        return o;
+      }), updatedAt:new Date().toISOString(), updatedBy:who||"unknown" };
+    const updates={}; updates[PORTAL_NODE]=payload;
+    const r=await fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})});
+    if(!r.ok){ let m="HTTP "+r.status; try{ m=(await r.json()).error||m; }catch(e){} throw new Error(m); }
+    return payload;
+  }
+
+  const ADM_UPLOADER="itsupport@dossaniparadise.com";
+  const ADM_ROLES=[["coach","District Mgr"],["director","Director"],["gm","General Mgr"],["staff","Staff"],["admin","Overwatch"]];
+  let admPreview=null, admDirty=false;
+
+  function admIsAdmin(){ return !!SESSION && SESSION.role==="admin"; }
+  function admSync(){ document.body.classList.toggle("is-admin", admIsAdmin()); }
+
+  /* Preview: temporarily pretend to be a role/division so the board redraws. */
+  function admApplyPreview(){
+    if(!admPreview){ renderBoard(); applyPortalIdentity(); return; }
+    const real=SESSION, realC=window.__admForceCStore;
+    if(admPreview==="guest"){ SESSION=null; window.__admForceCStore=false; }
+    else if(admPreview==="cstore"){ SESSION={role:"coach",name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__"}; window.__admForceCStore=true; }
+    else { SESSION={role:admPreview,name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__",
+            title:admPreview==="gm"?"General Manager":(admPreview==="staff"?"Staff":"")}; window.__admForceCStore=false; }
+    renderBoard(); applyPortalIdentity();
+    SESSION=real; window.__admForceCStore=realC;
+  }
+
+  function admIconSrc(a){
+    if(a.icon) return a.icon;
+    try{ return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(new URL(a.url).hostname)+"&sz=32"; }
+    catch(e){ return ""; }
+  }
+  function admList(){
+    const ul=document.getElementById("alist"); ul.innerHTML="";
+    APPS.forEach((a,idx)=>{
+      const li=document.createElement("li"); li.draggable=true;
+      const im=document.createElement("img"); im.src=admIconSrc(a); im.onerror=function(){this.style.visibility="hidden";};
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=a.name;
+      li.append(im,nm);
+      if(idx===0){ const t=document.createElement("span"); t.className="tag f"; t.textContent="FEATURED"; li.appendChild(t); }
+      if(a.only){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.only.toUpperCase(); li.appendChild(t); }
+      if(a.roles){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.roles.join("/").toUpperCase(); li.appendChild(t); }
+      if(a.tut){ const t=document.createElement("span"); t.className="tag"; t.textContent="?"; t.title="Has tutorial"; li.appendChild(t); }
+      const ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit"; ed.onclick=()=>admEdit(idx);
+      const rm=document.createElement("button"); rm.textContent="✕"; rm.title="Delete app";
+      rm.onclick=()=>{ if(!confirm('Delete "'+a.name+'" from every board?')) return; APPS.splice(idx,1); admChanged(); };
+      li.append(ed,rm);
+      li.addEventListener("dragstart",e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",idx); });
+      li.addEventListener("dragend",()=>li.classList.remove("dragging"));
+      li.addEventListener("dragover",e=>e.preventDefault());
+      li.addEventListener("drop",e=>{ e.preventDefault();
+        const from=+e.dataTransfer.getData("text/plain"); if(from===idx) return;
+        APPS.splice(idx,0,APPS.splice(from,1)[0]); admChanged(); });
       ul.appendChild(li);
     });
   }
-  function buildDup(){ var cfg=C(); var d=document.getElementById("dup-target");
-    d.innerHTML=cfg.portals.map(function(p){return '<option value="'+p.id+'">'+p.title+'</option>';}).join("");
-    document.getElementById("btn-dup").onclick=function(){ saveDraft();
-      portalById(d.value).tiles=targetTiles().slice(); alert("Copied into "+portalById(d.value).title+"."); };
-  }
-  /* add / new / edit app */
-  function toggle(id){ var el=document.getElementById(id); var open=el.classList.contains("open");
-    ["addform","newform","editform"].forEach(function(x){document.getElementById(x).classList.remove("open");});
-    if(!open) el.classList.add("open"); }
-  document.getElementById("btn-add").onclick=function(){ toggle("addform"); renderLib(""); document.getElementById("libsearch").value=""; };
-  document.getElementById("btn-new").onclick=function(){ toggle("newform"); };
-  document.getElementById("libsearch").oninput=function(){ renderLib(this.value); };
-  function renderLib(q){ q=(q||"").toLowerCase(); var res=document.getElementById("libsearch-res"); res.innerHTML="";
-    var have=targetTiles();
-    C().apps.filter(function(a){ return have.indexOf(a.id)<0 && (!q || (a.name+" "+a.desc).toLowerCase().indexOf(q)>=0); })
-      .slice(0,30).forEach(function(a){
-        var d=document.createElement("div"); d.className="libitem"; d.textContent=a.name+"  ·  "+(a.desc||"");
-        d.onclick=function(){ saveDraft(); targetTiles().push(a.id); buildTileList(); preview(); };
-        res.appendChild(d); });
-  }
-  document.getElementById("nf-save").onclick=function(){
-    var nm=document.getElementById("nf-name").value.trim(), url=document.getElementById("nf-url").value.trim();
-    if(!nm||!/^https?:\/\//.test(url)){ alert("Name and a full https:// link are required."); return; }
-    saveDraft();
-    var id=nm.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"app"; var n=2;
-    while(appById(id)) id=id+"-"+(n++);
-    C().apps.push({id:id,name:nm,url:url,desc:document.getElementById("nf-desc").value.trim(),icon:document.getElementById("nf-icon").value.trim()});
-    targetTiles().push(id);
-    var ev=portalById("everything"); if(ev && ev.tiles.indexOf(id)<0) ev.tiles.push(id);
-    ["nf-name","nf-url","nf-desc","nf-icon"].forEach(function(x){document.getElementById(x).value="";});
-    toggle("newform"); buildTileList(); preview();
-  };
-  function openEdit(app){ toggle("editform");
-    document.getElementById("ef-id").value=app.id;
-    document.getElementById("ef-name").value=app.name; document.getElementById("ef-url").value=app.url;
-    document.getElementById("ef-desc").value=app.desc||""; document.getElementById("ef-icon").value=app.icon||"";
-  }
-  document.getElementById("ef-save").onclick=function(){ saveDraft();
-    var a=appById(document.getElementById("ef-id").value); if(!a) return;
-    a.name=document.getElementById("ef-name").value.trim(); a.url=document.getElementById("ef-url").value.trim();
-    a.desc=document.getElementById("ef-desc").value.trim(); a.icon=document.getElementById("ef-icon").value.trim();
-    toggle("editform"); buildTileList(); preview(); };
-  document.getElementById("ef-cancel").onclick=function(){ toggle("editform"); };
-  /* person search */
-  document.getElementById("psearch").oninput=function(){
-    var q=this.value.toLowerCase().trim(); var res=document.getElementById("psearch-res"); res.innerHTML="";
-    if(q.length<2) return;
-    dir.people.filter(function(p){return (p.name+" "+p.email).toLowerCase().indexOf(q)>=0;}).slice(0,8)
-      .forEach(function(p){ var d=document.createElement("div"); d.className="person-hit";
-        d.innerHTML="<span>"+p.name+"</span><small>"+p.email+"</small>";
-        d.onclick=function(){ selectPerson(p); res.innerHTML=""; }; res.appendChild(d); });
-    if(!dir.loaded){ var d=document.createElement("div"); d.className="person-hit"; d.innerHTML="<small>Directory still loading…</small>"; res.appendChild(d); }
-  };
-  function selectPerson(p){ var cfg=C(); var tools=document.getElementById("person-tools");
-    if(cfg.people[p.email] && cfg.people[p.email].custom){ editTarget={type:"person",email:p.email}; buildDrawer(); return; }
-    var base=resolveFor({email:p.email, person:p});
-    tools.innerHTML='<label>'+p.name+' — '+(p.title||"")+'</label>'+
-      '<button class="dbtn primary" id="mkcustom" style="width:100%">Create custom portal (copies '+(base.title||"")+')</button>';
-    document.getElementById("mkcustom").onclick=function(){ saveDraft();
-      C().people[p.email]={custom:{title:(p.title||"My")+"", tiles:(base.tiles||[]).slice()}};
-      editTarget={type:"person",email:p.email}; tools.innerHTML=""; buildDrawer(); };
-  }
-  /* publish / discard */
-  document.getElementById("btn-publish").onclick=function(){
-    var cfg=JSON.stringify(C()).replace(/</g,"\\u003c");
-    fetch(location.href,{cache:"no-store"}).then(function(r){return r.text();}).then(function(html){
-      html=html.replace(/(<script type="application\/json" id="portal-config">)[\s\S]*?(<\/script>)/, function(_,a,b){return a+cfg+b;});
-      var blob=new Blob([html],{type:"text/html"}); var a=document.createElement("a");
-      a.href=URL.createObjectURL(blob); a.download="index.html"; a.click();
-      document.body.classList.remove("dirty"); alert("Downloaded. Upload this index.html to GitHub to make it live for everyone.");
-    }).catch(function(){
-      var blob=new Blob([cfg],{type:"application/json"}); var a=document.createElement("a");
-      a.href=URL.createObjectURL(blob); a.download="portal-config.json"; a.click();
-      alert("Couldn't read the page source here — downloaded the config JSON instead. Send it to IT to paste into index.html.");
-    });
-  };
-  document.getElementById("btn-discard").onclick=function(){ if(!confirm("Discard all unpublished changes?")) return;
-    draft=null; localStorage.removeItem("dpmDraft"); document.body.classList.remove("dirty"); buildDrawer(); };
+  function admChanged(){ admDirty=true; admList(); admApplyPreview(); admNote(); }
 
-  /* ================= BOOT ================= */
-  function renderAll(){
-    var cfg=C();
-    document.getElementById("footer-date").textContent=cfg.meta.updated;
-    document.getElementById("footer-ver").textContent="v"+cfg.meta.version;
-    renderCorner();
-    if(document.body.classList.contains("admin-open") && editTarget){ buildDrawer(); return; }
-    document.body.classList.remove("previewing");
-    renderPortal(resolveFor(sess), sess);
+  function admChips(host, opts, isOn, onTap){
+    host.innerHTML="";
+    opts.forEach(([val,lab])=>{ const b=document.createElement("button"); b.type="button";
+      b.className="chip"+(isOn(val)?" on":""); b.textContent=lab;
+      b.onclick=()=>{ onTap(val); }; host.appendChild(b); });
   }
-  if(draft && isAdmin()) document.body.classList.add("dirty");
-  window.__portal={fit:fit, renderAll:renderAll, C:C, resolveFor:resolveFor, get sess(){return sess;}, set sess(v){sess=v;}};
-  document.addEventListener("click",function(e){ if(e.target.id!=="c-hello" && !cmenu.contains(e.target)) cmenu.style.display="none"; });
-  document.getElementById("si-guest").onclick=function(){ sessionStorage.setItem("dpmGuest","1"); sibg.classList.remove("open"); renderAll(); };
-  renderAll();
-  loadDirectory();
-  if(!sess && !sessionStorage.getItem("dpmGuest")) openSignin();
-  window.addEventListener("pageshow",function(e){ if(e.persisted) location.reload(); });
+  function admOpenForm(id){ ["adm-newform","adm-editform"].forEach(x=>document.getElementById(x).classList.remove("open"));
+    if(id) document.getElementById(id).classList.add("open"); }
+  function admEdit(i){
+    const a=APPS[i]; admOpenForm("adm-editform");
+    document.getElementById("ae-i").value=i;
+    document.getElementById("ae-name").value=a.name||"";
+    document.getElementById("ae-url").value=a.url||"";
+    document.getElementById("ae-desc").value=a.desc||"";
+    document.getElementById("ae-icon").value=a.icon||"";
+    admChips(document.getElementById("ae-div"), [["","Both"],["bk","BK only"],["cstore","C-Store only"]],
+      v=>((a.only||"")===v), v=>{ if(v) a.only=v; else delete a.only; admChanged(); admEdit(i); });
+    document.getElementById("ae-tutcap").value=a.tutCap||"";
+    document.getElementById("ae-tuturl").value=a.tutUrl||"";
+    admChips(document.getElementById("ae-tut"), [[ "yes","Tutorial: Yes"],["no","No"]],
+      v=>((a.tut?"yes":"no")===v),
+      v=>{ if(v==="yes") a.tut=true; else { delete a.tut; } admChanged(); admEdit(i); });
+    admChips(document.getElementById("ae-roles"), ADM_ROLES,
+      v=>!!(a.roles&&a.roles.indexOf(v)>=0),
+      v=>{ a.roles=a.roles||[]; const k=a.roles.indexOf(v);
+           if(k>=0) a.roles.splice(k,1); else a.roles.push(v);
+           if(!a.roles.length) delete a.roles; admChanged(); admEdit(i); });
+  }
+  document.getElementById("ae-save").onclick=function(){
+    const a=APPS[+document.getElementById("ae-i").value]; if(!a) return;
+    a.name=document.getElementById("ae-name").value.trim();
+    a.url=document.getElementById("ae-url").value.trim();
+    a.desc=document.getElementById("ae-desc").value.trim();
+    const ic=document.getElementById("ae-icon").value.trim(); if(ic) a.icon=ic; else delete a.icon;
+    const tc=document.getElementById("ae-tutcap").value.trim(); if(tc) a.tutCap=tc; else delete a.tutCap;
+    const tu=document.getElementById("ae-tuturl").value.trim(); if(tu) a.tutUrl=tu; else delete a.tutUrl;
+    if(a.tut&&!a.tutUrl){ alert("Add a tutorial link, or set Tutorial to No."); return; }
+    admOpenForm(null); admChanged();
+  };
+  document.getElementById("ae-cancel").onclick=()=>admOpenForm(null);
+  document.getElementById("adm-new").onclick=()=>admOpenForm(
+    document.getElementById("adm-newform").classList.contains("open")?null:"adm-newform");
+  document.getElementById("an-save").onclick=function(){
+    const n=document.getElementById("an-name").value.trim(), u=document.getElementById("an-url").value.trim();
+    if(!n||!/^https?:\/\//.test(u)){ alert("Name and a full https:// link are required."); return; }
+    APPS.push({name:n,url:u,desc:document.getElementById("an-desc").value.trim(),
+               icon:document.getElementById("an-icon").value.trim()||undefined});
+    ["an-name","an-url","an-desc","an-icon"].forEach(x=>document.getElementById(x).value="");
+    admOpenForm(null); admChanged();
+  };
+
+  function admNote(){
+    const el=document.getElementById("adm-note"); if(!el) return;
+    const me=((SESSION&&SESSION.email)||"").toLowerCase();
+    if(me===ADM_UPLOADER){
+      el.className="upload";
+      el.innerHTML=(admDirty?"<b>Unsaved changes.</b> ":"")+"Publish saves straight to the alignment database — live for everyone right away. If that ever fails it downloads <b>index.html</b> to upload to GitHub instead.";
+    }else{
+      el.className="send";
+      el.innerHTML=(admDirty?"<b>Unsaved changes.</b> ":"")+"Publish saves straight to the alignment database — live for everyone right away. If it can't reach the database it downloads <b>index.html</b>; email that file to <b>"+ADM_UPLOADER+"</b> to upload to GitHub.";
+    }
+  }
+  function admSerialize(){
+    const lines=APPS.map(a=>{
+      let s='    { name:'+JSON.stringify(a.name)+', url:'+JSON.stringify(a.url)+', desc:'+JSON.stringify(a.desc||"");
+      if(a.icon) s+=', icon:'+JSON.stringify(a.icon);
+      if(a.only) s+=', only:'+JSON.stringify(a.only);
+      if(a.roles&&a.roles.length) s+=', roles:'+JSON.stringify(a.roles);
+      if(a.tut) s+=', tut:true';
+      if(a.tutCap) s+=', tutCap:'+JSON.stringify(a.tutCap);
+      if(a.tutUrl) s+=', tutUrl:'+JSON.stringify(a.tutUrl);
+      return s+' },';
+    });
+    return "const APPS = [\n"+lines.join("\n")+"\n  ];";
+  }
+  document.getElementById("adm-pub").onclick=async function(){
+    const btn=this, me=((SESSION&&SESSION.email)||"").toLowerCase();
+    btn.disabled=true; const label=btn.textContent; btn.textContent="Publishing…";
+    try{
+      await savePortalConfig(me);
+      admDirty=false; masterAt=0;            /* force a fresh master next read */
+      admNote();
+      alert("Published. The new tiles are live for everyone — no upload needed.");
+    }catch(err){
+      /* Database write refused or unreachable: fall back to the file route so
+         a publish is never simply lost. */
+      try{
+        const src=await (await fetch(location.href,{cache:"no-store"})).text();
+        const out=src.replace(/const APPS = \[[\s\S]*?\n  \];/, ()=>admSerialize());
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(new Blob([out],{type:"text/html"}));
+        a.download="index.html"; a.click();
+      }catch(e2){}
+      alert("Couldn't save to the database ("+(err.message||err)+").\n\n"+
+        "Downloaded index.html instead — "+(me===ADM_UPLOADER
+          ? "upload it to the DossaniPortal repo to publish."
+          : "email it to "+ADM_UPLOADER+" to upload."));
+    }finally{ btn.disabled=false; btn.textContent=label; }
+  };
+  document.getElementById("adm-reset").onclick=function(){
+    if(!confirm("Discard changes and reload the published version?")) return; location.reload();
+  };
+  document.getElementById("adm-view").onchange=function(){ admPreview=this.value; admApplyPreview(); };
+  document.getElementById("adm-open").onclick=function(){
+    document.body.classList.add("adm-open");
+    admPreview=document.getElementById("adm-view").value;
+    admList(); admNote(); admApplyPreview();
+    if(window.__fit) window.__fit();
+  };
+  document.getElementById("adm-x").onclick=function(){
+    document.body.classList.remove("adm-open"); admPreview=null;
+    renderBoard(); applyPortalIdentity(); if(window.__fit) window.__fit();
+  };
+
   </script>
 </body>
 </html>
