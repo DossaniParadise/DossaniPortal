@@ -369,6 +369,18 @@
     .tile-tut:hover{background:var(--navy-700);color:#fff;transform:scale(1.12);}
     .tile-tut:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
     .tile.has-alerts .tile-tut{background:#fff;border-color:rgba(198,8,25,.25);}
+  
+    .gate-emailrow{display:flex;align-items:stretch;gap:0;}
+    .gate-emailrow .gate-input{border-top-right-radius:0;border-bottom-right-radius:0;border-right:none;
+      min-width:0;flex:1 1 auto;}
+    .gate-domain{display:flex;align-items:center;flex:0 0 auto;white-space:nowrap;
+      font-family:var(--font-sans);font-size:.86rem;font-weight:600;color:var(--text-muted);
+      background:var(--gray-100);border:1px solid var(--border-subtle);border-left:none;
+      border-top-right-radius:var(--radius-lg);border-bottom-right-radius:var(--radius-lg);
+      padding:.6rem .7rem;user-select:none;}
+    .gate-emailrow:focus-within .gate-domain{border-color:var(--navy-400);}
+    @media (max-width:420px){ .gate-domain{font-size:.76rem;padding:.6rem .5rem;} }
+      .who-store{opacity:.75;font-weight:600;}
   </style>
 </head>
 
@@ -435,15 +447,17 @@
       <div class="gate-form">
         <div>
           <label class="gate-label" for="gate-email">Work email</label>
-          <input class="gate-input" type="email" id="gate-email" autocomplete="username"
-                 inputmode="email" spellcheck="false" autocapitalize="off" autocorrect="off"
-                 placeholder="you@dossaniparadise.com" />
+          <div class="gate-emailrow">
+            <input class="gate-input" type="text" id="gate-email" autocomplete="username"
+                   inputmode="text" spellcheck="false" autocapitalize="off" autocorrect="off"
+                   placeholder="firstname" aria-describedby="gate-domain" />
+            <span class="gate-domain" id="gate-domain">@dossaniparadise.com</span>
+          </div>
         </div>
-        <div>
-          <label class="gate-label" for="gate-pw">Password</label>
-          <input class="gate-input" type="password" id="gate-pw" autocomplete="current-password"
-                 placeholder="Your password" />
-        </div>
+        <div id="gate-pwwrap" hidden>
+            <label class="gate-label" for="gate-pw">Admin password</label>
+            <input class="gate-input" type="password" id="gate-pw" autocomplete="current-password" placeholder="Admin password" />
+          </div>
         <div class="gate-err" id="gate-err" role="alert" aria-live="polite"></div>
         <button type="button" class="gate-btn" id="gate-btn">Sign In</button>
       </div>
@@ -783,27 +797,46 @@
     const dirs=(MASTER&&MASTER.directors)||{};
     const dId=Object.keys(dirs).find(id=>emailIs(dirs,id));
     if(dId){
-      if(!pw) return {error:"Enter the Director of Operations password."};
-      if(pw!==ROLE_PASSWORDS.director) return {error:"That password doesn't match the Director of Operations role."};
       return {email:lc,role:"director",name:dirs[dId].name||"Director of Operations",refId:dId};
     }
 
     const coaches=(MASTER&&MASTER.areaCoaches)||{};
     const cId=Object.keys(coaches).find(id=>emailIs(coaches,id));
     if(cId){
-      if(!pw) return {error:"Enter the District Manager password."};
-      if(pw!==ROLE_PASSWORDS.coach) return {error:"That password doesn't match the District Manager role."};
       return {email:lc,role:"coach",name:coaches[cId].name||"District Manager",refId:cId};
     }
 
     /* Anyone else in the directory (GMs, coordinators, accountants…) signs in
        with just their work email — no shared password to circulate. */
+    const store=storeAccount(lc);
+    if(store) return store;
     const person=directoryPerson(lc);
     if(person) return {email:lc, role:person.role, name:person.name, title:person.title, refId:person.refId};
     return {error:"We couldn't find that email in the Dossani directory. Check it's the address on file, or continue without signing in below."};
   }
 
 
+
+  /* ---- Store accounts ---------------------------------------------------
+     Shared store logins (Bk14429@, Pqs11@, Bkgainesville27028@…) live on the
+     RESTAURANT record, not on a person: the address is `email` and the GM's
+     name is `storeManager`. They get the General Manager board, and because
+     the session carries the store id, the C-Store/BK split and the FixMi
+     count both scope to that one store automatically. */
+  function storeAccount(lc){
+    const stores=(MASTER&&MASTER.restaurants)||{};
+    for(const id in stores){
+      const s=stores[id]||{};
+      if(((s.email||"")+"").trim().toLowerCase()===lc){
+        const label=(s.storeName||("Store "+(s.storeNumber||id))).trim();
+        const mgr=((s.storeManager||"")+"").trim();
+        return { email:lc, role:"gm", refId:id, isStore:true,
+                 name:mgr||label, hasManager:!!mgr,
+                 storeLabel:label, title:"General Manager" };
+      }
+    }
+    return null;
+  }
   /* ---- Everyone else in the directory ----------------------------------
      Walks the whole alignment master for a matching email so GMs, marketing
      coordinators, staff accountants and future teams resolve without being
@@ -914,6 +947,7 @@
   function myStoreIds(){
     const stores=(MASTER&&MASTER.restaurants)||{};
     if(!SESSION) return [];
+    if(SESSION.role==="gm") return (SESSION.refId&&stores[SESSION.refId])?[SESSION.refId]:[];
     if(SESSION.role==="admin") return Object.keys(stores);
     if(SESSION.role==="director"){
       const coaches=(MASTER&&MASTER.areaCoaches)||{};
@@ -1099,7 +1133,7 @@
 
   async function doSignIn(){
     if(gBtn.disabled) return;
-    const email=gEmail.value.trim().toLowerCase(), pw=gPw.value;
+    const email=gateEmailValue(), pw=gPw.value;
     showErr("");
     if(!email){ showErr("Enter your work email."); return; }  /* password requirement is decided per-role by resolveSession */
     busy(true);
@@ -1134,6 +1168,27 @@
     openGate(false);
   }
 
+  const EMAIL_DOMAIN="@dossaniparadise.com";
+  /* The box takes a username; the domain sits beside it. Paste a whole
+     address and we quietly drop the domain rather than build a broken one. */
+  function gateEmailValue(){
+    let v=(gEmail.value||"").trim().toLowerCase();
+    if(!v) return "";
+    v=v.replace(/@.*$/,"");
+    return v?v+EMAIL_DOMAIN:"";
+  }
+  /* The password box only exists for the three Overwatch admins. It appears
+     as soon as one of their addresses is typed and disappears the moment the
+     address changes, so nobody else is ever asked for a password. */
+  const gPwWrap=document.getElementById("gate-pwwrap");
+  function syncPwField(){
+    const needs=ADMIN_EMAILS.indexOf(gateEmailValue())>=0;
+    gPwWrap.hidden=!needs;
+    if(!needs) gPw.value="";
+  }
+  gEmail.addEventListener("input",syncPwField);
+  gEmail.addEventListener("change",syncPwField);
+  syncPwField();
   gBtn.addEventListener("click",doSignIn);
   gGuest.addEventListener("click",useUnsigned);
   gCancel.addEventListener("click",()=>{ if(gateDismissable) closeGate(); });
@@ -1187,8 +1242,15 @@
     txt.textContent="";
     if(SESSION){
       who.classList.remove("is-guest");
-      const b=document.createElement("b"); b.textContent=SESSION.name;
-      txt.append(document.createTextNode("Signed in as "),b);
+      const b=document.createElement("b");
+      const anon=SESSION.isStore&&!SESSION.hasManager;
+      b.textContent=anon ? SESSION.storeLabel
+                         : (((SESSION.name||"").trim().split(/\s+/)[0])||"there");
+      txt.append(document.createTextNode("Hello, "),b);
+      if(SESSION.isStore&&SESSION.storeLabel&&!anon){
+        const st=document.createElement("span"); st.className="who-store";
+        st.textContent=" · "+SESSION.storeLabel; txt.appendChild(st);
+      }
       btn.textContent="Sign out";
       btn.onclick=signOut;
     }else{
