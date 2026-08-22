@@ -6,14 +6,18 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Dossani · District Manager Portal</title>
-  <meta name="description" content="Dossani Paradise Management — District Manager Portal. Every operating system in one place." />
+  <title>Dossani Portal</title>
+  <meta name="description" content="Dossani Paradise Management — one portal for every team. Every operating system in one place." />
 
   <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-title" content="Dossani DM" />
+  <meta name="apple-mobile-web-app-title" content="Dossani Portal" />
+  <link rel="manifest" href="site.webmanifest" />
+  <meta name="theme-color" content="#1b1660" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1242,7 +1246,7 @@
     if(pos) pos.textContent=who?name:"";
     const word=document.querySelector(".topbar-word"); if(word) word.textContent=name;
     const brand=document.querySelector(".topbar-brand"); if(brand) brand.setAttribute("aria-label",name+" home");
-    document.title="Dossani · "+name;
+    document.title=SESSION?("Dossani · "+name):"Dossani Portal";
   }
 
   /* ---- Identity chip ---- */
