@@ -432,7 +432,7 @@
     </a>
     <div class="foot-right">
       <div class="updated">Updated<span class="tag" id="footer-date">August 2026</span></div>
-      <div class="version">v3.4</div>
+      <div class="version" id="footer-ver"></div>
     </div>
   </footer>
   </div></div>
@@ -498,6 +498,8 @@
         <div class="chips" id="ae-div"></div>
         <label>Show only for these positions <span style="font-weight:500;text-transform:none;letter-spacing:0">(none = everyone)</span></label>
         <div class="chips" id="ae-roles"></div>
+        <label>Departments <span style="font-weight:500;text-transform:none;letter-spacing:0">(support staff only — none = all)</span></label>
+        <div class="chips" id="ae-depts"></div>
         <label>Tutorial</label>
         <div class="chips" id="ae-tut"></div>
         <input type="text" id="ae-tutcap" placeholder="Tutorial caption (default: Tutorial Video)" />
@@ -760,7 +762,8 @@
   }
   /* One pull serves both sign-in and the FixMi count, so a fresh copy is
      reused rather than re-fetched. */
-  async function loadMaster(){ MASTER=await fetchMaster(); masterAt=Date.now(); return MASTER; }
+  async function loadMaster(){ MASTER=await fetchMaster(); masterAt=Date.now(); try{ checkAppVersion(); }catch(e){}
+    return MASTER; }
   async function ensureMaster(){
     if(MASTER&&Date.now()-masterAt<MASTER_TTL_MS) return MASTER;
     return await loadMaster();
@@ -854,6 +857,7 @@
       if(hit) return { name:hit.name,
         title:(hit.jobTitle||hit.title||hit.position||hit.department||ROLE_TITLE_FALLBACK[group]||"").trim(),
         role:(group==="generalManagers"||group==="managers")?"gm":"staff",
+        dept:((hit.department||"")+"").trim(),
         refId:hit.id||null };
     }
     return null;
@@ -997,14 +1001,20 @@
      Everything without the flag shows on both. */
   /* The board for one role in one division. `only` may name a single division
      or several ("bk,subway"); no flag means every division. */
-  function appsFor(role,div){
+  function appsFor(role,div,dept){
+    dept=(dept||"").trim().toLowerCase();
     const list=APPS.filter(a=>{
       if(a.roles&&a.roles.length&&(!role||a.roles.indexOf(role)<0)) return false;
+      /* A tile flagged for departments belongs to those support-staff teams
+         only — Overwatch still sees everything. */
+      if(a.depts&&a.depts.length&&role!=="admin"){
+        if(role!=="staff") return false;
+        if(!dept||a.depts.map(d=>String(d).trim().toLowerCase()).indexOf(dept)<0) return false;
+      }
       if(!a.only) return true;
       return String(a.only).split(",").map(s=>s.trim()).indexOf(div)>=0;
     });
     if(div==="bk"||role==="admin") return list;
-    /* Non-BK divisions don't run the Burger King systems. */
     const kept=list.filter(a=>!CSTORE_HIDE.includes(a.name));
     const feat=kept.find(a=>a.name===CSTORE_FEATURE);
     return feat?[feat,...kept.filter(a=>a!==feat)]:kept;
@@ -1020,7 +1030,7 @@
     if(divs.indexOf("bk")>=0) return "bk";       /* mixed patch = full board */
     return divs[0]||"bk";
   }
-  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision()); }
+  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision(), (SESSION&&SESSION.dept)||""); }
   function wantsEmergenciesOnly(){
     return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
   }
@@ -1158,7 +1168,7 @@
     SESSION.cstore=isCStoreUser();
     writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,
                  refId:sess.refId||null,cstore:SESSION.cstore});
-    closeGate(); renderWho(); renderBoard(); startNotifications();
+    closeGate(); renderWho(); renderBoard(); startNotifications(); _booted=true;
   }
 
   function signOut(){
@@ -1270,7 +1280,7 @@
       // Trust the stored snapshot immediately so the board is usable offline
       // and there is no login flash, then quietly confirm it still holds.
       SESSION={email:saved.email,role:saved.role||"coach",name:saved.name||"District Manager",
-        refId:saved.refId||null,cstore:saved.cstore===true,title:saved.title||"",
+        refId:saved.refId||null,cstore:saved.cstore===true,title:saved.title||"",dept:saved.dept||"",
         isStore:!!saved.isStore,storeLabel:saved.storeLabel||"",hasManager:!!saved.hasManager};
       closeGate(); renderWho(); renderBoard(); startNotifications();
       try{
@@ -1359,6 +1369,58 @@
   /* Must match a write role the alignment API accepts (FixMi uses its own). */
   const PORTAL_WRITE_PASSWORD="rm123";
 
+  /* ======================================================================
+     ALWAYS-LATEST (cache busting)
+     ----------------------------------------------------------------------
+     Same trick FindMi and FixMi use: the newest build publishes its version
+     to the shared database; any client running an older build quietly
+     reloads itself from a cache-busting ?v= URL.
+
+     Deliberately NOT the admins/appMeta node those two share — their version
+     numbers are far ahead of this app's, so pointing here would make the
+     portal think it was permanently stale and reload forever. The portal
+     keeps its own stamp under portalConfig/appMeta.
+
+     Invisible by design: on arrival it swaps itself out before anyone has
+     started working. If a new build lands while the tab is already open it
+     waits, and refreshes the moment the person tabs away and comes back —
+     never yanking the page out from under a click.
+     ====================================================================== */
+  var APP_VERSION="3.5";
+  (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
+  const VER_PATH=PORTAL_NODE+"/appMeta";
+  let _verPublished=false, _updatePending=false, _booted=false;
+  function cmpVer(a,b){
+    const pa=String(a||"0").split(".").map(Number), pb=String(b||"0").split(".").map(Number);
+    for(let i=0;i<Math.max(pa.length,pb.length);i++){const x=pa[i]||0,y=pb[i]||0;if(x!==y)return x>y?1:-1;}
+    return 0;
+  }
+  function hardReload(v){
+    /* One reload per version, so a bad stamp can never loop the browser. */
+    const key="dpmReloadedFor";
+    try{ if(sessionStorage.getItem(key)===String(v)) return; sessionStorage.setItem(key,String(v)); }catch(e){}
+    const u=new URL(location.href);
+    u.searchParams.set("v",v);
+    location.replace(u.toString());
+  }
+  function checkAppVersion(){
+    const server=(((MASTER||{})[PORTAL_NODE]||{}).appMeta||{}).version;
+    if(!server||cmpVer(APP_VERSION,server)>0){
+      if(_verPublished) return;
+      _verPublished=true;
+      const updates={}; updates[VER_PATH]={version:APP_VERSION,updatedAt:new Date().toISOString()};
+      fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})})
+        .catch(()=>{_verPublished=false;});
+    }else if(cmpVer(server,APP_VERSION)>0){
+      if(!_booted){ hardReload(server); }      /* just arrived — swap now */
+      else { _updatePending=server; }          /* mid-session — wait for a lull */
+    }
+  }
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"&&_updatePending) hardReload(_updatePending);
+  });
+
   function portalConfigFromMaster(){
     const n=MASTER&&MASTER[PORTAL_NODE];
     if(!n||!Array.isArray(n.apps)||!n.apps.length) return null;
@@ -1379,10 +1441,17 @@
         if(a.icon) o.icon=a.icon;
         if(a.only) o.only=a.only;
         if(a.roles&&a.roles.length) o.roles=a.roles.slice();
+        if(a.depts&&a.depts.length) o.depts=a.depts.slice();
         if(a.tut){ o.tut=true; o.tutUrl=a.tutUrl||""; if(a.tutCap) o.tutCap=a.tutCap; }
         return o;
       }), updatedAt:new Date().toISOString(), updatedBy:who||"unknown" };
-    const updates={}; updates[PORTAL_NODE]=payload;
+    /* Write the parts, not the whole node, so the version stamp written by
+       checkAppVersion() below survives a publish. */
+    const updates={};
+    updates[PORTAL_NODE+"/apps"]=payload.apps;
+    updates[PORTAL_NODE+"/schema"]=payload.schema;
+    updates[PORTAL_NODE+"/updatedAt"]=payload.updatedAt;
+    updates[PORTAL_NODE+"/updatedBy"]=payload.updatedBy;
     const r=await fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})});
     if(!r.ok){ let m="HTTP "+r.status; try{ m=(await r.json()).error||m; }catch(e){} throw new Error(m); }
@@ -1434,12 +1503,12 @@
     const real=SESSION, realDiv=window.__admDivision;
     window.__admDivision=t.div;
     SESSION={role:t.role,name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__",
-      title:t.dept||(t.role==="gm"?"General Manager":"")};
+      dept:t.dept||"", title:t.dept||(t.role==="gm"?"General Manager":"")};
     renderBoard(); applyPortalIdentity();
     SESSION=real; window.__admDivision=realDiv;
   }
   /* The editor lists exactly the tiles this role/division sees. */
-  function admVisible(){ const t=admParse(); return appsFor(t.role,t.div); }
+  function admVisible(){ const t=admParse(); return appsFor(t.role,t.div,t.dept); }
 
   function admIconSrc(a){
     if(a.icon) return a.icon;
@@ -1459,6 +1528,9 @@
       if(pos===0){ const t=document.createElement("span"); t.className="tag f"; t.textContent="FEATURED"; li.appendChild(t); }
       if(a.only){ const t=document.createElement("span"); t.className="tag"; t.textContent=String(a.only).toUpperCase(); li.appendChild(t); }
       if(a.roles){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.roles.join("/").toUpperCase(); li.appendChild(t); }
+      if(a.depts&&a.depts.length){ const t=document.createElement("span"); t.className="tag";
+        t.textContent=a.depts.length===1?a.depts[0].slice(0,10).toUpperCase():a.depts.length+" DEPTS";
+        t.title="Departments: "+a.depts.join(", "); li.appendChild(t); }
       if(a.tut){ const t=document.createElement("span"); t.className="tag"; t.textContent="?"; t.title="Has tutorial"; li.appendChild(t); }
       const ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit"; ed.onclick=()=>admEdit(APPS.indexOf(a));
       const rm=document.createElement("button"); rm.textContent="✕"; rm.title="Delete app";
@@ -1500,6 +1572,14 @@
       v=>((a.only||"")===v), v=>{ if(v) a.only=v; else delete a.only; admChanged(); admEdit(i); });
     document.getElementById("ae-tutcap").value=a.tutCap||"";
     document.getElementById("ae-tuturl").value=a.tutUrl||"";
+    const dlist=admDepartments();
+    admChips(document.getElementById("ae-depts"),
+      (dlist.length?dlist:["(directory loading…)"]).map(d=>[d,d]),
+      v=>!!(a.depts&&a.depts.indexOf(v)>=0),
+      v=>{ if(!dlist.length) return;
+           a.depts=a.depts||[]; const k=a.depts.indexOf(v);
+           if(k>=0) a.depts.splice(k,1); else a.depts.push(v);
+           if(!a.depts.length) delete a.depts; admChanged(); admEdit(i); });
     admChips(document.getElementById("ae-tut"), [[ "yes","Tutorial: Yes"],["no","No"]],
       v=>((a.tut?"yes":"no")===v),
       v=>{ if(v==="yes") a.tut=true; else { delete a.tut; } admChanged(); admEdit(i); });
@@ -1549,6 +1629,7 @@
       if(a.icon) s+=', icon:'+JSON.stringify(a.icon);
       if(a.only) s+=', only:'+JSON.stringify(a.only);
       if(a.roles&&a.roles.length) s+=', roles:'+JSON.stringify(a.roles);
+      if(a.depts&&a.depts.length) s+=', depts:'+JSON.stringify(a.depts);
       if(a.tut) s+=', tut:true';
       if(a.tutCap) s+=', tutCap:'+JSON.stringify(a.tutCap);
       if(a.tutUrl) s+=', tutUrl:'+JSON.stringify(a.tutUrl);
