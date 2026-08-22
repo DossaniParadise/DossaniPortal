@@ -396,15 +396,64 @@
       font-size:11px;font-weight:700;letter-spacing:.01em;backdrop-filter:blur(6px);white-space:nowrap;}
     #wx{display:none;align-items:center;gap:6px;}
     #wx.show{display:inline-flex;}
-    #wx .t{font-size:12px;}
+    #wx .t{font-size:11px;}
+    #wx .wxi{display:inline-flex;align-items:center;color:#c7c3f1;}
     @media (max-width:560px){ #statusbar .pill{font-size:10px;padding:3px 8px;} }
     html:not(.gate-off) #statusbar{display:none;}
+  
+    /* ==================================================================
+       RESPONSIVE LAYOUT
+       Replaces the old scale-to-fit stage. That approach shrank a fixed
+       canvas, which left white gutters beside the banner and made type
+       sizes unpredictable. This is a normal fluid page: the banner is
+       full-bleed at every width and the tiles reflow with the viewport.
+       ================================================================== */
+    html,body{height:auto;overflow-x:hidden;overflow-y:auto;}
+    #fit{position:static;display:block;inset:auto;overflow:visible;background:var(--surface-page);}
+    #stage{transform:none!important;width:100%;max-width:none;}
+    #stage .hero{width:100%;}
+    #stage .hero-inner{max-width:1280px;margin:0 auto;
+      padding:clamp(1rem,2.4vw,1.9rem) clamp(1rem,4vw,2rem) clamp(1.1rem,2.6vw,2rem);}
+    #stage main{max-width:1280px;margin:0 auto;padding:clamp(1rem,2.5vw,1.8rem) clamp(.75rem,3vw,2rem) 1rem;}
+    #stage .board{max-width:none;}
+    #stage footer{max-width:1280px;margin:0 auto;padding:1rem clamp(1rem,4vw,2rem) 1.4rem;}
+
+    /* Tiles: one fluid grid that decides its own column count. */
+    #stage .board-top{display:flex;justify-content:center;margin-bottom:clamp(.6rem,1.4vw,1rem);}
+    #stage .board-top .tile{width:clamp(190px,22vw,260px);}
+    #stage .board-grid{display:grid;width:100%;margin:0;
+      grid-template-columns:repeat(auto-fit,minmax(clamp(140px,15vw,190px),1fr));
+      gap:clamp(.55rem,1.1vw,.95rem);justify-content:center;}
+    #stage .board-grid .tile{width:auto;}
+
+    /* Type scales with the viewport instead of a transform. */
+    .hero h1{font-size:clamp(1.4rem,3.6vw,2.6rem);}
+    .hero-position{font-size:clamp(.62rem,1.15vw,.9rem);}
+    .plate .dpm{font-size:clamp(1.1rem,2.4vw,1.6rem);}
+    .tile-name{font-size:clamp(.78rem,1.05vw,.95rem);}
+    .tile-desc{font-size:clamp(.66rem,.85vw,.78rem);}
+    .tile-icon{width:clamp(34px,3.4vw,46px);height:clamp(34px,3.4vw,46px);}
+    .tile-icon img{max-width:60%;max-height:60%;}
+
+    /* Status pills live INSIDE the banner so they never float over white. */
+    #statusbar{position:absolute;top:0;left:0;right:0;padding:10px clamp(.75rem,3vw,1.4rem);
+      display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;
+      pointer-events:none;z-index:5;}
+    #statusbar .pill{background:rgba(255,255,255,.10);border-color:rgba(199,195,241,.28);}
+    .hero{position:relative;}
+    @media (max-width:700px){
+      #statusbar{position:static;justify-content:center;flex-wrap:wrap;padding:8px 10px 0;}
+      #statusbar .pill{font-size:10px;}
+    }
+    @media (max-width:420px){
+      #stage .board-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));}
+      #stage .board-top .tile{width:100%;max-width:260px;}
+    }
   </style>
 </head>
 
 <body>
-  <div id="statusbar"><span class="pill" id="loadedat"></span><span class="pill" id="wx"></span></div>
-  <div id="fit"><div id="stage">
+    <div id="fit"><div id="stage">
   <header class="topbar">
     <div class="topbar-inner">
       <a class="topbar-brand" href="#top" aria-label="District Manager Portal home">
@@ -422,6 +471,7 @@
   </header>
 
   <section class="hero" id="top">
+      <div id="statusbar"><span class="pill" id="loadedat"></span><span class="pill" id="wx"></span></div>
     <div class="hero-inner">
       <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
       <span class="eyebrow">Dossani Paradise Management</span>
@@ -1277,9 +1327,38 @@
     el.textContent="Loaded "+d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+
       " · "+d.toLocaleDateString([],{month:"short",day:"numeric"});
   }
-  const WX={0:"☀",1:"🌤",2:"⛅",3:"☁",45:"🌫",48:"🌫",51:"🌦",53:"🌦",55:"🌦",
-    61:"🌧",63:"🌧",65:"🌧",71:"🌨",73:"🌨",75:"🌨",80:"🌦",81:"🌧",82:"🌧",
-    95:"⛈",96:"⛈",99:"⛈"};
+  /* WMO weather codes -> label + icon key. */
+  const WX_CODE={
+    0:["Clear","sun"],1:["Mainly clear","sun"],2:["Partly cloudy","partly"],3:["Overcast","cloud"],
+    45:["Fog","fog"],48:["Rime fog","fog"],
+    51:["Light drizzle","drizzle"],53:["Drizzle","drizzle"],55:["Heavy drizzle","drizzle"],
+    56:["Freezing drizzle","sleet"],57:["Freezing drizzle","sleet"],
+    61:["Light rain","rain"],63:["Rain","rain"],65:["Heavy rain","rain"],
+    66:["Freezing rain","sleet"],67:["Freezing rain","sleet"],
+    71:["Light snow","snow"],73:["Snow","snow"],75:["Heavy snow","snow"],77:["Snow grains","snow"],
+    80:["Light showers","showers"],81:["Showers","showers"],82:["Heavy showers","showers"],
+    85:["Snow showers","snow"],86:["Snow showers","snow"],
+    95:["Thunderstorm","storm"],96:["Thunderstorm","storm"],99:["Thunderstorm","storm"]
+  };
+  /* Inline SVG — crisp at any size and takes the bar's colour, unlike emoji. */
+  function wxIcon(key,day){
+    const s='stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
+    const cloud='<path d="M17.5 17H7a3.4 3.4 0 0 1-.3-6.8A5 5 0 0 1 16.3 11.4 3.1 3.1 0 0 1 17.5 17Z" '+s+'/>';
+    const sun='<circle cx="12" cy="12" r="4" '+s+'/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.2 5.2l1.5 1.5M17.3 17.3l1.5 1.5M18.8 5.2l-1.5 1.5M6.7 17.3l-1.5 1.5" '+s+'/>';
+    const moon='<path d="M18.5 14.8A7.2 7.2 0 0 1 9.7 6a7.6 7.6 0 1 0 8.8 8.8Z" '+s+'/>';
+    const drops=n=>{let o="";for(let i=0;i<n;i++)o+='<path d="M'+(8.5+i*3.1)+' 19v2.4" '+s+'/>';return o;};
+    const map={
+      sun: day?sun:moon,
+      partly:(day?'<circle cx="8.2" cy="7.6" r="2.9" '+s+'/>':'<path d="M10.8 9.4A4.3 4.3 0 0 1 6.6 4.1a4.6 4.6 0 1 0 5.1 5.3Z" '+s+'/>')+cloud,
+      cloud: cloud,
+      fog: cloud+'<path d="M5 20h6M13 20h6" '+s+'/>',
+      drizzle: cloud+drops(2), rain: cloud+drops(3), showers: cloud+drops(2),
+      sleet: cloud+drops(2)+'<path d="M15.2 19.4l1.2 1.2" '+s+'/>',
+      snow: cloud+'<path d="M9 20h.01M12.4 21h.01M15.8 20h.01" '+s+' stroke-width="2.4"/>',
+      storm: cloud+'<path d="M12.8 18.4 10.6 21.6h2.8l-2 3" '+s+'/>'
+    };
+    return '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">'+(map[key]||cloud)+'</svg>';
+  }
   function myStore(){
     if(!SESSION||!SESSION.isStore||!MASTER) return null;
     return (MASTER.restaurants||{})[SESSION.refId]||null;
@@ -1288,24 +1367,45 @@
     const m=String((s&&s.address)||"").match(/\b(\d{5})(?:-\d{4})?\b/);
     return m?m[1]:"";
   }
+  /* Weather is only useful to someone tied to a building.
+       store accounts  -> their own store's ZIP + conditions
+       support staff   -> the office ZIP
+       DM / DO / admin -> nothing; they move between sites all day. */
+  const OFFICE_ZIP="76051", OFFICE_LAT=32.9343, OFFICE_LON=-97.0781;
+  function wxTarget(){
+    if(!SESSION) return null;
+    if(SESSION.isStore){
+      const s=myStore(); if(!s) return null;
+      return {zip:zipOf(s), lat:s.latitude, lon:s.longitude};
+    }
+    if(SESSION.role==="staff") return {zip:OFFICE_ZIP, lat:OFFICE_LAT, lon:OFFICE_LON};
+    return null;
+  }
   function showWeather(){
     const el=document.getElementById("wx"); if(!el) return;
-    const s=myStore(); if(!s) return;
-    const zip=zipOf(s);
-    if(zip) { el.textContent=zip; el.classList.add("show"); }
-    const lat=s.latitude, lon=s.longitude;
-    if(!(lat&&lon)) return;
-    /* Keyless, no account needed; fails silently so a weather outage can
-       never affect the portal. */
-    fetch("https://api.open-meteo.com/v1/forecast?latitude="+encodeURIComponent(lat)+
-          "&longitude="+encodeURIComponent(lon)+
-          "&current=temperature_2m,weather_code&temperature_unit=fahrenheit")
-      .then(r=>r.ok?r.json():null).then(j=>{
-        const c=j&&j.current; if(!c) return;
-        const icon=WX[c.weather_code]||"";
-        el.textContent=(zip?zip+" · ":"")+Math.round(c.temperature_2m)+"°"+(icon?" "+icon:"");
-        el.classList.add("show");
-      }).catch(()=>{});
+    const t=wxTarget();
+    if(!t){ el.classList.remove("show"); return; }
+    if(t.zip){ el.textContent=t.zip; el.classList.add("show"); }
+    if(!(t.lat&&t.lon)) return;
+    const url="https://api.open-meteo.com/v1/forecast"+
+      "?latitude="+encodeURIComponent(t.lat)+"&longitude="+encodeURIComponent(t.lon)+
+      "&current=temperature_2m,apparent_temperature,precipitation,weather_code,is_day"+
+      "&daily=precipitation_probability_max&forecast_days=1&timezone=auto"+
+      "&temperature_unit=fahrenheit&precipitation_unit=inch";
+    fetch(url).then(r=>r.ok?r.json():null).then(j=>{
+      const c=j&&j.current; if(!c) return;
+      const meta=WX_CODE[c.weather_code]||["","cloud"];
+      const pop=((j.daily||{}).precipitation_probability_max||[])[0];
+      const now=c.precipitation||0;
+      const bits=[Math.round(c.temperature_2m)+"°"];
+      if(meta[0]) bits.push(meta[0]);
+      if(now>0.005) bits.push(now.toFixed(2)+'" now');
+      else if(pop!=null&&pop>=10) bits.push(pop+"%");
+      el.innerHTML='<span class="wxi">'+wxIcon(meta[1],c.is_day!==0)+'</span>'+
+                   '<span class="t">'+(t.zip?t.zip+" · ":"")+bits.join(" · ")+'</span>';
+      el.title=(meta[0]||"")+" · feels like "+Math.round(c.apparent_temperature)+"°";
+      el.classList.add("show");
+    }).catch(()=>{});
   }
 
   function applyPortalIdentity(){
@@ -1391,29 +1491,10 @@
 
   /* ---- Scale the stage to fill the window; pick the best column count ---- */
   (function(){
-    var stage=document.getElementById('stage');
-    var MAXS=3, MARGIN=4;
-    function fit(){
-      if(!stage) return;
-      var availW=window.innerWidth-MARGIN, availH=window.innerHeight-MARGIN;
-      var n=0; stage.querySelectorAll('.board-grid .tile').forEach(function(t){if(t.style.display!=='none')n++;});
-      var maxC=Math.min(8, Math.max(2, n||2));
-      var best=null;
-      for(var c=2;c<=maxC;c++){
-        stage.style.setProperty('--cols',c);
-        var w=stage.offsetWidth, h=stage.offsetHeight;
-        var s=Math.min(availW/w, availH/h);
-        if(!best||s>best.s){best={c:c,s:s};}
-      }
-      stage.style.setProperty('--cols',best.c);
-      stage.style.transform='scale('+Math.min(best.s,MAXS)+')';
-    }
-    var raf; function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(fit);}
-    window.addEventListener('resize',schedule);
-    window.addEventListener('orientationchange',schedule);
-    if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fit);}
-    window.addEventListener('load',fit);
-    window.__fit=fit; fit(); setTimeout(fit,150);
+    /* Layout is CSS-driven now (fluid grid + full-bleed banner), so there is
+       nothing to scale. fit() stays as a no-op because other code calls it. */
+    function fit(){}
+    window.__fit=fit;
   })();
 
   </script>
@@ -1463,7 +1544,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="3.5";
+  var APP_VERSION="3.6";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
