@@ -308,7 +308,12 @@
     #cmenu{position:fixed;top:48px;right:12px;z-index:210;background:#fff;border:1px solid var(--border-subtle);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;display:none;min-width:180px;}
     #cmenu button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 14px;font:600 13px var(--font-sans);color:var(--text-heading);cursor:pointer;}
     #cmenu button:hover{background:var(--navy-50);}
-    .modal-bg{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:300;display:none;align-items:center;justify-content:center;}
+    .modal-bg{position:fixed;inset:0;background:linear-gradient(158deg,#14104a 0%,#1b1660 55%,#251d7f 100%);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;}
+    .gate-head{text-align:center;margin-bottom:16px;}
+    .gate-head h2{font-family:var(--font-display);color:#fff;font-size:1.65rem;letter-spacing:.05em;margin:.55rem 0 0;font-weight:700;}
+    .gate-head .eyebrow{margin-bottom:0;}
+    .guest{margin-top:16px;background:none;border:none;color:#9d97e6;font:600 12.5px var(--font-sans);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+    .guest:hover{color:#fff;}
     .modal-bg.open{display:flex;}
     .modal{background:#fff;border-radius:14px;padding:22px 22px 18px;width:min(360px,92vw);box-shadow:var(--shadow-lg);font-family:var(--font-sans);}
     .modal h3{font-family:var(--font-display);color:var(--text-heading);font-size:18px;margin-bottom:4px;}
@@ -377,12 +382,21 @@
   <div id="corner"></div>
   <div id="cmenu"></div>
 
-  <div class="modal-bg" id="signin-bg"><div class="modal">
+  <div class="modal-bg" id="signin-bg">
+  <div class="gate-head">
+    <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
+    <div><span class="eyebrow">Dossani Paradise Management</span></div>
+    <h2>Dossani Portal</h2>
+  </div>
+  <div class="modal">
     <h3>Sign in</h3><p>Use your work email. Admins will be asked for the admin password.</p>
     <input type="email" id="si-email" placeholder="you@dossaniparadise.com" autocomplete="email" />
     <input type="password" id="si-pass" placeholder="Admin password" style="display:none" />
     <div class="err" id="si-err"></div>
     <button class="ovl-btn go" id="si-go">Continue</button>
+  </div>
+  <button class="guest" id="si-guest">Continue without signing in</button>
+  <div style="display:none">
   </div></div>
 
   <aside id="drawer">
@@ -579,8 +593,8 @@
     localStorage.setItem("dpmSession",JSON.stringify(sess));
     sibg.classList.remove("open"); renderAll();
   };
-  sibg.addEventListener("click",function(e){ if(e.target===sibg) sibg.classList.remove("open"); });
-  function signOut(){ sess=null; localStorage.removeItem("dpmSession"); closeDrawer(); renderAll(); }
+  /* gate cannot be dismissed by clicking outside */
+  function signOut(){ sess=null; localStorage.removeItem("dpmSession"); sessionStorage.removeItem("dpmGuest"); closeDrawer(); renderAll(); openSignin(); }
 
   /* ================= ADMIN DRAWER ================= */
   var editTarget=null; // {type:"portal",id} | {type:"person",email}
@@ -730,8 +744,10 @@
   if(draft && isAdmin()) document.body.classList.add("dirty");
   window.__portal={fit:fit, renderAll:renderAll, C:C, resolveFor:resolveFor, get sess(){return sess;}, set sess(v){sess=v;}};
   document.addEventListener("click",function(e){ if(e.target.id!=="c-hello" && !cmenu.contains(e.target)) cmenu.style.display="none"; });
+  document.getElementById("si-guest").onclick=function(){ sessionStorage.setItem("dpmGuest","1"); sibg.classList.remove("open"); renderAll(); };
   renderAll();
   loadDirectory();
+  if(!sess && !sessionStorage.getItem("dpmGuest")) openSignin();
   window.addEventListener("pageshow",function(e){ if(e.persisted) location.reload(); });
   </script>
 </body>
