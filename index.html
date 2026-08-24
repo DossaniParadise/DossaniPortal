@@ -319,51 +319,77 @@
       .gate-title{font-size:1.05rem;}
     }
   
-    /* ---- Admin panel ---- */
+    /* ---- Admin panel (full-page, multi-board) ---- */
     #adm-open{position:fixed;left:12px;bottom:12px;z-index:180;background:var(--accent);color:#fff;
       border:none;border-radius:999px;padding:9px 16px;font:800 12.5px var(--font-sans);cursor:pointer;
       box-shadow:0 6px 18px rgba(198,8,25,.35);display:none;}
     body.is-admin #adm-open{display:block;}
-    #adm{position:fixed;top:0;right:-400px;width:380px;max-width:100%;height:100%;background:#fff;z-index:400;
-      box-shadow:-10px 0 30px rgba(20,16,74,.2);transition:right .25s var(--ease);display:flex;flex-direction:column;
+    #adm{position:fixed;inset:0;background:var(--surface-page);z-index:400;display:none;flex-direction:column;
       font-family:var(--font-sans);}
-    body.adm-open #adm{right:0;}
-    #adm header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
-    #adm header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
-    #adm header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
-    #admb{flex:1;overflow-y:auto;padding:14px 16px 22px;}
-    #admb label{display:block;font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;
-      color:var(--text-muted);margin:14px 0 5px;}
-    #admb select,#admb input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);
-      border-radius:7px;font:500 13px var(--font-sans);}
-    #alist{list-style:none;margin:6px 0;padding:0;}
-    #alist li{display:flex;align-items:center;gap:7px;background:var(--gray-50);border:1px solid var(--gray-200);
-      border-radius:8px;padding:6px 8px;margin-bottom:5px;cursor:grab;}
-    #alist li.dragging{opacity:.4;}
-    #alist li img{width:17px;height:17px;object-fit:contain;}
-    #alist li .nm{flex:1;font:700 12.5px var(--font-sans);color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    #alist li .tag{font:800 8.5px var(--font-sans);letter-spacing:.05em;color:#fff;background:var(--navy-400);
-      border-radius:4px;padding:1px 4px;}
-    #alist li .tag.f{background:var(--accent);}
-    #alist li button{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:12px;padding:1px 3px;}
-    #alist li button:hover{color:var(--accent);}
+    body.adm-open #adm{display:flex;}
+    body.adm-open #fit{display:none;}
+    #adm-head{background:var(--navy-800);color:#fff;padding:11px 18px;display:flex;flex-wrap:wrap;gap:10px 14px;
+      align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;}
+    #adm-head b{font-family:var(--font-display);letter-spacing:.05em;font-size:14.5px;white-space:nowrap;}
+    #adm-tabs{display:flex;flex-wrap:wrap;gap:6px;}
+    #adm-tabs button{font:800 11px var(--font-sans);letter-spacing:.03em;padding:7px 13px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.07);color:#c7c3f1;cursor:pointer;}
+    #adm-tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .adm-head-actions{display:flex;gap:8px;align-items:center;}
+    .adm-head-actions .abtn{flex:none;padding:8px 13px;}
+    #adm-x{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    #adm-note{margin:0;border-radius:0;padding:9px 18px;font:600 12px var(--font-sans);line-height:1.4;}
+    #adm-note.send{background:#fff1f2;border-bottom:1px solid var(--accent);color:var(--alert-ink,#8a0b17);}
+    #adm-note.upload{background:var(--navy-50);border-bottom:1px solid var(--navy-200);color:var(--navy-800);}
+    #adm-staffbar{display:flex;align-items:center;gap:10px;padding:12px 18px 0;}
+    #adm-staffbar label{font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);}
+    #adm-staffbar select{padding:7px 10px;border:1px solid var(--gray-300);border-radius:7px;font:600 13px var(--font-sans);}
+    #adm-boards{flex:1;overflow-y:auto;padding:18px;display:grid;gap:18px;align-content:start;
+      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+    #adm-boards.single{grid-template-columns:1fr;max-width:640px;margin:0 auto;}
+    .mini-board{background:#fff;border:1px solid var(--border-subtle);border-radius:14px;overflow:hidden;
+      box-shadow:0 2px 10px rgba(20,16,74,.06);}
+    .mini-board>header{background:var(--navy-50);padding:10px 14px;display:flex;justify-content:space-between;
+      align-items:baseline;border-bottom:1px solid var(--border-subtle);}
+    .mini-board>header b{font-family:var(--font-display);letter-spacing:.04em;font-size:13px;color:var(--text-heading);}
+    .mini-board>header span{font:700 10.5px var(--font-sans);color:var(--text-muted);}
+    .mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;padding:12px;min-height:60px;}
+    .mini-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 4px 7px;
+      border-radius:10px;border:1px solid var(--gray-200);background:var(--gray-50);cursor:grab;text-align:center;}
+    .mini-tile.dragging{opacity:.35;}
+    .mini-tile img,.mini-tile .mt-letter{width:26px;height:26px;object-fit:contain;border-radius:6px;}
+    .mini-tile .mt-letter{background:var(--navy-600);color:#fff;font:800 12px var(--font-sans);display:flex;
+      align-items:center;justify-content:center;}
+    .mini-tile .nm{font:700 10px var(--font-sans);color:var(--text-heading);line-height:1.2;
+      overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+    .mini-tile .mt-x{position:absolute;top:2px;right:2px;background:rgba(20,16,74,.55);color:#fff;border:none;
+      border-radius:999px;width:15px;height:15px;font-size:9px;line-height:15px;cursor:pointer;display:none;padding:0;}
+    .mini-tile:hover .mt-x{display:block;}
+    .mini-tile.feat{border-color:var(--accent);}
+    .mini-empty{grid-column:1/-1;font:600 11.5px var(--font-sans);color:var(--text-subtle);padding:10px 4px;}
+    #adm-modal-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;display:flex;
+      align-items:center;justify-content:center;padding:16px;}
+    #adm-modal{background:#fff;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;border-radius:14px;
+      box-shadow:0 20px 60px rgba(13,10,53,.4);}
+    #adm-modal header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;
+      align-items:center;border-radius:14px 14px 0 0;}
+    #adm-modal header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
+    #adm-modal header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    #adm-modal .aform{margin:0;border:none;border-radius:0;padding:14px 16px 18px;background:#fff;}
+    #adm-modal label{display:block;font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;
+      color:var(--text-muted);margin:12px 0 5px;}
+    #adm-modal input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);
+      border-radius:7px;font:500 13px var(--font-sans);margin-bottom:6px;}
     .arow{display:flex;gap:7px;margin-top:8px;}
     .abtn{flex:1;padding:9px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;
       font:700 12.5px var(--font-sans);color:var(--text-heading);cursor:pointer;}
     .abtn.p{background:var(--primary);border-color:var(--primary);color:#fff;}
     .abtn.a{background:var(--accent);border-color:var(--accent);color:#fff;}
-    .aform{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:9px;padding:10px;margin-top:8px;display:none;}
-    .aform.open{display:block;}
-    .aform input{margin-bottom:6px;}
     .chips{display:flex;flex-wrap:wrap;gap:5px;margin:3px 0 8px;}
     .chip{font:700 11px var(--font-sans);padding:4px 9px;border-radius:999px;border:1px solid var(--gray-300);
       background:#fff;color:var(--text-muted);cursor:pointer;}
     .chip.on{background:var(--navy-700);border-color:var(--navy-700);color:#fff;}
-    #adm-note{margin-top:12px;border-radius:8px;padding:10px 11px;font:600 12px var(--font-sans);line-height:1.45;}
-    #adm-note.send{background:#fff1f2;border:1px solid var(--accent);color:var(--alert-ink,#8a0b17);}
-    #adm-note.upload{background:var(--navy-50);border:1px solid var(--navy-200);color:var(--navy-800);}
-    body.adm-open #fit{right:380px;}
-    @media (max-width:800px){ #adm{width:100%;right:-100%;} body.adm-open #fit{display:none;} }
+    @media (max-width:800px){ #adm-boards{grid-template-columns:1fr;} #adm-head{padding:10px 12px;} }
   
     /* ---- Tutorial helper on a tile ---- */
     .tile-tut{position:absolute;top:6px;right:6px;z-index:3;width:19px;height:19px;border-radius:50%;
@@ -538,29 +564,35 @@
 
   
   <button id="adm-open">✎ Edit Portals</button>
-  <aside id="adm" aria-label="Portal editor">
-    <header><b>EDIT PORTALS</b><button id="adm-x" aria-label="Close">✕</button></header>
-    <div id="admb">
-      <label>Preview board as</label>
-      <select id="adm-view"></select>
-      <label>Tiles — drag to reorder (first is featured)</label>
-      <div id="alist-cap" style="font:600 11px var(--font-sans);color:var(--text-muted);margin-bottom:6px"></div>
-      <ul id="alist"></ul>
-      <div class="arow"><button class="abtn" id="adm-new">+ New app</button></div>
-      <div class="aform" id="adm-newform">
-        <input type="text" id="an-name" placeholder="App name" />
-        <input type="text" id="an-url" placeholder="https://link" />
-        <input type="text" id="an-desc" placeholder="Caption" />
-        <input type="text" id="an-icon" placeholder="Icon image URL (optional)" />
-        <button class="abtn p" id="an-save" style="width:100%">Add app</button>
+  <div id="adm" aria-label="Portal editor" role="dialog" aria-modal="true">
+    <header id="adm-head">
+      <b>EDIT PORTALS</b>
+      <div id="adm-tabs" role="tablist"></div>
+      <div class="adm-head-actions">
+        <button type="button" class="abtn" id="adm-new">+ New app</button>
+        <button type="button" class="abtn a" id="adm-pub">Publish</button>
+        <button type="button" class="abtn" id="adm-reset">Discard</button>
+        <button type="button" id="adm-x" aria-label="Close">✕</button>
       </div>
+    </header>
+    <div id="adm-note"></div>
+    <div id="adm-staffbar" hidden>
+      <label for="adm-dept">Department</label>
+      <select id="adm-dept"></select>
+    </div>
+    <div id="adm-boards"></div>
+  </div>
+
+  <div id="adm-modal-wrap" hidden>
+    <div id="adm-modal" role="dialog" aria-modal="true" aria-labelledby="adm-modal-title">
+      <header><b id="adm-modal-title">Edit app</b><button type="button" id="adm-modal-x" aria-label="Close">✕</button></header>
       <div class="aform" id="adm-editform">
         <input type="hidden" id="ae-i" />
         <input type="text" id="ae-name" placeholder="App name" />
         <input type="text" id="ae-url" placeholder="https://link" />
         <input type="text" id="ae-desc" placeholder="Caption" />
         <input type="text" id="ae-icon" placeholder="Icon image URL" />
-        <label style="margin-top:4px">Division</label>
+        <label style="margin-top:4px">Division <span style="font-weight:500;text-transform:none;letter-spacing:0">(pick any — none = all)</span></label>
         <div class="chips" id="ae-div"></div>
         <label>Show only for these positions <span style="font-weight:500;text-transform:none;letter-spacing:0">(none = everyone)</span></label>
         <div class="chips" id="ae-roles"></div>
@@ -570,13 +602,14 @@
         <div class="chips" id="ae-tut"></div>
         <input type="text" id="ae-tutcap" placeholder="Tutorial caption (default: Tutorial Video)" />
         <input type="text" id="ae-tuturl" placeholder="Tutorial video link (https://…)" />
-        <div class="arow"><button class="abtn p" id="ae-save">Save</button><button class="abtn" id="ae-cancel">Cancel</button></div>
+        <div class="arow">
+          <button type="button" class="abtn p" id="ae-save">Save</button>
+          <button type="button" class="abtn" id="ae-cancel">Cancel</button>
+          <button type="button" class="abtn" id="ae-del" style="color:var(--accent)">Delete</button>
+        </div>
       </div>
-      <div id="adm-note"></div>
-      <div class="arow"><button class="abtn a" id="adm-pub">Publish (download index.html)</button></div>
-      <div class="arow"><button class="abtn" id="adm-reset">Discard changes</button></div>
     </div>
-  </aside>
+  </div>
 
   <script>
   /* ======================================================================
@@ -1618,15 +1651,23 @@
 
   const ADM_UPLOADER="itsupport@dossaniparadise.com";
   const ADM_ROLES=[["coach","District Mgr"],["director","Director"],["gm","General Mgr"],["staff","Staff"],["admin","Overwatch"]];
-  let admPreview=null, admDirty=false;
+  let admDirty=false, admGroup="gm", admNewPendingIndex=null;
 
   function admIsAdmin(){ return !!SESSION && SESSION.role==="admin"; }
   function admSync(){ document.body.classList.toggle("is-admin", admIsAdmin()); }
 
-  /* Preview: pretend to be a role in a division (or a support-staff
-     department) so the board — and the tile list — redraw exactly as that
-     person would see them. */
+  /* Each board shows exactly the tiles a role in a division (or a
+     support-staff department) would see, rendered as a small live grid so
+     several divisions can sit side by side for comparison. */
   const ADM_DIVLABEL={bk:"BK",subway:"Subway",cstore:"C-Store",carwash:"Car Wash"};
+  const ADM_SHORT={gm:"GM",coach:"DM",director:"DO"};
+  const ADM_GROUPS=[
+    {key:"gm",    label:"General Managers",           role:"gm",      divs:["bk","subway","cstore","carwash"]},
+    {key:"dm",    label:"District Managers",          role:"coach",   divs:["bk","cstore"]},
+    {key:"do",    label:"Directors of Operations",    role:"director",divs:["bk","cstore"]},
+    {key:"staff", label:"Support Staff",               role:"staff",   divs:null},
+    {key:"admin", label:"Overwatch",                   role:"admin",   divs:["bk"]},
+  ];
   function admDepartments(){
     const out=[], seen={};
     const vps=(MASTER&&MASTER.vps)||{};
@@ -1636,100 +1677,139 @@
     }
     return out.sort((a,b)=>a.localeCompare(b));
   }
-  function admBuildViews(){
-    const sel=document.getElementById("adm-view"); if(!sel) return;
-    const prev=sel.value;
-    const grp=(label,rows)=>'<optgroup label="'+label+'">'+rows.map(r=>
-      '<option value="'+r[0]+'">'+r[1]+'</option>').join("")+'</optgroup>';
-    let html="";
-    html+=grp("General Managers",["bk","subway","cstore","carwash"].map(d=>["gm|"+d,ADM_DIVLABEL[d]+" GM"]));
-    html+=grp("District Managers",["bk","cstore"].map(d=>["coach|"+d,ADM_DIVLABEL[d]+" DM"]));
-    html+=grp("Directors of Operations",["bk","cstore"].map(d=>["director|"+d,ADM_DIVLABEL[d]+" DO"]));
-    const deps=admDepartments();
-    html+=grp("Support Staff"+(deps.length?"":" (directory loading…)"),
-      (deps.length?deps:["All support staff"]).map(d=>["staff|bk|"+d,d]));
-    html+=grp("Company-wide",[["admin|bk","Overwatch"]]);
-    sel.innerHTML=html;
-    sel.value=prev&&sel.querySelector('option[value="'+prev+'"]')?prev:"gm|bk";
-  }
-  function admParse(){
-    const v=(document.getElementById("adm-view").value||"gm|bk").split("|");
-    return {role:v[0]||"gm", div:v[1]||"bk", dept:v[2]||""};
-  }
-  function admApplyPreview(){
-    const t=admParse();
-    const real=SESSION, realDiv=window.__admDivision;
-    window.__admDivision=t.div;
-    SESSION={role:t.role,name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__",
-      dept:t.dept||"", title:t.dept||(t.role==="gm"?"General Manager":"")};
-    renderBoard(); applyPortalIdentity();
-    SESSION=real; window.__admDivision=realDiv;
-  }
-  /* The editor lists exactly the tiles this role/division sees. */
-  function admVisible(){ const t=admParse(); return appsFor(t.role,t.div,t.dept); }
 
+  /* ---- Tabs ---- */
+  function admBuildTabs(){
+    const host=document.getElementById("adm-tabs"); if(!host) return;
+    host.innerHTML="";
+    ADM_GROUPS.forEach(g=>{
+      const b=document.createElement("button"); b.type="button"; b.textContent=g.label;
+      b.className=(g.key===admGroup?"on":"");
+      b.onclick=()=>{ admGroup=g.key; admSyncTabs(); admStaffDeptRefresh(); admRenderBoards(); };
+      host.appendChild(b);
+    });
+  }
+  function admSyncTabs(){
+    document.querySelectorAll("#adm-tabs button").forEach((b,i)=>b.classList.toggle("on", ADM_GROUPS[i].key===admGroup));
+    document.getElementById("adm-staffbar").hidden=(admGroup!=="staff");
+  }
+  function admStaffDeptRefresh(){
+    const sel=document.getElementById("adm-dept"); if(!sel) return;
+    const prev=sel.value, deps=admDepartments();
+    sel.innerHTML=(deps.length?deps:["(directory loading…)"]).map(d=>'<option value="'+d+'">'+d+'</option>').join("");
+    if(deps.length&&deps.includes(prev)) sel.value=prev;
+  }
+
+  /* ---- Boards ---- */
+  function admRenderBoards(){
+    const host=document.getElementById("adm-boards"); if(!host) return;
+    host.innerHTML="";
+    const grp=ADM_GROUPS.find(g=>g.key===admGroup)||ADM_GROUPS[0];
+    host.classList.toggle("single", grp.key==="staff"||grp.key==="admin");
+    if(grp.key==="staff"){
+      const dept=(document.getElementById("adm-dept").value)||"";
+      host.appendChild(admBuildMiniBoard("Support Staff"+(dept?" — "+dept:""),"staff","bk",dept));
+      return;
+    }
+    if(grp.key==="admin"){
+      host.appendChild(admBuildMiniBoard("Overwatch (sees everything)","admin","bk",""));
+      return;
+    }
+    grp.divs.forEach(d=>{
+      host.appendChild(admBuildMiniBoard(ADM_DIVLABEL[d]+" "+ADM_SHORT[grp.role],grp.role,d,""));
+    });
+  }
+  function admBuildMiniBoard(title,role,div,dept){
+    const wrap=document.createElement("div"); wrap.className="mini-board";
+    const head=document.createElement("header");
+    const b=document.createElement("b"); b.textContent=title;
+    const vis=appsFor(role,div,dept);
+    const span=document.createElement("span"); span.textContent=vis.length+(vis.length===1?" tile":" tiles");
+    head.append(b,span); wrap.appendChild(head);
+    const grid=document.createElement("div"); grid.className="mini-grid";
+    if(!vis.length){
+      const e=document.createElement("div"); e.className="mini-empty"; e.textContent="No tiles for this view yet.";
+      grid.appendChild(e);
+    }else{
+      vis.forEach((a,pos)=>grid.appendChild(admMiniTile(a,pos,vis)));
+    }
+    wrap.appendChild(grid);
+    return wrap;
+  }
   function admIconSrc(a){
     if(a.icon) return a.icon;
     try{ return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(new URL(a.url).hostname)+"&sz=32"; }
     catch(e){ return ""; }
   }
-  function admList(){
-    const ul=document.getElementById("alist"); ul.innerHTML="";
-    const vis=admVisible();
-    const cap=document.getElementById("alist-cap");
-    if(cap) cap.textContent=vis.length+" of "+APPS.length+" tiles shown to this role";
-    vis.forEach((a,pos)=>{
-      const li=document.createElement("li"); li.draggable=true; li.dataset.pos=pos;
-      const im=document.createElement("img"); im.src=admIconSrc(a); im.onerror=function(){this.style.visibility="hidden";};
-      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=a.name;
-      li.append(im,nm);
-      if(pos===0){ const t=document.createElement("span"); t.className="tag f"; t.textContent="FEATURED"; li.appendChild(t); }
-      if(a.only){ const t=document.createElement("span"); t.className="tag"; t.textContent=String(a.only).toUpperCase(); li.appendChild(t); }
-      if(a.roles){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.roles.join("/").toUpperCase(); li.appendChild(t); }
-      if(a.depts&&a.depts.length){ const t=document.createElement("span"); t.className="tag";
-        t.textContent=a.depts.length===1?a.depts[0].slice(0,10).toUpperCase():a.depts.length+" DEPTS";
-        t.title="Departments: "+a.depts.join(", "); li.appendChild(t); }
-      if(a.tut){ const t=document.createElement("span"); t.className="tag"; t.textContent="?"; t.title="Has tutorial"; li.appendChild(t); }
-      const ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit"; ed.onclick=()=>admEdit(APPS.indexOf(a));
-      const rm=document.createElement("button"); rm.textContent="✕"; rm.title="Delete app";
-      rm.onclick=()=>{ if(!confirm('Delete "'+a.name+'" from every board?')) return;
-        APPS.splice(APPS.indexOf(a),1); admChanged(); };
-      li.append(ed,rm);
-      li.addEventListener("dragstart",e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",pos); });
-      li.addEventListener("dragend",()=>li.classList.remove("dragging"));
-      li.addEventListener("dragover",e=>e.preventDefault());
-      li.addEventListener("drop",e=>{ e.preventDefault();
-        const from=+e.dataTransfer.getData("text/plain"); if(from===pos) return;
-        /* Move within the master list so the new order sticks for everyone. */
-        const moved=vis[from], target=vis[pos];
-        const gi=APPS.indexOf(moved); APPS.splice(gi,1);
-        APPS.splice(APPS.indexOf(target)+(from<pos?1:0),0,moved);
-        admChanged(); });
-      ul.appendChild(li);
-    });
-    if(!vis.length) ul.innerHTML='<li style="cursor:default;color:var(--text-muted)">No tiles for this role yet.</li>';
+  function admMiniLetter(name){
+    const d=document.createElement("div"); d.className="mt-letter";
+    d.textContent=(name||"?").trim().charAt(0).toUpperCase();
+    return d;
   }
-  function admChanged(){ admDirty=true; admList(); admApplyPreview(); admNote(); }
+  function admMiniTile(a,pos,vis){
+    const t=document.createElement("div"); t.className="mini-tile"+(pos===0?" feat":""); t.draggable=true; t.dataset.pos=pos;
+    t.title="Click to edit "+a.name;
+    const im=document.createElement("img"); im.src=admIconSrc(a); im.alt="";
+    im.onerror=function(){ this.replaceWith(admMiniLetter(a.name)); };
+    t.appendChild(im);
+    const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
+    t.appendChild(nm);
+    const x=document.createElement("button"); x.type="button"; x.className="mt-x"; x.textContent="✕"; x.title="Delete app";
+    x.onclick=(e)=>{ e.stopPropagation(); if(!confirm('Delete "'+a.name+'" from every board?')) return;
+      APPS.splice(APPS.indexOf(a),1); admChanged(); };
+    t.appendChild(x);
+    t.addEventListener("click",()=>admEdit(APPS.indexOf(a)));
+    t.addEventListener("dragstart",e=>{ t.classList.add("dragging"); e.dataTransfer.setData("text/plain",String(pos)); });
+    t.addEventListener("dragend",()=>t.classList.remove("dragging"));
+    t.addEventListener("dragover",e=>e.preventDefault());
+    t.addEventListener("drop",e=>{
+      e.preventDefault(); e.stopPropagation();
+      const from=+e.dataTransfer.getData("text/plain"); if(isNaN(from)||from===pos) return;
+      /* Reorder within the master list so the new placement sticks for everyone. */
+      const moved=vis[from], target=vis[pos];
+      const gi=APPS.indexOf(moved); APPS.splice(gi,1);
+      APPS.splice(APPS.indexOf(target)+(from<pos?1:0),0,moved);
+      admChanged();
+    });
+    return t;
+  }
+  function admChanged(){ admDirty=true; admRenderBoards(); admNote(); }
 
-  function admChips(host, opts, isOn, onTap){
+  /* ---- Chip helper (shared by division / role / department / tutorial pickers) ---- */
+  function admChips(host,opts,isOn,onTap){
     host.innerHTML="";
     opts.forEach(([val,lab])=>{ const b=document.createElement("button"); b.type="button";
       b.className="chip"+(isOn(val)?" on":""); b.textContent=lab;
       b.onclick=()=>{ onTap(val); }; host.appendChild(b); });
   }
-  function admOpenForm(id){ ["adm-newform","adm-editform"].forEach(x=>document.getElementById(x).classList.remove("open"));
-    if(id) document.getElementById(id).classList.add("open"); }
+
+  /* ---- Edit modal (also used to add a new app — a blank app is pushed into
+     APPS immediately so every chip works the same way in both modes, and is
+     removed again if the person cancels without giving it a name + link) ---- */
+  function admOpenModal(){ document.getElementById("adm-modal-wrap").hidden=false; }
+  function admCloseModal(){ document.getElementById("adm-modal-wrap").hidden=true; }
+
+  const ADM_DIV_OPTS=[["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]];
+
   function admEdit(i){
-    const a=APPS[i]; admOpenForm("adm-editform");
+    const a=APPS[i]; if(!a) return;
+    document.getElementById("adm-modal-title").textContent=(admNewPendingIndex===i)?"Add app":"Edit app";
     document.getElementById("ae-i").value=i;
+    document.getElementById("ae-del").style.display=(admNewPendingIndex===i)?"none":"";
     document.getElementById("ae-name").value=a.name||"";
     document.getElementById("ae-url").value=a.url||"";
     document.getElementById("ae-desc").value=a.desc||"";
     document.getElementById("ae-icon").value=a.icon||"";
-    admChips(document.getElementById("ae-div"), [["","All"],["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]],
-      v=>((a.only||"")===v), v=>{ if(v) a.only=v; else delete a.only; admChanged(); admEdit(i); });
     document.getElementById("ae-tutcap").value=a.tutCap||"";
     document.getElementById("ae-tuturl").value=a.tutUrl||"";
+
+    const divVal=(a.only||"").split(",").map(s=>s.trim()).filter(Boolean);
+    admChips(document.getElementById("ae-div"), ADM_DIV_OPTS,
+      v=>divVal.indexOf(v)>=0,
+      v=>{ const k=divVal.indexOf(v); if(k>=0) divVal.splice(k,1); else divVal.push(v);
+           if(divVal.length) a.only=divVal.join(","); else delete a.only;
+           admChanged(); admEdit(i); });
+
     const dlist=admDepartments();
     admChips(document.getElementById("ae-depts"),
       (dlist.length?dlist:["(directory loading…)"]).map(d=>[d,d]),
@@ -1738,37 +1818,52 @@
            a.depts=a.depts||[]; const k=a.depts.indexOf(v);
            if(k>=0) a.depts.splice(k,1); else a.depts.push(v);
            if(!a.depts.length) delete a.depts; admChanged(); admEdit(i); });
-    admChips(document.getElementById("ae-tut"), [[ "yes","Tutorial: Yes"],["no","No"]],
+
+    admChips(document.getElementById("ae-tut"), [["yes","Tutorial: Yes"],["no","No"]],
       v=>((a.tut?"yes":"no")===v),
-      v=>{ if(v==="yes") a.tut=true; else { delete a.tut; } admChanged(); admEdit(i); });
+      v=>{ if(v==="yes") a.tut=true; else delete a.tut; admChanged(); admEdit(i); });
+
     admChips(document.getElementById("ae-roles"), ADM_ROLES,
       v=>!!(a.roles&&a.roles.indexOf(v)>=0),
       v=>{ a.roles=a.roles||[]; const k=a.roles.indexOf(v);
            if(k>=0) a.roles.splice(k,1); else a.roles.push(v);
            if(!a.roles.length) delete a.roles; admChanged(); admEdit(i); });
+
+    admOpenModal();
+  }
+  function admNew(){
+    const a={name:"",url:"",desc:""};
+    APPS.push(a);
+    admNewPendingIndex=APPS.length-1;
+    admEdit(admNewPendingIndex);
+  }
+  function admCancelModal(){
+    if(admNewPendingIndex!=null){ APPS.splice(admNewPendingIndex,1); admNewPendingIndex=null; }
+    admCloseModal(); admRenderBoards(); admNote();
+  }
+  function admDel(){
+    const i=+document.getElementById("ae-i").value; const a=APPS[i]; if(!a) return;
+    if(!confirm('Delete "'+a.name+'" from every board?')) return;
+    APPS.splice(i,1); admNewPendingIndex=null; admCloseModal(); admChanged();
   }
   document.getElementById("ae-save").onclick=function(){
-    const a=APPS[+document.getElementById("ae-i").value]; if(!a) return;
-    a.name=document.getElementById("ae-name").value.trim();
-    a.url=document.getElementById("ae-url").value.trim();
+    const i=+document.getElementById("ae-i").value; const a=APPS[i]; if(!a) return;
+    const n=document.getElementById("ae-name").value.trim();
+    const u=document.getElementById("ae-url").value.trim();
+    if(!n||!/^https?:\/\//.test(u)){ alert("Name and a full https:// link are required."); return; }
+    a.name=n; a.url=u;
     a.desc=document.getElementById("ae-desc").value.trim();
     const ic=document.getElementById("ae-icon").value.trim(); if(ic) a.icon=ic; else delete a.icon;
     const tc=document.getElementById("ae-tutcap").value.trim(); if(tc) a.tutCap=tc; else delete a.tutCap;
     const tu=document.getElementById("ae-tuturl").value.trim(); if(tu) a.tutUrl=tu; else delete a.tutUrl;
     if(a.tut&&!a.tutUrl){ alert("Add a tutorial link, or set Tutorial to No."); return; }
-    admOpenForm(null); admChanged();
+    admNewPendingIndex=null;
+    admCloseModal(); admChanged();
   };
-  document.getElementById("ae-cancel").onclick=()=>admOpenForm(null);
-  document.getElementById("adm-new").onclick=()=>admOpenForm(
-    document.getElementById("adm-newform").classList.contains("open")?null:"adm-newform");
-  document.getElementById("an-save").onclick=function(){
-    const n=document.getElementById("an-name").value.trim(), u=document.getElementById("an-url").value.trim();
-    if(!n||!/^https?:\/\//.test(u)){ alert("Name and a full https:// link are required."); return; }
-    APPS.push({name:n,url:u,desc:document.getElementById("an-desc").value.trim(),
-               icon:document.getElementById("an-icon").value.trim()||undefined});
-    ["an-name","an-url","an-desc","an-icon"].forEach(x=>document.getElementById(x).value="");
-    admOpenForm(null); admChanged();
-  };
+  document.getElementById("ae-del").onclick=admDel;
+  document.getElementById("ae-cancel").onclick=admCancelModal;
+  document.getElementById("adm-modal-x").onclick=admCancelModal;
+  document.getElementById("adm-new").onclick=admNew;
 
   function admNote(){
     const el=document.getElementById("adm-note"); if(!el) return;
@@ -1822,17 +1917,15 @@
   document.getElementById("adm-reset").onclick=function(){
     if(!confirm("Discard changes and reload the published version?")) return; location.reload();
   };
-  document.getElementById("adm-view").onchange=function(){ admList(); admApplyPreview(); };
+  document.getElementById("adm-dept").onchange=function(){ admRenderBoards(); };
   document.getElementById("adm-open").onclick=function(){
     document.body.classList.add("adm-open");
-    admBuildViews();
-    admList(); admNote(); admApplyPreview();
-    if(window.__fit) window.__fit();
+    admBuildTabs(); admSyncTabs(); admStaffDeptRefresh(); admRenderBoards(); admNote();
   };
   document.getElementById("adm-x").onclick=function(){
-    document.body.classList.remove("adm-open"); admPreview=null;
-    renderBoard(); applyPortalIdentity(); if(window.__fit) window.__fit();
+    document.body.classList.remove("adm-open");
   };
+
 
   </script>
 </body>
