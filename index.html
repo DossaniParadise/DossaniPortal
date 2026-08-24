@@ -1563,8 +1563,10 @@
      previously published list still loads until the first new publish. */
   const PORTAL_NODE_LEGACY="portalConfig";
   const PORTAL_SCHEMA=1;
-  /* Must match a write role the alignment API accepts (FixMi uses its own). */
-  const PORTAL_WRITE_PASSWORD="rm123";
+  /* Must match the PORTAL role in the alignment API (api/dpm-alignment.js).
+     That role may only write the dpmPortal node — nothing else. If you
+     change the secret in the API's ROLES map, change it here to match. */
+  const PORTAL_WRITE_PASSWORD="portal123";
 
   /* ======================================================================
      ALWAYS-LATEST (cache busting)
@@ -1601,7 +1603,7 @@
     location.replace(u.toString());
   }
   function checkAppVersion(){
-    const server=(((MASTER||{})[PORTAL_NODE]||{}).appMeta||{}).version;
+    const server=((nodeAt(MASTER||{},PORTAL_NODE)||{}).appMeta||{}).version;
     if(!server||cmpVer(APP_VERSION,server)>0){
       if(_verPublished) return;
       _verPublished=true;
@@ -1618,8 +1620,16 @@
     if(document.visibilityState==="visible"&&_updatePending) hardReload(_updatePending);
   });
 
+  /* PORTAL_NODE may be nested (e.g. "someParent/dpmPortal") — reads resolve
+     each segment, writes already use slash paths, so trying a different
+     node only ever means changing this one constant. */
+  function nodeAt(obj,path){
+    let n=obj;
+    for(const seg of String(path).split("/")){ if(!n||typeof n!=="object") return null; n=n[seg]; }
+    return n||null;
+  }
   function portalConfigFromMaster(){
-    const n=(MASTER&&MASTER[PORTAL_NODE])||(MASTER&&MASTER[PORTAL_NODE_LEGACY]);
+    const n=nodeAt(MASTER,PORTAL_NODE)||nodeAt(MASTER,PORTAL_NODE_LEGACY);
     if(!n||!Array.isArray(n.apps)||!n.apps.length) return null;
     const clean=n.apps.filter(a=>a&&typeof a.name==="string"&&typeof a.url==="string"&&/^https?:\/\//.test(a.url));
     return clean.length?clean:null;
