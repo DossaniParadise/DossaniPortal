@@ -1733,32 +1733,74 @@
       const e=document.createElement("div"); e.className="mini-empty"; e.textContent="No tiles for this view yet.";
       grid.appendChild(e);
     }else{
-      vis.forEach((a,pos)=>grid.appendChild(admMiniTile(a,pos,vis)));
+      const ctx={role:role,div:div,dept:dept||""};
+      vis.forEach((a,pos)=>grid.appendChild(admMiniTile(a,pos,vis,ctx)));
     }
     wrap.appendChild(grid);
     return wrap;
-  }
-  function admIconSrc(a){
-    if(a.icon) return a.icon;
-    try{ return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(new URL(a.url).hostname)+"&sz=32"; }
-    catch(e){ return ""; }
   }
   function admMiniLetter(name){
     const d=document.createElement("div"); d.className="mt-letter";
     d.textContent=(name||"?").trim().charAt(0).toUpperCase();
     return d;
   }
-  function admMiniTile(a,pos,vis){
+  /* Same icon chain as the live board (tile explicit icon → embedded ICONS
+     data-URL → Google favicon), falling back to a letter, so the editor
+     looks exactly like what people will see. */
+  function admMiniIcon(a){
+    const sources=[];
+    const primary=iconFor(a); if(primary) sources.push(primary);
+    const d=domainOf(a.url);
+    if(d) sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
+    if(!sources.length) return admMiniLetter(a.name);
+    const img=document.createElement("img"); img.alt=""; img.loading="lazy";
+    let i=0; img.src=sources[0];
+    img.addEventListener("error",function(){ i++; if(i<sources.length) img.src=sources[i]; else img.replaceWith(admMiniLetter(a.name)); });
+    return img;
+  }
+  /* X on a tile removes it from THIS board only, by taking the board's
+     division (or department) out of the app's visibility. Deleting an app
+     everywhere lives on the Delete button inside the edit modal. */
+  const ADM_ALL_DIVS=["bk","subway","cstore","carwash"];
+  function admRemoveFromBoard(a,ctx){
+    if(ctx.role==="admin"){
+      if(!confirm('Overwatch sees everything, so removing "'+a.name+'" here deletes it from every board. Delete it?')) return;
+      APPS.splice(APPS.indexOf(a),1); admChanged(); return;
+    }
+    if(ctx.role==="staff"&&ctx.dept){
+      const dlist=admDepartments();
+      if(!dlist.length){ alert("The directory hasn't loaded yet, so departments can't be edited."); return; }
+      if(!confirm('Remove "'+a.name+'" from the '+ctx.dept+' board?')) return;
+      let depts=(a.depts&&a.depts.length)?a.depts.slice():dlist.slice();
+      depts=depts.filter(d=>d.toLowerCase()!==ctx.dept.toLowerCase());
+      if(!depts.length){
+        if(!confirm('That was its last department — delete "'+a.name+'" from every board instead?')) return;
+        APPS.splice(APPS.indexOf(a),1); admChanged(); return;
+      }
+      a.depts=depts; admChanged(); return;
+    }
+    /* Division boards (GM / DM / DO tabs). Division visibility is shared
+       across roles, so this hides it from every board of that division;
+       per-role visibility lives in Edit → Positions. */
+    const label=ADM_DIVLABEL[ctx.div]||ctx.div;
+    if(!confirm('Remove "'+a.name+'" from the '+label+' boards? (It stays on the other divisions. Use Edit → Positions to change which roles see it.)')) return;
+    let divs=(a.only?String(a.only).split(",").map(s=>s.trim()).filter(Boolean):ADM_ALL_DIVS.slice());
+    divs=divs.filter(d=>d!==ctx.div);
+    if(!divs.length){
+      if(!confirm('That was its last division — delete "'+a.name+'" from every board instead?')) return;
+      APPS.splice(APPS.indexOf(a),1); admChanged(); return;
+    }
+    a.only=divs.join(","); admChanged();
+  }
+  function admMiniTile(a,pos,vis,ctx){
     const t=document.createElement("div"); t.className="mini-tile"+(pos===0?" feat":""); t.draggable=true; t.dataset.pos=pos;
     t.title="Click to edit "+a.name;
-    const im=document.createElement("img"); im.src=admIconSrc(a); im.alt="";
-    im.onerror=function(){ this.replaceWith(admMiniLetter(a.name)); };
-    t.appendChild(im);
+    t.appendChild(admMiniIcon(a));
     const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
     t.appendChild(nm);
-    const x=document.createElement("button"); x.type="button"; x.className="mt-x"; x.textContent="✕"; x.title="Delete app";
-    x.onclick=(e)=>{ e.stopPropagation(); if(!confirm('Delete "'+a.name+'" from every board?')) return;
-      APPS.splice(APPS.indexOf(a),1); admChanged(); };
+    const x=document.createElement("button"); x.type="button"; x.className="mt-x"; x.textContent="✕";
+    x.title="Remove from this board";
+    x.onclick=(e)=>{ e.stopPropagation(); admRemoveFromBoard(a,ctx); };
     t.appendChild(x);
     t.addEventListener("click",()=>admEdit(APPS.indexOf(a)));
     t.addEventListener("dragstart",e=>{ t.classList.add("dragging"); e.dataTransfer.setData("text/plain",String(pos)); });
