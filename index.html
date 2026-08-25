@@ -142,11 +142,9 @@
       border:1px solid rgba(199,195,241,.3);border-radius:5px;padding:.06rem .38rem;flex-shrink:0;}
     .field:focus-within{border-color:var(--navy-300);box-shadow:0 0 0 3px rgba(199,195,241,.15);}
 
-    /* Board: featured tile on top, then a centred grid */
+    /* Board: one uniform centred grid — no featured tile */
     main{max-width:1200px;margin:0 auto;padding:1.2rem 1.5rem 0.9rem;}
     .board{max-width:788px;margin:0 auto;}
-    .board-top{display:flex;justify-content:center;margin-bottom:var(--gap);}
-    .board-top .tile{width:calc((100% - 2 * var(--gap)) / 3);}
     .board-grid{display:flex;flex-wrap:wrap;gap:var(--gap);justify-content:center;}
     .board-grid .tile{width:calc((100% - 2 * var(--gap)) / 3);}
 
@@ -159,9 +157,6 @@
     .tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--navy-100);}
     .tile:hover::after{left:22%;right:22%;}
     .tile:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
-    .board-top .tile{border-color:var(--navy-200);box-shadow:var(--shadow-md);
-      background:linear-gradient(180deg,var(--navy-50),#fff);}
-
     /* ---- Tile with pending notifications ---------------------------------
        A 20px badge is easy to miss on a board of 18 tiles, so the whole card
        takes a 40% wash of the brand red. The wash is composited over the card
@@ -366,7 +361,6 @@
     .mini-tile .mt-x{position:absolute;top:2px;right:2px;background:rgba(20,16,74,.55);color:#fff;border:none;
       border-radius:999px;width:15px;height:15px;font-size:9px;line-height:15px;cursor:pointer;display:none;padding:0;}
     .mini-tile:hover .mt-x{display:block;}
-    .mini-tile.feat{border-color:var(--accent);}
     .mini-empty{grid-column:1/-1;font:600 11.5px var(--font-sans);color:var(--text-subtle);padding:10px 4px;}
     #adm-modal-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;display:flex;
       align-items:center;justify-content:center;padding:16px;}
@@ -622,8 +616,7 @@
      EDIT YOUR LINKS HERE
      ----------------------------------------------------------------------
      Each tile is one line: { name, url, desc }.
-       • The FIRST entry is the large featured tile on top.
-       • The rest fill the grid left-to-right, top-to-bottom, in this order.
+       • Tiles fill the grid left-to-right, top-to-bottom, in this order.
        • To move a tile, just move its line. To add one, copy a line.
      Icons load automatically from each link's website. To force a specific
      icon, add   icon:"https://…/logo.png"   to that line (see Paycom).
@@ -688,11 +681,28 @@
   function domainOf(url){ try{ return new URL(url).hostname.replace(/^www\./,""); }catch{ return ""; } }
   function iconFor(app){ if(app.icon) return app.icon; if(ICONS[app.name]) return ICONS[app.name]; return null; }
 
+  /* Ordered list of icon URLs to try for a tile. Google's favicon service
+     only knows domains in its index, so an in-house subdomain like
+     paradisecarwash.sonnyscontrols.com comes back empty — the site's own
+     /favicon.ico and the parent domain are tried before giving up. */
+  function iconSources(app){
+    const sources=[]; const primary=iconFor(app); if(primary) sources.push(primary);
+    try{
+      const u=new URL(app.url), host=u.hostname.replace(/^www\./,"");
+      sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(host)+"&sz=64");
+      sources.push(u.origin+"/favicon.ico");
+      const parts=host.split(".");
+      if(parts.length>2){
+        const parent=parts.slice(-2).join(".");
+        sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(parent)+"&sz=64");
+      }
+    }catch(e){}
+    return sources;
+  }
+
   function buildIcon(app){
     const wrap=document.createElement("div"); wrap.className="tile-icon";
-    const sources=[]; const primary=iconFor(app); if(primary) sources.push(primary);
-    const d=domainOf(app.url);
-    if(d) sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
+    const sources=iconSources(app);
     if(!sources.length) return letter(wrap,app.name);
     const img=document.createElement("img"); img.alt=""; img.loading="lazy"; let i=0; img.src=sources[0];
     img.addEventListener("error",()=>{ i++; if(i<sources.length) img.src=sources[i]; else letter(wrap,app.name); });
@@ -740,11 +750,9 @@
     const old=root.querySelector(".board");
     if(old) old.remove();
     const board=document.createElement("div"); board.className="board";
-    const top=document.createElement("div"); top.className="board-top";
     const grid=document.createElement("div"); grid.className="board-grid";
-    if(apps.length) top.appendChild(tile(apps[0]));
-    apps.slice(1).forEach(a=>grid.appendChild(tile(a)));
-    board.append(top,grid);
+    apps.forEach(a=>grid.appendChild(tile(a)));
+    board.append(grid);
     root.insertBefore(board,noResults);
   }
 
@@ -766,8 +774,6 @@
       const m=!q||t.dataset.search.includes(q);
       t.style.display=m?"":"none"; if(m) any=true;
     });
-    const top=document.querySelector(".board-top");
-    if(top){ const t=top.querySelector(".tile"); top.style.display=(t&&t.style.display!=="none")?"":"none"; }
     noResults.classList.toggle("show",!any);
     document.getElementById("nr-q").textContent='"'+q+'"';
   }
@@ -1798,14 +1804,11 @@
     d.textContent=(name||"?").trim().charAt(0).toUpperCase();
     return d;
   }
-  /* Same icon chain as the live board (tile explicit icon → embedded ICONS
-     data-URL → Google favicon), falling back to a letter, so the editor
-     looks exactly like what people will see. */
+  /* Same icon chain as the live board (explicit icon → embedded ICONS →
+     Google favicon → the site's own favicon.ico → parent-domain favicon),
+     falling back to a letter, so the editor looks exactly like the portal. */
   function admMiniIcon(a){
-    const sources=[];
-    const primary=iconFor(a); if(primary) sources.push(primary);
-    const d=domainOf(a.url);
-    if(d) sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
+    const sources=iconSources(a);
     if(!sources.length) return admMiniLetter(a.name);
     const img=document.createElement("img"); img.alt=""; img.loading="lazy";
     let i=0; img.src=sources[0];
@@ -1855,7 +1858,7 @@
     a.only=divs.join(","); admChanged();
   }
   function admMiniTile(a,pos,vis,ctx){
-    const t=document.createElement("div"); t.className="mini-tile"+(pos===0?" feat":""); t.draggable=true; t.dataset.pos=pos;
+    const t=document.createElement("div"); t.className="mini-tile"; t.draggable=true; t.dataset.pos=pos;
     t.title="Click to edit "+a.name;
     t.appendChild(admMiniIcon(a));
     const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
