@@ -613,13 +613,17 @@
 
   <script>
   /* ======================================================================
-     EDIT YOUR LINKS HERE
+     FALLBACK TILE LIST — NOT the source of truth
      ----------------------------------------------------------------------
-     Each tile is one line: { name, url, desc }.
-       • Tiles fill the grid left-to-right, top-to-bottom, in this order.
-       • To move a tile, just move its line. To add one, copy a line.
+     The REAL tile list lives in the alignment database (dpmPortal node) and
+     is edited with the in-app "Edit Portals" screen; it replaces this list
+     the moment the database loads. This built-in copy exists only for:
+       • the very first run, before anything has been published, and
+       • keeping the board usable if the database is unreachable.
+     Editing this file does NOT change what anyone sees once a published
+     list exists — use Edit Portals → Publish instead.
      Icons load automatically from each link's website. To force a specific
-     icon, add   icon:"https://…/logo.png"   to that line (see Paycom).
+     icon, add   icon:"https://…/logo.png"   to a line (see Paycom).
      The bulky embedded favicons live in the ICONS map just below this list.
      ====================================================================== */
   const APPS = [
@@ -1523,12 +1527,14 @@
           renderWho(); openGate(false); showErr(sess.error);
         }else{
           // Directory may have moved this person, or re-tagged their stores.
-          const was=SESSION.cstore;
           SESSION=sess; SESSION.cstore=isCStoreUser();
           writeStored({email:sess.email,pw:saved.pw,name:sess.name,role:sess.role,
                        refId:sess.refId||null,cstore:SESSION.cstore});
           renderWho();
-          if(SESSION.cstore!==was) renderBoard();
+          /* Re-render unconditionally: the master carries the PUBLISHED tile
+             list (the single source of truth), which must replace the file's
+             built-in fallback now that it has arrived. */
+          renderBoard();
           refreshBadges();
         }
       }catch(e){
@@ -1604,7 +1610,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="3.7";
+  var APP_VERSION="3.8";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -2075,9 +2081,26 @@
     if(!confirm("Discard changes and reload the published version?")) return; location.reload();
   };
   document.getElementById("adm-dept").onchange=function(){ admRenderBoards(); };
-  document.getElementById("adm-open").onclick=function(){
+  /* Opening the editor ALWAYS pulls the published tile list from the API
+     first, so every editing session starts from the single source of truth —
+     never from the file's built-in fallback. Publishing from the fallback is
+     what used to silently reset earlier published changes. */
+  document.getElementById("adm-open").onclick=async function(){
     document.body.classList.add("adm-open");
-    admBuildTabs(); admSyncTabs(); admStaffDeptRefresh(); admRenderBoards(); admNote();
+    admBuildTabs(); admSyncTabs();
+    const host=document.getElementById("adm-boards");
+    host.classList.remove("single");
+    host.innerHTML='<div class="mini-empty" style="padding:24px;font-size:13px">Loading the published tile list from the database…</div>';
+    let fresh=false;
+    if(admDirty){ fresh=true; }              /* keep in-progress edits */
+    else{
+      try{ await loadMaster(); fresh=true; }catch(e){}
+      if(fresh) applyPublishedApps();
+    }
+    admStaffDeptRefresh(); admRenderBoards(); admNote();
+    if(!fresh){
+      alert("Couldn't reach the alignment database, so you're looking at the file's built-in fallback list — NOT the published one. Publishing now could overwrite newer live changes. Reconnect and reopen the editor before publishing.");
+    }
   };
   document.getElementById("adm-x").onclick=function(){
     document.body.classList.remove("adm-open");
