@@ -319,79 +319,51 @@
       .gate-title{font-size:1.05rem;}
     }
   
-    /* ---- Admin panel (full-page, multi-board) ---- */
+    /* ---- Admin panel ---- */
     #adm-open{position:fixed;left:12px;bottom:12px;z-index:180;background:var(--accent);color:#fff;
       border:none;border-radius:999px;padding:9px 16px;font:800 12.5px var(--font-sans);cursor:pointer;
       box-shadow:0 6px 18px rgba(198,8,25,.35);display:none;}
     body.is-admin #adm-open{display:block;}
-    #adm{position:fixed;inset:0;background:var(--surface-page);z-index:400;display:none;flex-direction:column;
+    #adm{position:fixed;top:0;right:-400px;width:380px;max-width:100%;height:100%;background:#fff;z-index:400;
+      box-shadow:-10px 0 30px rgba(20,16,74,.2);transition:right .25s var(--ease);display:flex;flex-direction:column;
       font-family:var(--font-sans);}
-    body.adm-open #adm{display:flex;}
-    body.adm-open #fit{display:none;}
-    #adm-head{background:var(--navy-800);color:#fff;padding:11px 18px;display:flex;flex-wrap:wrap;gap:10px 14px;
-      align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;}
-    #adm-head b{font-family:var(--font-display);letter-spacing:.05em;font-size:14.5px;white-space:nowrap;}
-    #adm-tabs{display:flex;flex-wrap:wrap;gap:6px;}
-    #adm-tabs button{font:800 11px var(--font-sans);letter-spacing:.03em;padding:7px 13px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.07);color:#c7c3f1;cursor:pointer;}
-    #adm-tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;}
-    .adm-head-actions{display:flex;gap:8px;align-items:center;}
-    .adm-head-actions .abtn{flex:none;padding:8px 13px;}
-    #adm-x{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
-    #adm-note{margin:0;border-radius:0;padding:9px 18px;font:600 12px var(--font-sans);line-height:1.4;}
-    #adm-note.send{background:#fff1f2;border-bottom:1px solid var(--accent);color:var(--alert-ink,#8a0b17);}
-    #adm-note.upload{background:var(--navy-50);border-bottom:1px solid var(--navy-200);color:var(--navy-800);}
-    #adm-staffbar{display:flex;align-items:center;gap:10px;padding:12px 18px 0;}
-    #adm-staffbar[hidden]{display:none;}
-    #adm-staffbar label{font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);}
-    #adm-staffbar select{padding:7px 10px;border:1px solid var(--gray-300);border-radius:7px;font:600 13px var(--font-sans);}
-    #adm-boards{flex:1;overflow-y:auto;padding:18px;display:grid;gap:18px;align-content:start;
-      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
-    #adm-boards.single{grid-template-columns:1fr;max-width:640px;margin:0 auto;}
-    .mini-board{background:#fff;border:1px solid var(--border-subtle);border-radius:14px;overflow:hidden;
-      box-shadow:0 2px 10px rgba(20,16,74,.06);}
-    .mini-board>header{background:var(--navy-50);padding:10px 14px;display:flex;justify-content:space-between;
-      align-items:baseline;border-bottom:1px solid var(--border-subtle);}
-    .mini-board>header b{font-family:var(--font-display);letter-spacing:.04em;font-size:13px;color:var(--text-heading);}
-    .mini-board>header span{font:700 10.5px var(--font-sans);color:var(--text-muted);}
-    .mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;padding:12px;min-height:60px;}
-    .mini-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 4px 7px;
-      border-radius:10px;border:1px solid var(--gray-200);background:var(--gray-50);cursor:grab;text-align:center;}
-    .mini-tile.dragging{opacity:.35;}
-    .mini-tile img,.mini-tile .mt-letter{width:26px;height:26px;object-fit:contain;border-radius:6px;}
-    .mini-tile .mt-letter{background:var(--navy-600);color:#fff;font:800 12px var(--font-sans);display:flex;
-      align-items:center;justify-content:center;}
-    .mini-tile .nm{font:700 10px var(--font-sans);color:var(--text-heading);line-height:1.2;
-      overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-    .mini-tile .mt-x{position:absolute;top:2px;right:2px;background:rgba(20,16,74,.55);color:#fff;border:none;
-      border-radius:999px;width:15px;height:15px;font-size:9px;line-height:15px;cursor:pointer;display:none;padding:0;}
-    .mini-tile:hover .mt-x{display:block;}
-    .mini-tile.feat{border-color:var(--accent);}
-    .mini-empty{grid-column:1/-1;font:600 11.5px var(--font-sans);color:var(--text-subtle);padding:10px 4px;}
-    #adm-modal-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;display:flex;
-      align-items:center;justify-content:center;padding:16px;}
-    #adm-modal-wrap[hidden]{display:none;}
-    #adm-modal{background:#fff;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;border-radius:14px;
-      box-shadow:0 20px 60px rgba(13,10,53,.4);}
-    #adm-modal header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;
-      align-items:center;border-radius:14px 14px 0 0;}
-    #adm-modal header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
-    #adm-modal header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
-    #adm-modal .aform{margin:0;border:none;border-radius:0;padding:14px 16px 18px;background:#fff;}
-    #adm-modal label{display:block;font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;
-      color:var(--text-muted);margin:12px 0 5px;}
-    #adm-modal input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);
-      border-radius:7px;font:500 13px var(--font-sans);margin-bottom:6px;}
+    body.adm-open #adm{right:0;}
+    #adm header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+    #adm header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
+    #adm header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    #admb{flex:1;overflow-y:auto;padding:14px 16px 22px;}
+    #admb label{display:block;font:800 10.5px var(--font-sans);letter-spacing:.09em;text-transform:uppercase;
+      color:var(--text-muted);margin:14px 0 5px;}
+    #admb select,#admb input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--gray-300);
+      border-radius:7px;font:500 13px var(--font-sans);}
+    #alist{list-style:none;margin:6px 0;padding:0;}
+    #alist li{display:flex;align-items:center;gap:7px;background:var(--gray-50);border:1px solid var(--gray-200);
+      border-radius:8px;padding:6px 8px;margin-bottom:5px;cursor:grab;}
+    #alist li.dragging{opacity:.4;}
+    #alist li img{width:17px;height:17px;object-fit:contain;}
+    #alist li .nm{flex:1;font:700 12.5px var(--font-sans);color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #alist li .tag{font:800 8.5px var(--font-sans);letter-spacing:.05em;color:#fff;background:var(--navy-400);
+      border-radius:4px;padding:1px 4px;}
+    #alist li .tag.f{background:var(--accent);}
+    #alist li button{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:12px;padding:1px 3px;}
+    #alist li button:hover{color:var(--accent);}
     .arow{display:flex;gap:7px;margin-top:8px;}
     .abtn{flex:1;padding:9px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;
       font:700 12.5px var(--font-sans);color:var(--text-heading);cursor:pointer;}
     .abtn.p{background:var(--primary);border-color:var(--primary);color:#fff;}
     .abtn.a{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .aform{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:9px;padding:10px;margin-top:8px;display:none;}
+    .aform.open{display:block;}
+    .aform input{margin-bottom:6px;}
     .chips{display:flex;flex-wrap:wrap;gap:5px;margin:3px 0 8px;}
     .chip{font:700 11px var(--font-sans);padding:4px 9px;border-radius:999px;border:1px solid var(--gray-300);
       background:#fff;color:var(--text-muted);cursor:pointer;}
     .chip.on{background:var(--navy-700);border-color:var(--navy-700);color:#fff;}
-    @media (max-width:800px){ #adm-boards{grid-template-columns:1fr;} #adm-head{padding:10px 12px;} }
+    #adm-note{margin-top:12px;border-radius:8px;padding:10px 11px;font:600 12px var(--font-sans);line-height:1.45;}
+    #adm-note.send{background:#fff1f2;border:1px solid var(--accent);color:var(--alert-ink,#8a0b17);}
+    #adm-note.upload{background:var(--navy-50);border:1px solid var(--navy-200);color:var(--navy-800);}
+    body.adm-open #fit{right:380px;}
+    @media (max-width:800px){ #adm{width:100%;right:-100%;} body.adm-open #fit{display:none;} }
   
     /* ---- Tutorial helper on a tile ---- */
     .tile-tut{position:absolute;top:6px;right:6px;z-index:3;width:19px;height:19px;border-radius:50%;
@@ -566,36 +538,41 @@
 
   
   <button id="adm-open">✎ Edit Portals</button>
-  <div id="adm" aria-label="Portal editor" role="dialog" aria-modal="true">
-    <header id="adm-head">
-      <b>EDIT PORTALS</b>
-      <div id="adm-tabs" role="tablist"></div>
-      <div class="adm-head-actions">
-        <button type="button" class="abtn" id="adm-new">+ New app</button>
-        <button type="button" class="abtn" id="adm-test">Test API</button>
-        <button type="button" class="abtn a" id="adm-pub">Publish</button>
-        <button type="button" class="abtn" id="adm-reset">Discard</button>
-        <button type="button" id="adm-x" aria-label="Close">✕</button>
+  <aside id="adm" aria-label="Portal editor">
+    <header><b>EDIT PORTALS</b><button id="adm-x" aria-label="Close">✕</button></header>
+    <div id="admb">
+      <label>Preview board as</label>
+      <select id="adm-view"></select>
+      <label>Custom board for one account</label>
+      <input type="text" id="adm-person" placeholder="username or full email" autocomplete="off" />
+      <div class="arow">
+        <button class="abtn" id="adm-mkperson">Create / open</button>
+        <button class="abtn" id="adm-rmperson">Remove custom</button>
       </div>
-    </header>
-    <div id="adm-note"></div>
-    <div id="adm-staffbar" hidden>
-      <label for="adm-dept">Department</label>
-      <select id="adm-dept"></select>
-    </div>
-    <div id="adm-boards"></div>
-  </div>
-
-  <div id="adm-modal-wrap" hidden>
-    <div id="adm-modal" role="dialog" aria-modal="true" aria-labelledby="adm-modal-title">
-      <header><b id="adm-modal-title">Edit app</b><button type="button" id="adm-modal-x" aria-label="Close">✕</button></header>
+      <div id="adm-personhint" style="font:600 11px var(--font-sans);color:var(--text-muted);margin-top:5px"></div>
+      <label>Tiles — drag to reorder (first is featured)</label>
+      <div id="alist-cap" style="font:600 11px var(--font-sans);color:var(--text-muted);margin-bottom:6px"></div>
+      <ul id="alist"></ul>
+      <div class="arow"><button class="abtn" id="adm-add">+ Add app</button>
+        <button class="abtn" id="adm-new">+ New app</button></div>
+      <div class="aform" id="adm-addform">
+        <input type="text" id="adm-addsearch" placeholder="Search the app library…" autocomplete="off" />
+        <div id="adm-addres" style="max-height:150px;overflow:auto;margin-top:5px"></div>
+      </div>
+      <div class="aform" id="adm-newform">
+        <input type="text" id="an-name" placeholder="App name" />
+        <input type="text" id="an-url" placeholder="https://link" />
+        <input type="text" id="an-desc" placeholder="Caption" />
+        <input type="text" id="an-icon" placeholder="Icon image URL (optional)" />
+        <button class="abtn p" id="an-save" style="width:100%">Add app</button>
+      </div>
       <div class="aform" id="adm-editform">
         <input type="hidden" id="ae-i" />
         <input type="text" id="ae-name" placeholder="App name" />
         <input type="text" id="ae-url" placeholder="https://link" />
         <input type="text" id="ae-desc" placeholder="Caption" />
         <input type="text" id="ae-icon" placeholder="Icon image URL" />
-        <label style="margin-top:4px">Division <span style="font-weight:500;text-transform:none;letter-spacing:0">(pick any — none = all)</span></label>
+        <label style="margin-top:4px">Division</label>
         <div class="chips" id="ae-div"></div>
         <label>Show only for these positions <span style="font-weight:500;text-transform:none;letter-spacing:0">(none = everyone)</span></label>
         <div class="chips" id="ae-roles"></div>
@@ -605,14 +582,13 @@
         <div class="chips" id="ae-tut"></div>
         <input type="text" id="ae-tutcap" placeholder="Tutorial caption (default: Tutorial Video)" />
         <input type="text" id="ae-tuturl" placeholder="Tutorial video link (https://…)" />
-        <div class="arow">
-          <button type="button" class="abtn p" id="ae-save">Save</button>
-          <button type="button" class="abtn" id="ae-cancel">Cancel</button>
-          <button type="button" class="abtn" id="ae-del" style="color:var(--accent)">Delete</button>
-        </div>
+        <div class="arow"><button class="abtn p" id="ae-save">Save</button><button class="abtn" id="ae-cancel">Cancel</button></div>
       </div>
+      <div id="adm-note"></div>
+      <div class="arow"><button class="abtn a" id="adm-pub">Publish (download index.html)</button></div>
+      <div class="arow"><button class="abtn" id="adm-reset">Discard changes</button></div>
     </div>
-  </div>
+  </aside>
 
   <script>
   /* ======================================================================
@@ -1103,6 +1079,18 @@
      Everything without the flag shows on both. */
   /* The board for one role in one division. `only` may name a single division
      or several ("bk,subway"); no flag means every division. */
+  /* ---- Per-account boards ----------------------------------------------
+     Anything in here beats the role/division rules for that one address.
+     Value is an ordered list of app NAMES (first = featured tile), so a
+     renamed app is easy to spot and fix. Two GMs in the same division can
+     therefore have completely different boards. */
+  var PEOPLE = {};
+  function personBoard(email){
+    const ov=PEOPLE[String(email||"").toLowerCase()];
+    if(!ov||!Array.isArray(ov.tiles)||!ov.tiles.length) return null;
+    const list=ov.tiles.map(n=>APPS.find(a=>a.name===n)).filter(Boolean);
+    return list.length?list:null;
+  }
   function appsFor(role,div,dept){
     dept=(dept||"").trim().toLowerCase();
     const list=APPS.filter(a=>{
@@ -1132,7 +1120,10 @@
     if(divs.indexOf("bk")>=0) return "bk";       /* mixed patch = full board */
     return divs[0]||"bk";
   }
-  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision(), (SESSION&&SESSION.dept)||""); }
+  function appsForSession(){
+    const mine=SESSION&&personBoard(SESSION.email);
+    if(mine) return mine;
+    return appsFor((SESSION&&SESSION.role)||null, sessionDivision(), (SESSION&&SESSION.dept)||""); }
   function wantsEmergenciesOnly(){
     return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
   }
@@ -1548,25 +1539,20 @@
      Everything the portal owns lives under ONE node, portalConfig, so it can
      never collide with the directory or FixMi's tickets:
 
-       dpmPortal/apps       the tile list (array)
-       dpmPortal/updatedAt  ISO timestamp
-       dpmPortal/updatedBy  who published
-       dpmPortal/schema     bumped if the tile shape ever changes
+       portalConfig/apps       the tile list (array)
+       portalConfig/updatedAt  ISO timestamp
+       portalConfig/updatedBy  who published
+       portalConfig/schema     bumped if the tile shape ever changes
 
      One write per publish, one path, whole node replaced — no partial state
      and nothing scattered across the tree. Reads fail soft: if the node is
      missing or malformed the portal quietly uses the built-in list below,
      so a bad save can never leave anyone with a blank board.
      ====================================================================== */
-  const PORTAL_NODE="dpmPortal";
-  /* Older builds published under portalConfig; reads fall back there so a
-     previously published list still loads until the first new publish. */
-  const PORTAL_NODE_LEGACY="portalConfig";
+  const PORTAL_NODE="portalConfig";
   const PORTAL_SCHEMA=1;
-  /* Must match the PORTAL role in the alignment API (api/dpm-alignment.js).
-     That role may only write the dpmPortal node — nothing else. If you
-     change the secret in the API's ROLES map, change it here to match. */
-  const PORTAL_WRITE_PASSWORD="portal123";
+  /* Must match a write role the alignment API accepts (FixMi uses its own). */
+  const PORTAL_WRITE_PASSWORD="rm123";
 
   /* ======================================================================
      ALWAYS-LATEST (cache busting)
@@ -1585,7 +1571,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="3.7";
+  var APP_VERSION="3.6";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1603,7 +1589,7 @@
     location.replace(u.toString());
   }
   function checkAppVersion(){
-    const server=((nodeAt(MASTER||{},PORTAL_NODE)||{}).appMeta||{}).version;
+    const server=(((MASTER||{})[PORTAL_NODE]||{}).appMeta||{}).version;
     if(!server||cmpVer(APP_VERSION,server)>0){
       if(_verPublished) return;
       _verPublished=true;
@@ -1620,16 +1606,8 @@
     if(document.visibilityState==="visible"&&_updatePending) hardReload(_updatePending);
   });
 
-  /* PORTAL_NODE may be nested (e.g. "someParent/dpmPortal") — reads resolve
-     each segment, writes already use slash paths, so trying a different
-     node only ever means changing this one constant. */
-  function nodeAt(obj,path){
-    let n=obj;
-    for(const seg of String(path).split("/")){ if(!n||typeof n!=="object") return null; n=n[seg]; }
-    return n||null;
-  }
   function portalConfigFromMaster(){
-    const n=nodeAt(MASTER,PORTAL_NODE)||nodeAt(MASTER,PORTAL_NODE_LEGACY);
+    const n=MASTER&&MASTER[PORTAL_NODE];
     if(!n||!Array.isArray(n.apps)||!n.apps.length) return null;
     const clean=n.apps.filter(a=>a&&typeof a.name==="string"&&typeof a.url==="string"&&/^https?:\/\//.test(a.url));
     return clean.length?clean:null;
@@ -1637,6 +1615,14 @@
   /* Swap the built-in tiles for the published ones, in place, so every
      existing reference to APPS keeps working. */
   function applyPublishedApps(){
+    /* People overrides load independently of the tile list: a site may have
+       custom boards published without ever having overridden the app list. */
+    const node=(MASTER||{})[PORTAL_NODE]||{};
+    const ppl=node.people;
+    if(ppl&&typeof ppl==="object"){
+      PEOPLE={};
+      for(const k in ppl){ const v=ppl[k]; if(v&&Array.isArray(v.tiles)) PEOPLE[String(k).toLowerCase()]=v; }
+    }
     const saved=portalConfigFromMaster();
     if(!saved) return false;
     APPS.length=0; saved.forEach(a=>APPS.push(a));
@@ -1659,6 +1645,7 @@
     updates[PORTAL_NODE+"/schema"]=payload.schema;
     updates[PORTAL_NODE+"/updatedAt"]=payload.updatedAt;
     updates[PORTAL_NODE+"/updatedBy"]=payload.updatedBy;
+    updates[PORTAL_NODE+"/people"]=PEOPLE;
     const r=await fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})});
     if(!r.ok){ let m="HTTP "+r.status; try{ m=(await r.json()).error||m; }catch(e){} throw new Error(m); }
@@ -1667,23 +1654,15 @@
 
   const ADM_UPLOADER="itsupport@dossaniparadise.com";
   const ADM_ROLES=[["coach","District Mgr"],["director","Director"],["gm","General Mgr"],["staff","Staff"],["admin","Overwatch"]];
-  let admDirty=false, admGroup="gm", admNewPendingIndex=null;
+  let admPreview=null, admDirty=false;
 
   function admIsAdmin(){ return !!SESSION && SESSION.role==="admin"; }
   function admSync(){ document.body.classList.toggle("is-admin", admIsAdmin()); }
 
-  /* Each board shows exactly the tiles a role in a division (or a
-     support-staff department) would see, rendered as a small live grid so
-     several divisions can sit side by side for comparison. */
+  /* Preview: pretend to be a role in a division (or a support-staff
+     department) so the board — and the tile list — redraw exactly as that
+     person would see them. */
   const ADM_DIVLABEL={bk:"BK",subway:"Subway",cstore:"C-Store",carwash:"Car Wash"};
-  const ADM_SHORT={gm:"GM",coach:"DM",director:"DO"};
-  const ADM_GROUPS=[
-    {key:"gm",    label:"General Managers",           role:"gm",      divs:["bk","subway","cstore","carwash"]},
-    {key:"dm",    label:"District Managers",          role:"coach",   divs:["bk","cstore"]},
-    {key:"do",    label:"Directors of Operations",    role:"director",divs:["bk","cstore"]},
-    {key:"staff", label:"Support Staff",               role:"staff",   divs:null},
-    {key:"admin", label:"Overwatch",                   role:"admin",   divs:["bk"]},
-  ];
   function admDepartments(){
     const out=[], seen={};
     const vps=(MASTER&&MASTER.vps)||{};
@@ -1693,288 +1672,252 @@
     }
     return out.sort((a,b)=>a.localeCompare(b));
   }
-
-  /* ---- Tabs ---- */
-  function admBuildTabs(){
-    const host=document.getElementById("adm-tabs"); if(!host) return;
-    host.innerHTML="";
-    ADM_GROUPS.forEach(g=>{
-      const b=document.createElement("button"); b.type="button"; b.textContent=g.label;
-      b.className=(g.key===admGroup?"on":"");
-      b.onclick=()=>{ admGroup=g.key; admSyncTabs(); admStaffDeptRefresh(); admRenderBoards(); };
-      host.appendChild(b);
-    });
+  function admBuildViews(){
+    const sel=document.getElementById("adm-view"); if(!sel) return;
+    const prev=sel.value;
+    const grp=(label,rows)=>'<optgroup label="'+label+'">'+rows.map(r=>
+      '<option value="'+r[0]+'">'+r[1]+'</option>').join("")+'</optgroup>';
+    let html="";
+    html+=grp("General Managers",["bk","subway","cstore","carwash"].map(d=>["gm|"+d,ADM_DIVLABEL[d]+" GM"]));
+    html+=grp("District Managers",["bk","cstore"].map(d=>["coach|"+d,ADM_DIVLABEL[d]+" DM"]));
+    html+=grp("Directors of Operations",["bk","cstore"].map(d=>["director|"+d,ADM_DIVLABEL[d]+" DO"]));
+    const deps=admDepartments();
+    html+=grp("Support Staff"+(deps.length?"":" (directory loading…)"),
+      (deps.length?deps:["All support staff"]).map(d=>["staff|bk|"+d,d]));
+    html+=grp("Company-wide",[["admin|bk","Overwatch"]]);
+    const custom=Object.keys(PEOPLE);
+    if(custom.length) html+=grp("Custom boards (per account)",
+      custom.sort().map(e=>["person:"+e, (PEOPLE[e].label||e)]));
+    sel.innerHTML=html;
+    sel.value=prev&&sel.querySelector('option[value="'+prev+'"]')?prev:"gm|bk";
   }
-  function admSyncTabs(){
-    document.querySelectorAll("#adm-tabs button").forEach((b,i)=>b.classList.toggle("on", ADM_GROUPS[i].key===admGroup));
-    document.getElementById("adm-staffbar").hidden=(admGroup!=="staff");
+  function admParse(){
+    const raw=document.getElementById("adm-view").value||"gm|bk";
+    if(raw.indexOf("person:")===0) return {person:raw.slice(7)};
+    const v=raw.split("|");
+    return {role:v[0]||"gm", div:v[1]||"bk", dept:v[2]||""};
   }
-  function admStaffDeptRefresh(){
-    const sel=document.getElementById("adm-dept"); if(!sel) return;
-    const prev=sel.value, deps=admDepartments();
-    sel.innerHTML=(deps.length?deps:["(directory loading…)"]).map(d=>'<option value="'+d+'">'+d+'</option>').join("");
-    if(deps.length&&deps.includes(prev)) sel.value=prev;
+  function admApplyPreview(){
+    const t=admParse();
+    const real=SESSION, realDiv=window.__admDivision;
+    window.__admDivision=t.div;
+    SESSION={role:t.role,name:"Preview",email:"preview@dossaniparadise.com",refId:"__preview__",
+      dept:t.dept||"", title:t.dept||(t.role==="gm"?"General Manager":"")};
+    renderBoard(); applyPortalIdentity();
+    SESSION=real; window.__admDivision=realDiv;
   }
-
-  /* ---- Boards ---- */
-  function admRenderBoards(){
-    const host=document.getElementById("adm-boards"); if(!host) return;
-    host.innerHTML="";
-    const grp=ADM_GROUPS.find(g=>g.key===admGroup)||ADM_GROUPS[0];
-    host.classList.toggle("single", grp.key==="staff"||grp.key==="admin");
-    if(grp.key==="staff"){
-      const dept=(document.getElementById("adm-dept").value)||"";
-      host.appendChild(admBuildMiniBoard("Support Staff"+(dept?" — "+dept:""),"staff","bk",dept));
-      return;
-    }
-    if(grp.key==="admin"){
-      host.appendChild(admBuildMiniBoard("Overwatch (sees everything)","admin","bk",""));
-      return;
-    }
-    grp.divs.forEach(d=>{
-      host.appendChild(admBuildMiniBoard(ADM_DIVLABEL[d]+" "+ADM_SHORT[grp.role],grp.role,d,""));
-    });
+  /* The editor lists exactly the tiles this role/division sees. */
+  function admVisible(){
+    const t=admParse();
+    if(t.person) return personBoard(t.person)||[];
+    return appsFor(t.role,t.div,t.dept);
   }
-  function admBuildMiniBoard(title,role,div,dept){
-    const wrap=document.createElement("div"); wrap.className="mini-board";
-    const head=document.createElement("header");
-    const b=document.createElement("b"); b.textContent=title;
-    const vis=appsFor(role,div,dept);
-    const span=document.createElement("span"); span.textContent=vis.length+(vis.length===1?" tile":" tiles");
-    head.append(b,span); wrap.appendChild(head);
-    const grid=document.createElement("div"); grid.className="mini-grid";
-    if(!vis.length){
-      const e=document.createElement("div"); e.className="mini-empty"; e.textContent="No tiles for this view yet.";
-      grid.appendChild(e);
+  /* Editing a person edits their own list; editing a role edits the shared
+     APPS order. Both funnel through here so the drag handlers stay simple. */
+  function admReorder(from,to){
+    const t=admParse(), vis=admVisible();
+    if(t.person){
+      const arr=PEOPLE[t.person].tiles;
+      arr.splice(to,0,arr.splice(from,1)[0]);
     }else{
-      const ctx={role:role,div:div,dept:dept||""};
-      vis.forEach((a,pos)=>grid.appendChild(admMiniTile(a,pos,vis,ctx)));
-    }
-    wrap.appendChild(grid);
-    return wrap;
-  }
-  function admMiniLetter(name){
-    const d=document.createElement("div"); d.className="mt-letter";
-    d.textContent=(name||"?").trim().charAt(0).toUpperCase();
-    return d;
-  }
-  /* Same icon chain as the live board (tile explicit icon → embedded ICONS
-     data-URL → Google favicon), falling back to a letter, so the editor
-     looks exactly like what people will see. */
-  function admMiniIcon(a){
-    const sources=[];
-    const primary=iconFor(a); if(primary) sources.push(primary);
-    const d=domainOf(a.url);
-    if(d) sources.push("https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64");
-    if(!sources.length) return admMiniLetter(a.name);
-    const img=document.createElement("img"); img.alt=""; img.loading="lazy";
-    let i=0; img.src=sources[0];
-    img.addEventListener("error",function(){ i++; if(i<sources.length) img.src=sources[i]; else img.replaceWith(admMiniLetter(a.name)); });
-    return img;
-  }
-  /* X on a tile removes it from THIS board only, by taking the board's
-     division (or department) out of the app's visibility. Deleting an app
-     everywhere lives on the Delete button inside the edit modal. */
-  const ADM_ALL_DIVS=["bk","subway","cstore","carwash"];
-  function admRemoveFromBoard(a,ctx){
-    if(ctx.role==="admin"){
-      if(!confirm('Overwatch sees everything, so removing "'+a.name+'" here deletes it from every board. Delete it?')) return;
-      APPS.splice(APPS.indexOf(a),1); admChanged(); return;
-    }
-    if(ctx.role==="staff"&&ctx.dept){
-      const dlist=admDepartments();
-      if(!dlist.length){ alert("The directory hasn't loaded yet, so departments can't be edited."); return; }
-      if(!confirm('Remove "'+a.name+'" from the '+ctx.dept+' board?')) return;
-      let depts=(a.depts&&a.depts.length)?a.depts.slice():dlist.slice();
-      depts=depts.filter(d=>d.toLowerCase()!==ctx.dept.toLowerCase());
-      if(!depts.length){
-        if(!confirm('That was its last department — delete "'+a.name+'" from every board instead?')) return;
-        APPS.splice(APPS.indexOf(a),1); admChanged(); return;
-      }
-      a.depts=depts; admChanged(); return;
-    }
-    /* Division boards (GM / DM / DO tabs). Division visibility is shared
-       across roles, so this hides it from every board of that division;
-       per-role visibility lives in Edit → Positions. */
-    const label=ADM_DIVLABEL[ctx.div]||ctx.div;
-    if(!confirm('Remove "'+a.name+'" from the '+label+' boards? (It stays on the other divisions. Use Edit → Positions to change which roles see it.)')) return;
-    let divs=(a.only?String(a.only).split(",").map(s=>s.trim()).filter(Boolean):ADM_ALL_DIVS.slice());
-    divs=divs.filter(d=>d!==ctx.div);
-    if(!divs.length){
-      if(!confirm('That was its last division — delete "'+a.name+'" from every board instead?')) return;
-      APPS.splice(APPS.indexOf(a),1); admChanged(); return;
-    }
-    a.only=divs.join(","); admChanged();
-  }
-  function admMiniTile(a,pos,vis,ctx){
-    const t=document.createElement("div"); t.className="mini-tile"+(pos===0?" feat":""); t.draggable=true; t.dataset.pos=pos;
-    t.title="Click to edit "+a.name;
-    t.appendChild(admMiniIcon(a));
-    const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
-    t.appendChild(nm);
-    const x=document.createElement("button"); x.type="button"; x.className="mt-x"; x.textContent="✕";
-    x.title="Remove from this board";
-    x.onclick=(e)=>{ e.stopPropagation(); admRemoveFromBoard(a,ctx); };
-    t.appendChild(x);
-    t.addEventListener("click",()=>admEdit(APPS.indexOf(a)));
-    t.addEventListener("dragstart",e=>{ t.classList.add("dragging"); e.dataTransfer.setData("text/plain",String(pos)); });
-    t.addEventListener("dragend",()=>t.classList.remove("dragging"));
-    t.addEventListener("dragover",e=>e.preventDefault());
-    t.addEventListener("drop",e=>{
-      e.preventDefault(); e.stopPropagation();
-      const from=+e.dataTransfer.getData("text/plain"); if(isNaN(from)||from===pos) return;
-      /* Reorder within the master list so the new placement sticks for everyone. */
-      const moved=vis[from], target=vis[pos];
+      const moved=vis[from], target=vis[to];
       const gi=APPS.indexOf(moved); APPS.splice(gi,1);
-      APPS.splice(APPS.indexOf(target)+(from<pos?1:0),0,moved);
-      admChanged();
-    });
-    return t;
+      APPS.splice(APPS.indexOf(target)+(from<to?1:0),0,moved);
+    }
   }
-  function admChanged(){ admDirty=true; admRenderBoards(); admNote(); }
+  function admRemoveAt(idx){
+    const t=admParse(), vis=admVisible(), a=vis[idx];
+    if(t.person){ PEOPLE[t.person].tiles.splice(idx,1); }
+    else { if(!confirm('Delete "'+a.name+'" from every board?')) return false;
+           APPS.splice(APPS.indexOf(a),1); }
+    return true;
+  }
 
-  /* ---- Chip helper (shared by division / role / department / tutorial pickers) ---- */
-  function admChips(host,opts,isOn,onTap){
+  function admIconSrc(a){
+    if(a.icon) return a.icon;
+    try{ return "https://www.google.com/s2/favicons?domain="+encodeURIComponent(new URL(a.url).hostname)+"&sz=32"; }
+    catch(e){ return ""; }
+  }
+  function admList(){
+    const ul=document.getElementById("alist"); ul.innerHTML="";
+    const vis=admVisible();
+    const cap=document.getElementById("alist-cap");
+    if(cap) cap.textContent=vis.length+" of "+APPS.length+" tiles shown to this role";
+    vis.forEach((a,pos)=>{
+      const li=document.createElement("li"); li.draggable=true; li.dataset.pos=pos;
+      const im=document.createElement("img"); im.src=admIconSrc(a); im.onerror=function(){this.style.visibility="hidden";};
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=a.name;
+      li.append(im,nm);
+      if(pos===0){ const t=document.createElement("span"); t.className="tag f"; t.textContent="FEATURED"; li.appendChild(t); }
+      if(a.only){ const t=document.createElement("span"); t.className="tag"; t.textContent=String(a.only).toUpperCase(); li.appendChild(t); }
+      if(a.roles){ const t=document.createElement("span"); t.className="tag"; t.textContent=a.roles.join("/").toUpperCase(); li.appendChild(t); }
+      if(a.depts&&a.depts.length){ const t=document.createElement("span"); t.className="tag";
+        t.textContent=a.depts.length===1?a.depts[0].slice(0,10).toUpperCase():a.depts.length+" DEPTS";
+        t.title="Departments: "+a.depts.join(", "); li.appendChild(t); }
+      if(a.tut){ const t=document.createElement("span"); t.className="tag"; t.textContent="?"; t.title="Has tutorial"; li.appendChild(t); }
+      const ed=document.createElement("button"); ed.textContent="✎"; ed.title="Edit"; ed.onclick=()=>admEdit(APPS.indexOf(a));
+      const rm=document.createElement("button"); rm.textContent="✕"; rm.title="Delete app";
+      rm.title=admParse().person?"Remove from this person's board":"Delete app";
+      rm.onclick=()=>{ if(admRemoveAt(pos)!==false) admChanged(); };
+      li.append(ed,rm);
+      li.addEventListener("dragstart",e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",pos); });
+      li.addEventListener("dragend",()=>li.classList.remove("dragging"));
+      li.addEventListener("dragover",e=>e.preventDefault());
+      li.addEventListener("drop",e=>{ e.preventDefault();
+        const from=+e.dataTransfer.getData("text/plain"); if(from===pos) return;
+        admReorder(from,pos); admChanged(); });
+      ul.appendChild(li);
+    });
+    if(!vis.length) ul.innerHTML='<li style="cursor:default;color:var(--text-muted)">No tiles for this role yet.</li>';
+  }
+  function admChanged(){ admDirty=true; admList(); admApplyPreview(); admNote(); }
+
+  function admChips(host, opts, isOn, onTap){
     host.innerHTML="";
     opts.forEach(([val,lab])=>{ const b=document.createElement("button"); b.type="button";
       b.className="chip"+(isOn(val)?" on":""); b.textContent=lab;
       b.onclick=()=>{ onTap(val); }; host.appendChild(b); });
   }
-
-  /* ---- Edit modal (also used to add a new app — a blank app is pushed into
-     APPS immediately so every chip works the same way in both modes, and is
-     removed again if the person cancels without giving it a name + link) ---- */
-  function admOpenModal(){ document.getElementById("adm-modal-wrap").hidden=false; }
-  function admCloseModal(){ document.getElementById("adm-modal-wrap").hidden=true; }
-
-  const ADM_DIV_OPTS=[["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]];
-
-  /* Pull whatever is typed in the text inputs into the app object BEFORE a
-     chip click re-renders the form — otherwise clicking a chip would wipe an
-     unsaved name or link (this is what made "add a new app" feel broken). */
-  function admSyncFields(a){
+  function admOpenForm(id){ ["adm-newform","adm-editform"].forEach(x=>document.getElementById(x).classList.remove("open"));
+    if(id) document.getElementById(id).classList.add("open"); }
+  function admEdit(i){
+    const a=APPS[i]; admOpenForm("adm-editform");
+    document.getElementById("ae-i").value=i;
+    document.getElementById("ae-name").value=a.name||"";
+    document.getElementById("ae-url").value=a.url||"";
+    document.getElementById("ae-desc").value=a.desc||"";
+    document.getElementById("ae-icon").value=a.icon||"";
+    admChips(document.getElementById("ae-div"), [["","All"],["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]],
+      v=>((a.only||"")===v), v=>{ if(v) a.only=v; else delete a.only; admChanged(); admEdit(i); });
+    document.getElementById("ae-tutcap").value=a.tutCap||"";
+    document.getElementById("ae-tuturl").value=a.tutUrl||"";
+    const dlist=admDepartments();
+    admChips(document.getElementById("ae-depts"),
+      (dlist.length?dlist:["(directory loading…)"]).map(d=>[d,d]),
+      v=>!!(a.depts&&a.depts.indexOf(v)>=0),
+      v=>{ if(!dlist.length) return;
+           a.depts=a.depts||[]; const k=a.depts.indexOf(v);
+           if(k>=0) a.depts.splice(k,1); else a.depts.push(v);
+           if(!a.depts.length) delete a.depts; admChanged(); admEdit(i); });
+    admChips(document.getElementById("ae-tut"), [[ "yes","Tutorial: Yes"],["no","No"]],
+      v=>((a.tut?"yes":"no")===v),
+      v=>{ if(v==="yes") a.tut=true; else { delete a.tut; } admChanged(); admEdit(i); });
+    admChips(document.getElementById("ae-roles"), ADM_ROLES,
+      v=>!!(a.roles&&a.roles.indexOf(v)>=0),
+      v=>{ a.roles=a.roles||[]; const k=a.roles.indexOf(v);
+           if(k>=0) a.roles.splice(k,1); else a.roles.push(v);
+           if(!a.roles.length) delete a.roles; admChanged(); admEdit(i); });
+  }
+  document.getElementById("ae-save").onclick=function(){
+    const a=APPS[+document.getElementById("ae-i").value]; if(!a) return;
     a.name=document.getElementById("ae-name").value.trim();
     a.url=document.getElementById("ae-url").value.trim();
     a.desc=document.getElementById("ae-desc").value.trim();
     const ic=document.getElementById("ae-icon").value.trim(); if(ic) a.icon=ic; else delete a.icon;
     const tc=document.getElementById("ae-tutcap").value.trim(); if(tc) a.tutCap=tc; else delete a.tutCap;
     const tu=document.getElementById("ae-tuturl").value.trim(); if(tu) a.tutUrl=tu; else delete a.tutUrl;
-  }
-
-  function admEdit(i){
-    const a=APPS[i]; if(!a) return;
-    document.getElementById("adm-modal-title").textContent=(admNewPendingIndex===i)?"Add app":"Edit app";
-    document.getElementById("ae-i").value=i;
-    document.getElementById("ae-del").style.display=(admNewPendingIndex===i)?"none":"";
-    document.getElementById("ae-name").value=a.name||"";
-    document.getElementById("ae-url").value=a.url||"";
-    document.getElementById("ae-desc").value=a.desc||"";
-    document.getElementById("ae-icon").value=a.icon||"";
-    document.getElementById("ae-tutcap").value=a.tutCap||"";
-    document.getElementById("ae-tuturl").value=a.tutUrl||"";
-
-    const divVal=(a.only||"").split(",").map(s=>s.trim()).filter(Boolean);
-    admChips(document.getElementById("ae-div"), ADM_DIV_OPTS,
-      v=>divVal.indexOf(v)>=0,
-      v=>{ admSyncFields(a);
-           const k=divVal.indexOf(v); if(k>=0) divVal.splice(k,1); else divVal.push(v);
-           if(divVal.length) a.only=divVal.join(","); else delete a.only;
-           admChanged(); admEdit(i); });
-
-    const dlist=admDepartments();
-    admChips(document.getElementById("ae-depts"),
-      (dlist.length?dlist:["(directory loading…)"]).map(d=>[d,d]),
-      v=>!!(a.depts&&a.depts.indexOf(v)>=0),
-      v=>{ if(!dlist.length) return;
-           admSyncFields(a);
-           a.depts=a.depts||[]; const k=a.depts.indexOf(v);
-           if(k>=0) a.depts.splice(k,1); else a.depts.push(v);
-           if(!a.depts.length) delete a.depts; admChanged(); admEdit(i); });
-
-    admChips(document.getElementById("ae-tut"), [["yes","Tutorial: Yes"],["no","No"]],
-      v=>((a.tut?"yes":"no")===v),
-      v=>{ admSyncFields(a);
-           if(v==="yes") a.tut=true; else delete a.tut; admChanged(); admEdit(i); });
-
-    admChips(document.getElementById("ae-roles"), ADM_ROLES,
-      v=>!!(a.roles&&a.roles.indexOf(v)>=0),
-      v=>{ admSyncFields(a);
-           a.roles=a.roles||[]; const k=a.roles.indexOf(v);
-           if(k>=0) a.roles.splice(k,1); else a.roles.push(v);
-           if(!a.roles.length) delete a.roles; admChanged(); admEdit(i); });
-
-    admOpenModal();
-  }
-  function admNew(){
-    const a={name:"",url:"",desc:""};
-    APPS.push(a);
-    admNewPendingIndex=APPS.length-1;
-    admEdit(admNewPendingIndex);
-  }
-  function admCancelModal(){
-    if(admNewPendingIndex!=null){
-      const a=APPS[admNewPendingIndex];
-      /* A stray backdrop click was silently throwing new apps away — if
-         anything has been typed or toggled, ask first. */
-      const typed=(document.getElementById("ae-name").value.trim()||document.getElementById("ae-url").value.trim());
-      const touched=a&&(a.only||a.roles||a.depts||a.tut);
-      if((typed||touched)&&!confirm("Discard this new app?")) return;
-      APPS.splice(admNewPendingIndex,1); admNewPendingIndex=null;
-    }
-    admCloseModal(); admRenderBoards(); admNote();
-  }
-  function admDel(){
-    const i=+document.getElementById("ae-i").value; const a=APPS[i]; if(!a) return;
-    if(!confirm('Delete "'+a.name+'" from every board?')) return;
-    APPS.splice(i,1); admNewPendingIndex=null; admCloseModal(); admChanged();
-  }
-  document.getElementById("ae-save").onclick=function(){
-    const i=+document.getElementById("ae-i").value; const a=APPS[i]; if(!a) return;
-    admSyncFields(a);
-    if(!a.name||!/^https?:\/\//.test(a.url)){ alert("Name and a full https:// link are required."); return; }
     if(a.tut&&!a.tutUrl){ alert("Add a tutorial link, or set Tutorial to No."); return; }
-    admNewPendingIndex=null;
-    admCloseModal(); admChanged();
+    admOpenForm(null); admChanged();
   };
-  document.getElementById("ae-del").onclick=admDel;
-  document.getElementById("ae-cancel").onclick=admCancelModal;
-  document.getElementById("adm-modal-x").onclick=admCancelModal;
-  /* Clicking the dark backdrop (not the card itself) cancels, and Escape
-     always offers a way out — modal first, then the admin page. */
-  document.getElementById("adm-modal-wrap").addEventListener("click",function(e){
-    if(e.target===this) admCancelModal();
-  });
-  document.addEventListener("keydown",function(e){
-    if(e.key!=="Escape") return;
-    if(!document.getElementById("adm-modal-wrap").hidden){ admCancelModal(); return; }
-    if(document.body.classList.contains("adm-open")) document.body.classList.remove("adm-open");
-  });
-  document.getElementById("adm-new").onclick=admNew;
+  document.getElementById("ae-cancel").onclick=()=>admOpenForm(null);
+  document.getElementById("adm-new").onclick=()=>admOpenForm(
+    document.getElementById("adm-newform").classList.contains("open")?null:"adm-newform");
+  document.getElementById("an-save").onclick=function(){
+    const n=document.getElementById("an-name").value.trim(), u=document.getElementById("an-url").value.trim();
+    if(!n||!/^https?:\/\//.test(u)){ alert("Name and a full https:// link are required."); return; }
+    APPS.push({name:n,url:u,desc:document.getElementById("an-desc").value.trim(),
+               icon:document.getElementById("an-icon").value.trim()||undefined});
+    const _t=admParse(); if(_t.person) PEOPLE[_t.person].tiles.push(n);
+    ["an-name","an-url","an-desc","an-icon"].forEach(x=>document.getElementById(x).value="");
+    admOpenForm(null); admChanged();
+  };
 
+
+  /* ---- Per-account boards: create, seed, remove ---- */
+  function admEmailFrom(v){
+    v=String(v||"").trim().toLowerCase();
+    if(!v) return "";
+    return v.indexOf("@")>=0 ? v : v+"@dossaniparadise.com";
+  }
+  function admPersonLabel(email){
+    const s=storeAccount(email); if(s) return s.storeLabel+" ("+email+")";
+    const pr=directoryPerson(email); if(pr) return pr.name+" — "+(pr.title||"")+" ("+email+")";
+    return email;
+  }
+  document.getElementById("adm-mkperson").onclick=function(){
+    const email=admEmailFrom(document.getElementById("adm-person").value);
+    const hint=document.getElementById("adm-personhint");
+    if(!email){ hint.textContent="Enter a username or email."; return; }
+    if(!PEOPLE[email]){
+      /* Seed from whatever that person sees today, so you start from their
+         real board and tweak, instead of building from nothing. */
+      const store=storeAccount(email), pr=store||directoryPerson(email);
+      if(!pr){ hint.textContent="Not found in FindMi — check the address."; return; }
+      const save=SESSION;
+      SESSION={email:email,role:pr.role,refId:pr.refId||null,isStore:!!store,
+               title:pr.title||"",dept:pr.dept||""};
+      const seed=appsFor(pr.role,sessionDivision(),pr.dept||"").map(a=>a.name);
+      SESSION=save;
+      PEOPLE[email]={label:admPersonLabel(email),tiles:seed};
+      admDirty=true;
+    }
+    admBuildViews();
+    document.getElementById("adm-view").value="person:"+email;
+    hint.textContent="Editing "+(PEOPLE[email].label||email);
+    admList(); admApplyPreview(); admNote();
+  };
+  document.getElementById("adm-rmperson").onclick=function(){
+    const t=admParse();
+    const email=t.person||admEmailFrom(document.getElementById("adm-person").value);
+    if(!email||!PEOPLE[email]){ document.getElementById("adm-personhint").textContent="No custom board for that account."; return; }
+    if(!confirm("Remove the custom board for "+email+"?\nThey'll go back to their role's board.")) return;
+    delete PEOPLE[email]; admDirty=true;
+    admBuildViews(); document.getElementById("adm-view").value="gm|bk";
+    document.getElementById("adm-personhint").textContent="Removed — back on the role board.";
+    admList(); admApplyPreview(); admNote();
+  };
+  /* Add an existing library app to whatever board is open. */
+  document.getElementById("adm-add").onclick=function(){
+    const f=document.getElementById("adm-addform");
+    const open=f.classList.contains("open");
+    ["adm-addform","adm-newform","adm-editform"].forEach(x=>document.getElementById(x).classList.remove("open"));
+    if(!open){ f.classList.add("open"); admAddList(""); document.getElementById("adm-addsearch").value=""; }
+  };
+  document.getElementById("adm-addsearch").oninput=function(){ admAddList(this.value); };
+  function admAddList(q){
+    q=(q||"").toLowerCase();
+    const box=document.getElementById("adm-addres"); box.innerHTML="";
+    const t=admParse(), have=admVisible().map(a=>a.name);
+    APPS.filter(a=>have.indexOf(a.name)<0 && (!q||(a.name+" "+(a.desc||"")).toLowerCase().indexOf(q)>=0))
+      .slice(0,30).forEach(a=>{
+        const d=document.createElement("div"); d.className="libitem";
+        d.style.cssText="padding:6px 8px;border-radius:7px;cursor:pointer;font:600 12.5px var(--font-sans);color:var(--text-heading)";
+        d.textContent=a.name+(a.desc?"  ·  "+a.desc:"");
+        d.onmouseenter=()=>d.style.background="var(--navy-50)";
+        d.onmouseleave=()=>d.style.background="";
+        d.onclick=()=>{
+          if(t.person){ PEOPLE[t.person].tiles.push(a.name); }
+          else { /* make it visible to this role by clearing a blocking flag */
+            if(a.roles&&a.roles.indexOf(t.role)<0) a.roles.push(t.role);
+            if(a.only&&String(a.only).split(",").indexOf(t.div)<0) a.only=String(a.only)+","+t.div;
+          }
+          admChanged(); admAddList(q);
+        };
+        box.appendChild(d);
+      });
+    if(!box.children.length) box.innerHTML='<div style="font:600 12px var(--font-sans);color:var(--text-muted);padding:5px">Nothing left to add.</div>';
+  }
   function admNote(){
     const el=document.getElementById("adm-note"); if(!el) return;
-    el.className="upload";
-    el.innerHTML=(admDirty?"<b>Unsaved changes.</b> ":"")+
-      "Publish saves to the alignment database ("+PORTAL_NODE+" node) — live for everyone right away. "+
-      "If the database refuses the write it downloads <b>index.html</b> as a backup so nothing is lost. "+
-      "Use <b>Test API</b> to check the connection without publishing.";
+    const me=((SESSION&&SESSION.email)||"").toLowerCase();
+    if(me===ADM_UPLOADER){
+      el.className="upload";
+      el.innerHTML=(admDirty?"<b>Unsaved changes.</b> ":"")+"Publish saves straight to the alignment database — live for everyone right away. If that ever fails it downloads <b>index.html</b> to upload to GitHub instead.";
+    }else{
+      el.className="send";
+      el.innerHTML=(admDirty?"<b>Unsaved changes.</b> ":"")+"Publish saves straight to the alignment database — live for everyone right away. If it can't reach the database it downloads <b>index.html</b>; email that file to <b>"+ADM_UPLOADER+"</b> to upload to GitHub.";
+    }
   }
-  /* One-click write check: pokes a harmless timestamp at PORTAL_NODE/ping so
-     the write permission can be verified without touching the tile list. */
-  document.getElementById("adm-test").onclick=async function(){
-    const btn=this; btn.disabled=true; const label=btn.textContent; btn.textContent="Testing…";
-    try{
-      const updates={}; updates[PORTAL_NODE+"/ping"]={t:new Date().toISOString(),by:((SESSION&&SESSION.email)||"unknown")};
-      const r=await fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})});
-      if(!r.ok){ let m="HTTP "+r.status; try{ m=(await r.json()).error||m; }catch(e){} throw new Error(m); }
-      alert("✓ Write OK — the API accepted a test write to "+PORTAL_NODE+"/ping.\nPublish will work.");
-    }catch(err){
-      alert("✗ Write refused: "+(err.message||err)+
-        "\n\nThe API is rejecting password \""+PORTAL_WRITE_PASSWORD+"\" for the \""+PORTAL_NODE+"\" node. "+
-        "Check the API's allowed paths for that password, or change PORTAL_NODE / PORTAL_WRITE_PASSWORD at the top of the PUBLISHED PORTAL CONFIG section in this file.");
-    }finally{ btn.disabled=false; btn.textContent=label; }
-  };
   function admSerialize(){
     const lines=APPS.map(a=>{
       let s='    { name:'+JSON.stringify(a.name)+', url:'+JSON.stringify(a.url)+', desc:'+JSON.stringify(a.desc||"");
@@ -2002,7 +1945,8 @@
          a publish is never simply lost. */
       try{
         const src=await (await fetch(location.href,{cache:"no-store"})).text();
-        const out=src.replace(/const APPS = \[[\s\S]*?\n  \];/, ()=>admSerialize());
+        let out=src.replace(/const APPS = \[[\s\S]*?\n  \];/, ()=>admSerialize());
+      out=out.replace(/var PEOPLE = \{[\s\S]*?\};/, ()=>"var PEOPLE = "+JSON.stringify(PEOPLE,null,2)+";");
         const a=document.createElement("a");
         a.href=URL.createObjectURL(new Blob([out],{type:"text/html"}));
         a.download="index.html"; a.click();
@@ -2016,22 +1960,17 @@
   document.getElementById("adm-reset").onclick=function(){
     if(!confirm("Discard changes and reload the published version?")) return; location.reload();
   };
-  document.getElementById("adm-dept").onchange=function(){ admRenderBoards(); };
+  document.getElementById("adm-view").onchange=function(){ admList(); admApplyPreview(); };
   document.getElementById("adm-open").onclick=function(){
     document.body.classList.add("adm-open");
-    admBuildTabs(); admSyncTabs(); admStaffDeptRefresh(); admRenderBoards(); admNote();
+    admBuildViews();
+    admList(); admNote(); admApplyPreview();
+    if(window.__fit) window.__fit();
   };
   document.getElementById("adm-x").onclick=function(){
-    document.body.classList.remove("adm-open");
+    document.body.classList.remove("adm-open"); admPreview=null;
+    renderBoard(); applyPortalIdentity(); if(window.__fit) window.__fit();
   };
-
-  /* On a fresh page load with a remembered session, the board renders before
-     this script has defined admSync(), so the Edit Portals button never
-     appeared until the person logged out and back in. Running it here (and
-     once more after the directory settles) closes that gap. */
-  admSync();
-  setTimeout(admSync,1500);
-
 
   </script>
 </body>
