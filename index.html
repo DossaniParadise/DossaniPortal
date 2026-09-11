@@ -385,6 +385,38 @@
     .chip{font:700 11px var(--font-sans);padding:4px 9px;border-radius:999px;border:1px solid var(--gray-300);
       background:#fff;color:var(--text-muted);cursor:pointer;}
     .chip.on{background:var(--navy-700);border-color:var(--navy-700);color:#fff;}
+    #adm-acct-wrap,#adm-plink-wrap,#ml-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;
+      display:flex;align-items:center;justify-content:center;padding:16px;}
+    #adm-acct-wrap[hidden],#adm-plink-wrap[hidden],#ml-wrap[hidden]{display:none;}
+    #adm-acct,#adm-plink,#ml{background:#fff;width:560px;max-width:100%;max-height:92vh;overflow-y:auto;
+      border-radius:14px;box-shadow:0 20px 60px rgba(13,10,53,.4);}
+    #ml{width:400px;}
+    #adm-acct header,#adm-plink header,#ml header{background:var(--navy-800);color:#fff;padding:12px 16px;
+      display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0;}
+    #adm-acct header b,#adm-plink header b,#ml header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
+    #adm-acct header button,#adm-plink header button,#ml header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    .acct-body{padding:14px 16px 18px;}
+    .acct-note{font:600 12px var(--font-sans);color:var(--text-muted);line-height:1.5;margin:0 0 12px;}
+    .acct-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid var(--gray-200);
+      border-radius:10px;padding:10px;padding-right:28px;margin-bottom:10px;background:var(--gray-50);position:relative;}
+    .acct-row input,.acct-row select{width:100%;padding:7px 9px;border:1px solid var(--gray-300);
+      border-radius:7px;font:500 13px var(--font-sans);background:#fff;}
+    .acct-row .full{grid-column:1/-1;}
+    .acct-row .rx{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--gray-400);
+      font-size:13px;cursor:pointer;padding:2px;}
+    .acct-row .rx:hover{color:var(--accent);}
+    .acct-empty{font:600 12px var(--font-sans);color:var(--text-subtle);padding:8px 2px 12px;}
+    .ml-in{width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:7px;
+      font:500 13px var(--font-sans);margin-bottom:6px;}
+    /* Personal tiles: owner edit pencil + the dashed "add a link" tile */
+    .tile-edit{position:absolute;top:6px;right:6px;z-index:3;width:22px;height:22px;border-radius:999px;
+      border:1px solid var(--gray-300);background:#fff;color:var(--navy-600);font-size:11px;line-height:20px;
+      text-align:center;cursor:pointer;padding:0;opacity:0;transition:opacity .12s;}
+    .tile:hover .tile-edit,.tile-edit:focus{opacity:1;}
+    .tile-add{border-style:dashed;border-color:var(--navy-200);background:var(--gray-50);cursor:pointer;
+      font:inherit;text-align:center;}
+    .tile-add .tile-icon{background:transparent;border:none;font-size:1.6rem;color:var(--navy-400);}
+    .tile-add .tile-name{color:var(--navy-500);}
     @media (max-width:800px){ #adm-boards{grid-template-columns:1fr;} #adm-head{padding:10px 12px;} }
   
     /* ---- Tutorial helper on a tile ---- */
@@ -566,6 +598,8 @@
       <div id="adm-tabs" role="tablist"></div>
       <div class="adm-head-actions">
         <button type="button" class="abtn" id="adm-new">+ New app</button>
+        <button type="button" class="abtn" id="adm-acct-open">Accounts</button>
+        <button type="button" class="abtn" id="adm-plink-open">Personal links</button>
         <button type="button" class="abtn" id="adm-test">Test API</button>
         <button type="button" class="abtn a" id="adm-pub">Publish</button>
         <button type="button" class="abtn" id="adm-reset">Discard</button>
@@ -606,6 +640,60 @@
           <button type="button" class="abtn p" id="ae-save">Save</button>
           <button type="button" class="abtn" id="ae-cancel">Cancel</button>
           <button type="button" class="abtn" id="ae-del" style="color:var(--accent)">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adm-acct-wrap" hidden>
+    <div id="adm-acct" role="dialog" aria-modal="true" aria-labelledby="adm-acct-title">
+      <header><b id="adm-acct-title">Hidden accounts</b><button type="button" id="adm-acct-x" aria-label="Close">&#10005;</button></header>
+      <div class="acct-body">
+        <p class="acct-note">People kept out of FindMi for privacy who can still sign in.
+          District&nbsp;Mgr, Director and Overwatch positions require their role password at sign-in;
+          General&nbsp;Mgr and Staff sign in with email only. Changes go live on Publish.</p>
+        <div id="adm-acct-list"></div>
+        <div class="arow">
+          <button type="button" class="abtn" id="adm-acct-add">+ Add account</button>
+          <button type="button" class="abtn p" id="adm-acct-save">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adm-plink-wrap" hidden>
+    <div id="adm-plink" role="dialog" aria-modal="true" aria-labelledby="adm-plink-title">
+      <header><b id="adm-plink-title">Personal links</b><button type="button" id="adm-plink-x" aria-label="Close">&#10005;</button></header>
+      <div class="acct-body">
+        <p class="acct-note">Each person can add links that appear on their portal only.
+          Load an account to fix names, links or icons for them. Saving writes straight
+          to the database — no Publish needed.</p>
+        <div class="arow" style="margin-top:0">
+          <input type="text" id="adm-plink-email" placeholder="person@dossaniparadise.com" style="flex:2;padding:8px 10px;border:1px solid var(--gray-300);border-radius:7px;font:500 13px var(--font-sans)" />
+          <button type="button" class="abtn" id="adm-plink-load">Load</button>
+        </div>
+        <div id="adm-plink-list" style="margin-top:10px"></div>
+        <div class="arow" id="adm-plink-actions" hidden>
+          <button type="button" class="abtn" id="adm-plink-add">+ Add link</button>
+          <button type="button" class="abtn p" id="adm-plink-save">Save to database</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ml-wrap" hidden>
+    <div id="ml" role="dialog" aria-modal="true" aria-labelledby="ml-title">
+      <header><b id="ml-title">Add a link to my page</b><button type="button" id="ml-x" aria-label="Close">&#10005;</button></header>
+      <div class="acct-body">
+        <p class="acct-note">This link appears on your portal only.</p>
+        <input type="hidden" id="ml-i" />
+        <input type="text" id="ml-name" placeholder="Name" class="ml-in" />
+        <input type="text" id="ml-url" placeholder="https://link" class="ml-in" />
+        <input type="text" id="ml-desc" placeholder="Caption (optional)" class="ml-in" />
+        <div class="arow">
+          <button type="button" class="abtn p" id="ml-save">Save</button>
+          <button type="button" class="abtn" id="ml-cancel">Cancel</button>
+          <button type="button" class="abtn" id="ml-del" style="color:var(--accent)">Delete</button>
         </div>
       </div>
     </div>
@@ -746,6 +834,14 @@
     const nm=document.createElement("div"); nm.className="tile-name"; nm.textContent=app.name;
     const ds=document.createElement("div"); ds.className="tile-desc"; ds.textContent=app.desc||domainOf(app.url);
     body.append(nm,ds); a.appendChild(body);
+    /* Personal links carry an edit pencil so the owner can fix or remove
+       them without anyone else's board being involved. */
+    if(app._mine!==undefined){
+      const ed=document.createElement("button"); ed.type="button"; ed.className="tile-edit";
+      ed.textContent="\u270E"; ed.title="Edit my link";
+      ed.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); mlOpen(app._mine); });
+      a.appendChild(ed);
+    }
     return a;
   }
 
@@ -756,6 +852,18 @@
     const board=document.createElement("div"); board.className="board";
     const grid=document.createElement("div"); grid.className="board-grid";
     apps.forEach(a=>grid.appendChild(tile(a)));
+    if(SESSION&&SESSION.email){
+      const add=document.createElement("button"); add.type="button"; add.className="tile tile-add";
+      add.dataset.search="add a link my links personal";
+      const ic=document.createElement("div"); ic.className="tile-icon"; ic.textContent="+";
+      const iw=document.createElement("div"); iw.className="tile-iconwrap"; iw.appendChild(ic);
+      const bd=document.createElement("div"); bd.className="tile-body";
+      const nm=document.createElement("div"); nm.className="tile-name"; nm.textContent="Add a link";
+      const ds=document.createElement("div"); ds.className="tile-desc"; ds.textContent="Shows on your page only";
+      bd.append(nm,ds); add.append(iw,bd);
+      add.addEventListener("click",()=>mlOpen(null));
+      grid.appendChild(add);
+    }
     board.append(grid);
     root.insertBefore(board,noResults);
   }
@@ -765,11 +873,89 @@
   function renderBoard(){
     if(typeof admSync==="function") admSync();
     if(typeof applyPublishedApps==="function" && !admDirty) applyPublishedApps();
-    render(appsForSession());
+    render(appsForSession().concat(myLinks().map((l,i)=>Object.assign({},l,{_mine:i}))));
     for(const k in BADGE_TILES) setBadge(k,COUNTS[k]||0);
     if(sTop&&sTop.value.trim()) filter(sTop.value);
     if(window.__fit) window.__fit();
   }
+
+  /* ---- Personal links ---------------------------------------------------
+     Every signed-in person can pin their own links; they live in the portal
+     config node (dpmPortal/personalLinks/<email-key>) so the database stays
+     the single source of truth, and Overwatch can tidy them up from
+     Edit Portals -> Personal links. Saves write to the API immediately —
+     no Publish step for regular users. */
+  function plEmailKey(em){ return String(em||"").trim().toLowerCase().replace(/[.#$\[\]\/]/g,","); }
+  function personalLinksFor(em){
+    try{
+      const node=(typeof nodeAt==="function"&&typeof PORTAL_NODE!=="undefined")?nodeAt(MASTER,PORTAL_NODE):null;
+      const all=node&&node.personalLinks;
+      const arr=all&&all[plEmailKey(em)];
+      return Array.isArray(arr)?arr:[];
+    }catch(e){ return []; }
+  }
+  function myLinks(){ return (SESSION&&SESSION.email)?personalLinksFor(SESSION.email):[]; }
+  async function savePersonalLinks(em,arr){
+    const updates={};
+    updates[PORTAL_NODE+"/personalLinks/"+plEmailKey(em)]=arr;
+    const r=await fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})});
+    if(!r.ok){ let m="HTTP "+r.status; try{ m=(await r.json()).error||m; }catch(e){} throw new Error(m); }
+    /* Mirror into the local master so the board reflects it instantly. */
+    try{
+      let n=MASTER;
+      for(const seg of PORTAL_NODE.split("/")){ n[seg]=n[seg]||{}; n=n[seg]; }
+      n.personalLinks=n.personalLinks||{};
+      n.personalLinks[plEmailKey(em)]=arr;
+    }catch(e){}
+    masterAt=0;
+  }
+
+  function mlOpen(i){
+    if(!SESSION||!SESSION.email) return;
+    const links=myLinks();
+    const isNew=(i==null||!links[i]);
+    document.getElementById("ml-title").textContent=isNew?"Add a link to my page":"Edit my link";
+    document.getElementById("ml-i").value=isNew?"":i;
+    document.getElementById("ml-name").value=isNew?"":(links[i].name||"");
+    document.getElementById("ml-url").value=isNew?"":(links[i].url||"");
+    document.getElementById("ml-desc").value=isNew?"":(links[i].desc||"");
+    document.getElementById("ml-del").style.display=isNew?"none":"";
+    document.getElementById("ml-wrap").hidden=false;
+    document.getElementById("ml-name").focus();
+  }
+  function mlClose(){ document.getElementById("ml-wrap").hidden=true; }
+  async function mlSave(){
+    const name=document.getElementById("ml-name").value.trim();
+    let url=document.getElementById("ml-url").value.trim();
+    const desc=document.getElementById("ml-desc").value.trim();
+    if(url&&!/^https?:\/\//i.test(url)) url="https://"+url;
+    if(!name||!/^https?:\/\//i.test(url)){ alert("A name and a link are required."); return; }
+    const links=myLinks().slice();
+    const iv=document.getElementById("ml-i").value;
+    const entry={name:name,url:url,desc:desc};
+    if(iv===""){ links.push(entry); }
+    else{ const old=links[+iv]||{}; if(old.icon) entry.icon=old.icon; links[+iv]=entry; }
+    const btn=document.getElementById("ml-save"); btn.disabled=true;
+    try{ await savePersonalLinks(SESSION.email,links); mlClose(); renderBoard(); }
+    catch(err){ alert("Couldn't save your link ("+(err.message||err)+"). Check your connection and try again."); }
+    finally{ btn.disabled=false; }
+  }
+  async function mlDelete(){
+    const iv=document.getElementById("ml-i").value; if(iv==="") return;
+    const links=myLinks().slice(); const gone=links[+iv];
+    if(!confirm('Remove "'+((gone&&gone.name)||"this link")+'" from your page?')) return;
+    links.splice(+iv,1);
+    const btn=document.getElementById("ml-del"); btn.disabled=true;
+    try{ await savePersonalLinks(SESSION.email,links); mlClose(); renderBoard(); }
+    catch(err){ alert("Couldn't remove the link ("+(err.message||err)+")."); }
+    finally{ btn.disabled=false; }
+  }
+  document.getElementById("ml-save").addEventListener("click",mlSave);
+  document.getElementById("ml-del").addEventListener("click",mlDelete);
+  document.getElementById("ml-cancel").addEventListener("click",mlClose);
+  document.getElementById("ml-x").addEventListener("click",mlClose);
+  document.getElementById("ml-wrap").addEventListener("click",function(e){ if(e.target===this) mlClose(); });
 
   const sTop=document.getElementById("search-top");
   function filter(q){
@@ -887,6 +1073,27 @@
   /* Mirrors FixMi's resolveSession — same order, same passwords — so one
      person gets one identity suite-wide. Admin is checked first: Rahim and
      IT Support must never resolve as anything else. */
+  /* ---- Hidden accounts --------------------------------------------------
+     People deliberately kept OUT of the FindMi directory for privacy still
+     need to sign in. The live list is published with the tile config
+     (dpmPortal/extraAccounts, editable from Edit Portals -> Accounts); this
+     seed only covers first-run and database-down. Privileged positions
+     still require their role password at sign-in; gm/staff are email-only. */
+  const PORTAL_EXTRA_SEED=[
+    { email:"armaan@dossaniparadise.com", name:"Armaan", title:"Executive", role:"director" },
+    { email:"al@dossaniparadise.com",     name:"Al",     title:"Executive", role:"director" }
+  ];
+  function extraAccounts(){
+    try{
+      const node=(typeof nodeAt==="function"&&typeof PORTAL_NODE!=="undefined")?nodeAt(MASTER,PORTAL_NODE):null;
+      if(node&&Array.isArray(node.extraAccounts)) return node.extraAccounts;
+    }catch(e){}
+    return PORTAL_EXTRA_SEED;
+  }
+  function extraAccount(lc){
+    return extraAccounts().find(a=>String((a&&a.email)||"").trim().toLowerCase()===lc)||null;
+  }
+
   function resolveSession(email,pw){
     const lc=(email||"").trim().toLowerCase();
     if(!lc) return {error:"Enter your work email."};
@@ -901,6 +1108,19 @@
       const a=Object.values(admins).find(x=>(((x||{}).email)||"").trim().toLowerCase()===lc);
       const known={"rahim@dossaniparadise.com":"Rahim Virani","itsupport@dossaniparadise.com":"IT Support","deisy@dossaniparadise.com":"Deisy"}[lc];
       return {email:lc,role:"admin",name:(a&&a.name)||known||"Administrator"};
+    }
+
+    /* Hidden accounts (not in FindMi) — resolved from the portal config. */
+    const xa=extraAccount(lc);
+    if(xa){
+      const role=xa.role||"staff";
+      if(role==="admin"||role==="director"||role==="coach"){
+        const roleName={admin:"Overwatch",director:"Director",coach:"District Manager"}[role];
+        if(!pw) return {error:"Enter the "+roleName+" password."};
+        if(pw!==ROLE_PASSWORDS[role]) return {error:"That password doesn't match the "+roleName+" role."};
+      }
+      return { email:lc, role:role, name:xa.name||lc.split("@")[0],
+               title:(xa.title||"").trim(), dept:((xa.dept||"")+"").trim() };
     }
 
     const dirs=(MASTER&&MASTER.directors)||{};
@@ -1610,7 +1830,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="3.8";
+  var APP_VERSION="4.0";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1686,6 +1906,8 @@
     updates[PORTAL_NODE+"/schema"]=payload.schema;
     updates[PORTAL_NODE+"/updatedAt"]=payload.updatedAt;
     updates[PORTAL_NODE+"/updatedBy"]=payload.updatedBy;
+    /* Hidden accounts publish alongside the tiles — one node, one truth. */
+    updates[PORTAL_NODE+"/extraAccounts"]=(typeof ADM_EXTRA!=="undefined"&&ADM_EXTRA)?ADM_EXTRA:extraAccounts();
     const r=await fetch(ALIGNMENT_API,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({password:PORTAL_WRITE_PASSWORD,updates})});
     if(!r.ok){ let m="HTTP "+r.status; try{ m=(await r.json()).error||m; }catch(e){} throw new Error(m); }
@@ -2008,10 +2230,151 @@
   });
   document.addEventListener("keydown",function(e){
     if(e.key!=="Escape") return;
+    const mw=document.getElementById("ml-wrap");
+    if(mw&&!mw.hidden){ mlClose(); return; }
+    if(!document.getElementById("adm-plink-wrap").hidden){ admPlClose(); return; }
+    if(!document.getElementById("adm-acct-wrap").hidden){ admAcctClose(); return; }
     if(!document.getElementById("adm-modal-wrap").hidden){ admCancelModal(); return; }
     if(document.body.classList.contains("adm-open")) document.body.classList.remove("adm-open");
   });
   document.getElementById("adm-new").onclick=admNew;
+
+  /* ---- Hidden accounts manager ------------------------------------------
+     Edits a working copy (ADM_EXTRA); Publish writes it to
+     dpmPortal/extraAccounts next to the tile list. */
+  let ADM_EXTRA=null;
+  const ADM_ACCT_ROLES=[["gm","General Mgr (email-only sign-in)"],["coach","District Mgr (password)"],
+    ["director","Director (password)"],["staff","Staff (email-only sign-in)"],["admin","Overwatch (password)"]];
+  function admAcctOpen(){
+    if(!ADM_EXTRA) ADM_EXTRA=JSON.parse(JSON.stringify(extraAccounts()));
+    admAcctRender();
+    document.getElementById("adm-acct-wrap").hidden=false;
+  }
+  function admAcctClose(){ document.getElementById("adm-acct-wrap").hidden=true; }
+  function admAcctRender(){
+    const host=document.getElementById("adm-acct-list"); host.innerHTML="";
+    if(!ADM_EXTRA.length){
+      const e=document.createElement("div"); e.className="acct-empty";
+      e.textContent="No hidden accounts yet — add one below."; host.appendChild(e); return;
+    }
+    ADM_EXTRA.forEach((ac,idx)=>{
+      const row=document.createElement("div"); row.className="acct-row";
+      const mk=(ph,val,key,full)=>{ const inp=document.createElement("input");
+        inp.type="text"; inp.placeholder=ph; inp.value=val||"";
+        if(full) inp.className="full";
+        inp.oninput=()=>{ ac[key]=inp.value; }; return inp; };
+      row.appendChild(mk("Email (e.g. name@dossaniparadise.com)",ac.email,"email",true));
+      row.appendChild(mk("Display name",ac.name,"name"));
+      row.appendChild(mk("Title (shown on their portal)",ac.title,"title"));
+      const sel=document.createElement("select");
+      ADM_ACCT_ROLES.forEach(([v,l])=>{ const o=document.createElement("option");
+        o.value=v; o.textContent=l; sel.appendChild(o); });
+      sel.value=ac.role||"staff"; sel.onchange=()=>{ ac.role=sel.value; admAcctRender(); };
+      row.appendChild(sel);
+      const dept=mk("Department (staff only, optional)",ac.dept,"dept");
+      if((ac.role||"staff")!=="staff") dept.disabled=true;
+      row.appendChild(dept);
+      const rx=document.createElement("button"); rx.type="button"; rx.className="rx";
+      rx.textContent="\u2715"; rx.title="Remove this account";
+      rx.onclick=()=>{ if(!confirm("Remove "+(ac.email||"this account")+" from hidden accounts? They will no longer be able to sign in (unless added to FindMi).")) return;
+        ADM_EXTRA.splice(idx,1); admAcctRender(); };
+      row.appendChild(rx);
+      host.appendChild(row);
+    });
+  }
+  document.getElementById("adm-acct-open").onclick=admAcctOpen;
+  document.getElementById("adm-acct-x").onclick=admAcctClose;
+  document.getElementById("adm-acct-add").onclick=function(){
+    ADM_EXTRA.push({email:"",name:"",title:"",role:"staff",dept:""}); admAcctRender();
+  };
+  document.getElementById("adm-acct-save").onclick=function(){
+    const cleaned=[];
+    for(const ac of ADM_EXTRA){
+      const em=String(ac.email||"").trim().toLowerCase();
+      if(!em) continue;
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ alert('"'+ac.email+'" doesn\'t look like an email address.'); return; }
+      const o={email:em, name:String(ac.name||"").trim(), title:String(ac.title||"").trim(), role:ac.role||"staff"};
+      const d=String(ac.dept||"").trim(); if(o.role==="staff"&&d) o.dept=d;
+      cleaned.push(o);
+    }
+    ADM_EXTRA=cleaned;
+    admDirty=true; admNote(); admAcctClose();
+  };
+  document.getElementById("adm-acct-wrap").addEventListener("click",function(e){
+    if(e.target===this) admAcctClose();
+  });
+
+  /* ---- Overwatch: personal-links manager --------------------------------
+     Load anyone's personal links by email to fix names, links or add icons
+     for them. Saves write straight to the database (no Publish). */
+  let ADM_PL_EMAIL="", ADM_PL=[];
+  function admPlClose(){ document.getElementById("adm-plink-wrap").hidden=true; }
+  function admPlRender(){
+    const host=document.getElementById("adm-plink-list"); host.innerHTML="";
+    document.getElementById("adm-plink-actions").hidden=!ADM_PL_EMAIL;
+    if(!ADM_PL_EMAIL) return;
+    if(!ADM_PL.length){
+      const e=document.createElement("div"); e.className="acct-empty";
+      e.textContent="No personal links for "+ADM_PL_EMAIL+" yet — add one below."; host.appendChild(e); return;
+    }
+    ADM_PL.forEach((l,idx)=>{
+      const row=document.createElement("div"); row.className="acct-row";
+      const mk=(ph,val,key,full)=>{ const inp=document.createElement("input");
+        inp.type="text"; inp.placeholder=ph; inp.value=val||"";
+        if(full) inp.className="full";
+        inp.oninput=()=>{ l[key]=inp.value; }; return inp; };
+      row.appendChild(mk("Name",l.name,"name"));
+      row.appendChild(mk("https://link",l.url,"url"));
+      row.appendChild(mk("Caption",l.desc,"desc"));
+      row.appendChild(mk("Icon image URL (optional)",l.icon,"icon"));
+      const rx=document.createElement("button"); rx.type="button"; rx.className="rx";
+      rx.textContent="\u2715"; rx.title="Remove this link";
+      rx.onclick=()=>{ ADM_PL.splice(idx,1); admPlRender(); };
+      row.appendChild(rx);
+      host.appendChild(row);
+    });
+  }
+  document.getElementById("adm-plink-open").onclick=function(){
+    document.getElementById("adm-plink-email").value=ADM_PL_EMAIL||"";
+    admPlRender();
+    document.getElementById("adm-plink-wrap").hidden=false;
+  };
+  document.getElementById("adm-plink-x").onclick=admPlClose;
+  document.getElementById("adm-plink-load").onclick=function(){
+    const em=document.getElementById("adm-plink-email").value.trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ alert("Enter the person's full email address."); return; }
+    ADM_PL_EMAIL=em;
+    ADM_PL=JSON.parse(JSON.stringify(personalLinksFor(em)));
+    admPlRender();
+  };
+  document.getElementById("adm-plink-add").onclick=function(){
+    ADM_PL.push({name:"",url:"",desc:""}); admPlRender();
+  };
+  document.getElementById("adm-plink-save").onclick=async function(){
+    if(!ADM_PL_EMAIL) return;
+    const cleaned=[];
+    for(const l of ADM_PL){
+      const name=String(l.name||"").trim(); let url=String(l.url||"").trim();
+      if(!name&&!url) continue;
+      if(url&&!/^https?:\/\//i.test(url)) url="https://"+url;
+      if(!name||!/^https?:\/\//i.test(url)){ alert("Every link needs a name and a valid https:// link."); return; }
+      const o={name:name,url:url,desc:String(l.desc||"").trim()};
+      const ic=String(l.icon||"").trim(); if(ic) o.icon=ic;
+      cleaned.push(o);
+    }
+    const btn=this; btn.disabled=true; const label=btn.textContent; btn.textContent="Saving\u2026";
+    try{
+      await savePersonalLinks(ADM_PL_EMAIL,cleaned);
+      ADM_PL=cleaned; admPlRender();
+      if(SESSION&&(SESSION.email||"").toLowerCase()===ADM_PL_EMAIL) renderBoard();
+      alert("Saved. "+ADM_PL_EMAIL+" will see the updated links on their next load.");
+    }catch(err){
+      alert("Couldn't save ("+(err.message||err)+").");
+    }finally{ btn.disabled=false; btn.textContent=label; }
+  };
+  document.getElementById("adm-plink-wrap").addEventListener("click",function(e){
+    if(e.target===this) admPlClose();
+  });
 
   function admNote(){
     const el=document.getElementById("adm-note"); if(!el) return;
