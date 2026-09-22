@@ -616,6 +616,8 @@
         <div class="chips" id="ae-roles"></div>
         <label>Departments <span style="font-weight:500;text-transform:none;letter-spacing:0">(support staff only — none = all)</span></label>
         <div class="chips" id="ae-depts"></div>
+        <label>Only stores under <span style="font-weight:500;text-transform:none;letter-spacing:0">(from FindMi — follows their store list as it changes; none = no restriction)</span></label>
+        <div class="chips" id="ae-under"></div>
         <label>Accounts <span style="font-weight:500;text-transform:none;letter-spacing:0">(emails, comma-separated — blank = normal rules)</span></label>
         <input type="text" id="ae-accounts" placeholder="Only these accounts see it (e.g. wash1@…, wash2@…)" />
         <input type="text" id="ae-hidefor" placeholder="Hide from these accounts" />
@@ -1188,12 +1190,44 @@
      Everything without the flag shows on both. */
   /* The board for one role in one division. `only` may name a single division
      or several ("bk,subway"); no flag means every division. */
-  function appsFor(role,div,dept,email){
+  /* ---- Leader groups ----------------------------------------------------
+     A tile can be pinned to "every store under" a Director or District
+     Manager. Membership is resolved from FindMi at render time — never
+     stored — so when a leader gains or loses stores, their tiles follow
+     automatically. Director scope mirrors myStoreIds(): stores stamped with
+     the director PLUS every store under a DM who reports to them. */
+  function storesUnderLeader(ref){
+    const stores=(MASTER&&MASTER.restaurants)||{};
+    const i=String(ref||"").indexOf(":"), kind=i<0?"":ref.slice(0,i), id=i<0?"":ref.slice(i+1);
+    if(!id) return [];
+    if(kind==="coach")
+      return Object.keys(stores).filter(r=>(stores[r]||{}).assignedAreaCoachId===id);
+    if(kind==="director"){
+      const coaches=(MASTER&&MASTER.areaCoaches)||{};
+      const mine=new Set(Object.keys(coaches).filter(cid=>(coaches[cid]||{}).assignedDirectorId===id));
+      return Object.keys(stores).filter(r=>{
+        const st=stores[r]||{};
+        return st.assignedDirectorId===id||mine.has(st.assignedAreaCoachId);
+      });
+    }
+    return [];
+  }
+
+  function appsFor(role,div,dept,email,storeIds){
     dept=(dept||"").trim().toLowerCase();
     email=(email||"").trim().toLowerCase();
     const inList=arr=>arr.map(e=>String(e).trim().toLowerCase()).indexOf(email)>=0;
     const list=APPS.filter(a=>{
       if(a.roles&&a.roles.length&&(!role||a.roles.indexOf(role)<0)) return false;
+      /* Leader-group targeting: the tile shows only when the viewer's stores
+         overlap the CURRENT stores of one of the named leaders. Overwatch is
+         exempt; storeIds===null means an admin preview board, where the gate
+         is skipped so targeted tiles stay visible and editable. */
+      if(a.under&&a.under.length&&role!=="admin"&&storeIds!==null&&storeIds!==undefined){
+        const mine=new Set(storeIds);
+        if(!mine.size) return false;
+        if(!a.under.some(ref=>storesUnderLeader(ref).some(id=>mine.has(id)))) return false;
+      }
       /* Per-account targeting — Overwatch is exempt so nothing can be
          hidden from the people who administer the board.
            accounts: if set, ONLY these emails see the tile
@@ -1227,7 +1261,7 @@
     if(divs.indexOf("bk")>=0) return "bk";       /* mixed patch = full board */
     return divs[0]||"bk";
   }
-  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision(), (SESSION&&SESSION.dept)||"", (SESSION&&SESSION.email)||""); }
+  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision(), (SESSION&&SESSION.dept)||"", (SESSION&&SESSION.email)||"", myStoreIds()); }
   function wantsEmergenciesOnly(){
     return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
   }
@@ -1682,7 +1716,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="4.1";
+  var APP_VERSION="4.2";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1748,6 +1782,7 @@
         if(a.depts&&a.depts.length) o.depts=a.depts.slice();
         if(a.accounts&&a.accounts.length) o.accounts=a.accounts.slice();
         if(a.hideFor&&a.hideFor.length) o.hideFor=a.hideFor.slice();
+        if(a.under&&a.under.length) o.under=a.under.slice();
         if(a.tut){ o.tut=true; o.tutUrl=a.tutUrl||""; if(a.tutCap) o.tutCap=a.tutCap; }
         return o;
       }), updatedAt:new Date().toISOString(), updatedBy:who||"unknown" };
@@ -1849,6 +1884,11 @@
       host.appendChild(admBuildMiniBoard(ADM_DIVLABEL[d]+" "+ADM_SHORT[grp.role],grp.role,d,"",""));
     });
   }
+  function admStoreIdsForEmail(em){
+    em=String(em||"").trim().toLowerCase();
+    const stores=(MASTER&&MASTER.restaurants)||{};
+    return Object.keys(stores).filter(r=>String(((stores[r]||{}).email)||"").trim().toLowerCase()===em);
+  }
   function admCarwashAccounts(){
     const out=[], stores=(MASTER&&MASTER.restaurants)||{};
     for(const id in stores){
@@ -1865,7 +1905,7 @@
     const wrap=document.createElement("div"); wrap.className="mini-board";
     const head=document.createElement("header");
     const b=document.createElement("b"); b.textContent=title;
-    const vis=appsFor(role,div,dept,email||"");
+    const vis=appsFor(role,div,dept,email||"",email?admStoreIdsForEmail(email):null);
     const span=document.createElement("span"); span.textContent=vis.length+(vis.length===1?" tile":" tiles");
     head.append(b,span); wrap.appendChild(head);
     const grid=document.createElement("div"); grid.className="mini-grid";
@@ -1939,7 +1979,7 @@
   }
   function admMiniTile(a,pos,vis,ctx){
     const t=document.createElement("div"); t.className="mini-tile"; t.draggable=true; t.dataset.pos=pos;
-    t.title="Click to edit "+a.name;
+    t.title="Click to edit "+a.name+((a.under&&a.under.length)?" — targeted to stores under specific leaders; some people on this board may not see it":"");
     t.appendChild(admMiniIcon(a));
     const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
     t.appendChild(nm);
@@ -1979,6 +2019,24 @@
   function admCloseModal(){ document.getElementById("adm-modal-wrap").hidden=true; }
 
   const ADM_DIV_OPTS=[["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]];
+
+  /* Directors and District Managers from FindMi, as chip options. The value
+     stored on the tile is the directory ID (stable if an email changes);
+     the label shows the current name and live store count. */
+  function admLeaderOptions(){
+    const out=[];
+    const dirs=(MASTER&&MASTER.directors)||{};
+    Object.keys(dirs).forEach(id=>{
+      const n=((dirs[id]||{}).name||"Director").trim();
+      out.push(["director:"+id,"DO · "+n+" ("+storesUnderLeader("director:"+id).length+" stores)"]);
+    });
+    const coaches=(MASTER&&MASTER.areaCoaches)||{};
+    Object.keys(coaches).forEach(id=>{
+      const n=((coaches[id]||{}).name||"District Manager").trim();
+      out.push(["coach:"+id,"DM · "+n+" ("+storesUnderLeader("coach:"+id).length+" stores)"]);
+    });
+    return out;
+  }
 
   /* Pull whatever is typed in the text inputs into the app object BEFORE a
      chip click re-renders the form — otherwise clicking a chip would wipe an
@@ -2027,6 +2085,16 @@
            if(k>=0) a.depts.splice(k,1); else a.depts.push(v);
            if(!a.depts.length) delete a.depts; admChanged(); admEdit(i); });
 
+    const leaders=admLeaderOptions();
+    admChips(document.getElementById("ae-under"),
+      (leaders.length?leaders:[["","(directory loading…)"]]),
+      v=>!!(a.under&&a.under.indexOf(v)>=0),
+      v=>{ if(!v) return;
+           admSyncFields(a);
+           a.under=a.under||[]; const k=a.under.indexOf(v);
+           if(k>=0) a.under.splice(k,1); else a.under.push(v);
+           if(!a.under.length) delete a.under; admChanged(); admEdit(i); });
+
     admChips(document.getElementById("ae-tut"), [["yes","Tutorial: Yes"],["no","No"]],
       v=>((a.tut?"yes":"no")===v),
       v=>{ admSyncFields(a);
@@ -2053,7 +2121,7 @@
       /* A stray backdrop click was silently throwing new apps away — if
          anything has been typed or toggled, ask first. */
       const typed=(document.getElementById("ae-name").value.trim()||document.getElementById("ae-url").value.trim());
-      const touched=a&&(a.only||a.roles||a.depts||a.tut||a.accounts||a.hideFor);
+      const touched=a&&(a.only||a.roles||a.depts||a.tut||a.accounts||a.hideFor||a.under);
       if((typed||touched)&&!confirm("Discard this new app?")) return;
       APPS.splice(admNewPendingIndex,1); admNewPendingIndex=null;
     }
@@ -2188,6 +2256,7 @@
       if(a.depts&&a.depts.length) s+=', depts:'+JSON.stringify(a.depts);
       if(a.accounts&&a.accounts.length) s+=', accounts:'+JSON.stringify(a.accounts);
       if(a.hideFor&&a.hideFor.length) s+=', hideFor:'+JSON.stringify(a.hideFor);
+      if(a.under&&a.under.length) s+=', under:'+JSON.stringify(a.under);
       if(a.tut) s+=', tut:true';
       if(a.tutCap) s+=', tutCap:'+JSON.stringify(a.tutCap);
       if(a.tutUrl) s+=', tutUrl:'+JSON.stringify(a.tutUrl);
