@@ -860,6 +860,10 @@
   const ALIGNMENT_API="https://alignment-api-khaki.vercel.app/api/dpm-alignment";
   const PAYMI_FS="https://firestore.googleapis.com/v1/projects/gen-lang-client-0357067758/databases/(default)/documents/invoices?pageSize=300&key=AIzaSyAxW6wajL9PH1Wlw3_QuBXgAMFgYWjkJp8";
   const ROLE_PASSWORDS={ coach:"DM@76051", director:"DO@76051", admin:"Overwatch@76051" };
+  /* The ONLY account that is asked for a password: the one that can open
+     Edit Portals. The portal is a link collector, not SSO — everyone else
+     signs in with their work email alone. */
+  const PORTAL_EDITOR="itsupport@dossaniparadise.com";
   const ADMIN_EMAILS=["itsupport@dossaniparadise.com","rahim@dossaniparadise.com","deisy@dossaniparadise.com"];
   /* What the portal calls itself, per role. Anyone not signed in sees the
      default. */
@@ -957,8 +961,12 @@
 
     const admins=(MASTER&&MASTER.admins)||{};
     if(ADMIN_EMAILS.includes(lc)||Object.keys(admins).some(id=>emailIs(admins,id))){
-      if(!pw) return {error:"Enter the Overwatch password."};
-      if(pw!==ROLE_PASSWORDS.admin) return {error:"That password doesn't match the Overwatch role."};
+      /* Only the portal editor is challenged; the other Overwatch accounts
+         get the full board with just their email, like everyone else. */
+      if(lc===PORTAL_EDITOR){
+        if(!pw) return {error:"Enter the Overwatch password."};
+        if(pw!==ROLE_PASSWORDS.admin) return {error:"That password doesn't match the Overwatch role."};
+      }
       const a=Object.values(admins).find(x=>(((x||{}).email)||"").trim().toLowerCase()===lc);
       const known={"rahim@dossaniparadise.com":"Rahim Virani","itsupport@dossaniparadise.com":"IT Support","deisy@dossaniparadise.com":"Deisy"}[lc];
       return {email:lc,role:"admin",name:(a&&a.name)||known||"Administrator"};
@@ -967,13 +975,9 @@
     /* Hidden accounts (not in FindMi) — resolved from the portal config. */
     const xa=extraAccount(lc);
     if(xa){
-      const role=xa.role||"staff";
-      if(role==="admin"||role==="director"||role==="coach"){
-        const roleName={admin:"Overwatch",director:"Director",coach:"District Manager"}[role];
-        if(!pw) return {error:"Enter the "+roleName+" password."};
-        if(pw!==ROLE_PASSWORDS[role]) return {error:"That password doesn't match the "+roleName+" role."};
-      }
-      return { email:lc, role:role, name:xa.name||lc.split("@")[0],
+      /* Email-only, whatever their position — the password lives with the
+         portal editor alone. */
+      return { email:lc, role:xa.role||"staff", name:xa.name||lc.split("@")[0],
                title:(xa.title||"").trim(), dept:((xa.dept||"")+"").trim() };
     }
 
@@ -1430,12 +1434,12 @@
     v=v.replace(/@.*$/,"");
     return v?v+EMAIL_DOMAIN:"";
   }
-  /* The password box only exists for the three Overwatch admins. It appears
-     as soon as one of their addresses is typed and disappears the moment the
+  /* The password box exists for exactly one address — the portal editor.
+     It appears when that address is typed and disappears the moment the
      address changes, so nobody else is ever asked for a password. */
   const gPwWrap=document.getElementById("gate-pwwrap");
   function syncPwField(){
-    const needs=ADMIN_EMAILS.indexOf(gateEmailValue())>=0;
+    const needs=gateEmailValue()===PORTAL_EDITOR;
     gPwWrap.hidden=!needs;
     if(!needs) gPw.value="";
   }
@@ -1726,7 +1730,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="4.3";
+  var APP_VERSION="4.4";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1815,7 +1819,10 @@
   const ADM_ROLES=[["coach","District Mgr"],["director","Director"],["gm","General Mgr"],["staff","Staff"],["admin","Overwatch"]];
   let admDirty=false, admGroup="gm", admNewPendingIndex=null;
 
-  function admIsAdmin(){ return !!SESSION && SESSION.role==="admin"; }
+  /* Edit Portals is tied to the ONE password-protected account, not the
+     Overwatch role — other Overwatch viewers sign in email-only and must
+     not be able to publish. */
+  function admIsAdmin(){ return !!SESSION && SESSION.role==="admin" && (SESSION.email||"").toLowerCase()===ADM_UPLOADER; }
   function admSync(){ document.body.classList.toggle("is-admin", admIsAdmin()); }
 
   /* Each board shows exactly the tiles a role in a division (or a
