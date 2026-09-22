@@ -1221,12 +1221,22 @@
       if(a.roles&&a.roles.length&&(!role||a.roles.indexOf(role)<0)) return false;
       /* Leader-group targeting: the tile shows only when the viewer's stores
          overlap the CURRENT stores of one of the named leaders. Overwatch is
-         exempt; storeIds===null means an admin preview board, where the gate
-         is skipped so targeted tiles stay visible and editable. */
-      if(a.under&&a.under.length&&role!=="admin"&&storeIds!==null&&storeIds!==undefined){
-        const mine=new Set(storeIds);
-        if(!mine.size) return false;
-        if(!a.under.some(ref=>storesUnderLeader(ref).some(id=>mine.has(id)))) return false;
+         exempt. storeIds===null means a generic admin preview board (a role in
+         a division, no specific person): there the tile shows only if one of
+         the leaders' stores actually belongs to that division — so a tile for
+         a BK-only DM's stores previews on the BK boards alone, exactly
+         mirroring who really sees it. */
+      if(a.under&&a.under.length&&role!=="admin"){
+        const leaderStores=[];
+        a.under.forEach(ref=>storesUnderLeader(ref).forEach(id=>leaderStores.push(id)));
+        if(storeIds===null||storeIds===undefined){
+          const stores=(MASTER&&MASTER.restaurants)||{};
+          if(!leaderStores.some(id=>storeDivision(stores[id])===div)) return false;
+        }else{
+          const mine=new Set(storeIds);
+          if(!mine.size) return false;
+          if(!leaderStores.some(id=>mine.has(id))) return false;
+        }
       }
       /* Per-account targeting — Overwatch is exempt so nothing can be
          hidden from the people who administer the board.
@@ -1716,7 +1726,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="4.2";
+  var APP_VERSION="4.3";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1979,7 +1989,7 @@
   }
   function admMiniTile(a,pos,vis,ctx){
     const t=document.createElement("div"); t.className="mini-tile"; t.draggable=true; t.dataset.pos=pos;
-    t.title="Click to edit "+a.name+((a.under&&a.under.length)?" — targeted to stores under specific leaders; some people on this board may not see it":"");
+    t.title="Click to edit "+a.name+((a.under&&a.under.length)?" — targeted to stores under specific leaders":"");
     t.appendChild(admMiniIcon(a));
     const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
     t.appendChild(nm);
