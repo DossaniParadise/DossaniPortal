@@ -405,6 +405,33 @@
       font-size:13px;cursor:pointer;padding:2px;}
     .acct-row .rx:hover{color:var(--accent);}
     .acct-empty{font:600 12px var(--font-sans);color:var(--text-subtle);padding:8px 2px 12px;}
+    #adm-views{display:flex;gap:0;border:1px solid rgba(255,255,255,.28);border-radius:999px;overflow:hidden;}
+    #adm-views button{font:800 11px var(--font-sans);letter-spacing:.03em;padding:7px 14px;border:none;
+      background:rgba(255,255,255,.07);color:#c7c3f1;cursor:pointer;}
+    #adm-views button.on{background:#fff;color:var(--navy-800);}
+    #adm-matrix-wrap{grid-column:1/-1;overflow:auto;background:#fff;border:1px solid var(--border-subtle);
+      border-radius:14px;box-shadow:0 2px 10px rgba(20,16,74,.06);}
+    #adm-matrix{border-collapse:separate;border-spacing:0;font:600 12px var(--font-sans);min-width:100%;}
+    #adm-matrix th,#adm-matrix td{border-bottom:1px solid var(--gray-200);padding:6px 8px;text-align:center;white-space:nowrap;}
+    #adm-matrix thead th{position:sticky;top:0;background:var(--navy-50);color:var(--text-heading);
+      font:800 10.5px var(--font-sans);letter-spacing:.05em;text-transform:uppercase;z-index:2;}
+    #adm-matrix th:first-child,#adm-matrix td:first-child{position:sticky;left:0;background:#fff;text-align:left;z-index:1;
+      border-right:1px solid var(--gray-200);max-width:230px;overflow:hidden;text-overflow:ellipsis;}
+    #adm-matrix thead th:first-child{background:var(--navy-50);z-index:3;}
+    .mx-name{display:flex;align-items:center;gap:7px;cursor:pointer;}
+    .mx-name img,.mx-name .mt-letter{width:17px;height:17px;object-fit:contain;border-radius:4px;flex:none;}
+    .mx-name b{font:700 12.5px var(--font-sans);color:var(--text-heading);overflow:hidden;text-overflow:ellipsis;}
+    .mx-dup{font:800 8.5px var(--font-sans);letter-spacing:.04em;color:#fff;background:var(--accent);
+      border-radius:4px;padding:1px 5px;flex:none;}
+    .mx-cell{display:inline-block;min-width:26px;padding:3px 6px;border-radius:7px;border:1px solid transparent;
+      background:none;cursor:pointer;font:800 12px var(--font-sans);}
+    .mx-cell.on{color:#0a7a2f;background:#e9f7ee;border-color:#bfe6cc;}
+    .mx-cell.off{color:var(--gray-400);}
+    .mx-cell.part{color:#8a5a00;background:#fdf3e0;border-color:#f0ddb0;}
+    .mx-cell.lock{color:var(--gray-300);cursor:not-allowed;}
+    .mx-cell:not(.lock):hover{border-color:var(--navy-300);}
+    .mx-del{background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:12px;}
+    .mx-del:hover{color:var(--accent);}
     @media (max-width:800px){ #adm-boards{grid-template-columns:1fr;} #adm-head{padding:10px 12px;} }
   
     /* ---- Tutorial helper on a tile ---- */
@@ -583,6 +610,10 @@
   <div id="adm" aria-label="Portal editor" role="dialog" aria-modal="true">
     <header id="adm-head">
       <b>EDIT PORTALS</b>
+      <div id="adm-views">
+        <button type="button" id="adm-view-boards" class="on">Boards</button>
+        <button type="button" id="adm-view-matrix">Matrix</button>
+      </div>
       <div id="adm-tabs" role="tablist"></div>
       <div class="adm-head-actions">
         <button type="button" class="abtn" id="adm-new">+ New app</button>
@@ -610,10 +641,8 @@
         <input type="text" id="ae-url" placeholder="https://link" />
         <input type="text" id="ae-desc" placeholder="Caption" />
         <input type="text" id="ae-icon" placeholder="Icon image URL" />
-        <label style="margin-top:4px">Division <span style="font-weight:500;text-transform:none;letter-spacing:0">(pick any — none = all)</span></label>
-        <div class="chips" id="ae-div"></div>
-        <label>Show only for these positions <span style="font-weight:500;text-transform:none;letter-spacing:0">(none = everyone)</span></label>
-        <div class="chips" id="ae-roles"></div>
+        <label style="margin-top:4px">Boards <span style="font-weight:500;text-transform:none;letter-spacing:0">(each toggles independently)</span></label>
+        <div class="chips" id="ae-boards"></div>
         <label>Departments <span style="font-weight:500;text-transform:none;letter-spacing:0">(support staff only — none = all)</span></label>
         <div class="chips" id="ae-depts"></div>
         <label>Only stores under <span style="font-weight:500;text-transform:none;letter-spacing:0">(from FindMi — follows their store list as it changes; none = no restriction)</span></label>
@@ -1217,12 +1246,56 @@
     return [];
   }
 
+  /* ---- Boards model -----------------------------------------------------
+     A tile belongs to BOARDS: independent role-and-division cells
+     (gm:bk, gm:subway, gm:cstore, gm:carwash, coach:bk, coach:cstore,
+     director:bk, director:cstore, staff). This replaces the old orthogonal
+     "positions × divisions" filters, which couldn't express combinations
+     like "BK GMs and C-Store DMs but not BK DMs". Tiles published before
+     this change (with roles/only) are converted on the fly. */
+  const BOARD_KEYS=["gm:bk","gm:subway","gm:cstore","gm:carwash",
+                    "coach:bk","coach:cstore","director:bk","director:cstore","staff"];
+  const ALL_DIVS=["bk","subway","cstore","carwash"];
+  function normBoardDiv(role,div){
+    if(role==="gm") return div;
+    return (div==="subway")?"bk":(div==="carwash")?"cstore":div;   /* DM/DO boards come in 2 flavors */
+  }
+  function effectiveBoards(a){
+    if(Array.isArray(a.boards)) return a.boards;
+    /* Legacy conversion: roles × divisions -> board cells. */
+    const roles=(a.roles&&a.roles.length)?a.roles:["gm","coach","director","staff"];
+    const divs=a.only?String(a.only).split(",").map(t=>t.trim()).filter(Boolean):ALL_DIVS;
+    const out=[];
+    roles.forEach(r=>{
+      if(r==="admin") return;
+      if(r==="staff"){ out.push("staff"); return; }
+      if(r==="gm"){ divs.forEach(d=>{ if(out.indexOf("gm:"+d)<0) out.push("gm:"+d); }); return; }
+      const set=new Set(divs.map(d=>normBoardDiv(r,d)));
+      set.forEach(d=>{ if(out.indexOf(r+":"+d)<0) out.push(r+":"+d); });
+    });
+    return out;
+  }
+  /* Two tiles pointing at the same place never both render: the first in
+     board order wins (which is also the one the notification badge attaches
+     to, since badges bind to the earliest matching name). */
+  function urlDedupe(list){
+    const seen=new Set();
+    return list.filter(a=>{
+      const k=String(a.url||"").trim().toLowerCase().replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/+$/,"");
+      if(!k) return true;
+      if(seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+  }
   function appsFor(role,div,dept,email,storeIds){
     dept=(dept||"").trim().toLowerCase();
     email=(email||"").trim().toLowerCase();
     const inList=arr=>arr.map(e=>String(e).trim().toLowerCase()).indexOf(email)>=0;
     const list=APPS.filter(a=>{
-      if(a.roles&&a.roles.length&&(!role||a.roles.indexOf(role)<0)) return false;
+      if(role!=="admin"){
+        const key=(role==="staff")?"staff":((role||"gm")+":"+normBoardDiv(role||"gm",div));
+        if(effectiveBoards(a).indexOf(key)<0) return false;
+      }
       /* Leader-group targeting: the tile shows only when the viewer's stores
          overlap the CURRENT stores of one of the named leaders. Overwatch is
          exempt. storeIds===null means a generic admin preview board (a role in
@@ -1256,13 +1329,12 @@
         if(role!=="staff") return false;
         if(!dept||a.depts.map(d=>String(d).trim().toLowerCase()).indexOf(dept)<0) return false;
       }
-      if(!a.only) return true;
-      return String(a.only).split(",").map(s=>s.trim()).indexOf(div)>=0;
+      return true;
     });
-    if(div==="bk"||role==="admin") return list;
+    if(div==="bk"||role==="admin") return urlDedupe(list);
     const kept=list.filter(a=>!CSTORE_HIDE.includes(a.name));
     const feat=kept.find(a=>a.name===CSTORE_FEATURE);
-    return feat?[feat,...kept.filter(a=>a!==feat)]:kept;
+    return urlDedupe(feat?[feat,...kept.filter(a=>a!==feat)]:kept);
   }
   function sessionDivision(){
     if(window.__admDivision) return window.__admDivision;
@@ -1730,7 +1802,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="4.4";
+  var APP_VERSION="4.5";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1797,6 +1869,7 @@
         if(a.accounts&&a.accounts.length) o.accounts=a.accounts.slice();
         if(a.hideFor&&a.hideFor.length) o.hideFor=a.hideFor.slice();
         if(a.under&&a.under.length) o.under=a.under.slice();
+        if(Array.isArray(a.boards)) o.boards=a.boards.slice();
         if(a.tut){ o.tut=true; o.tutUrl=a.tutUrl||""; if(a.tutCap) o.tutCap=a.tutCap; }
         return o;
       }), updatedAt:new Date().toISOString(), updatedBy:who||"unknown" };
@@ -1816,7 +1889,6 @@
   }
 
   const ADM_UPLOADER="itsupport@dossaniparadise.com";
-  const ADM_ROLES=[["coach","District Mgr"],["director","Director"],["gm","General Mgr"],["staff","Staff"],["admin","Overwatch"]];
   let admDirty=false, admGroup="gm", admNewPendingIndex=null;
 
   /* Edit Portals is tied to the ONE password-protected account, not the
@@ -1870,9 +1942,85 @@
   }
 
   /* ---- Boards ---- */
+  let admView="boards";
+  function admSyncViews(){
+    document.getElementById("adm-view-boards").classList.toggle("on",admView==="boards");
+    document.getElementById("adm-view-matrix").classList.toggle("on",admView==="matrix");
+    document.getElementById("adm-tabs").style.display=(admView==="matrix")?"none":"";
+    document.getElementById("adm-staffbar").hidden=(admView==="matrix")?false:(admGroup!=="staff");
+  }
+  document.getElementById("adm-view-boards").onclick=function(){ admView="boards"; admSyncViews(); admRenderBoards(); };
+  document.getElementById("adm-view-matrix").onclick=function(){ admView="matrix"; admSyncViews(); admRenderBoards(); };
+
+  /* ---- Matrix view -------------------------------------------------------
+     Rows are tiles, columns are boards; every cell toggles independently.
+     \u2713 shown  \u2715 hidden  \u25D0 shown-with-finer-rules (leaders /
+     accounts / departments refine WHO within the board — click the name to
+     edit those). Duplicate URLs are flagged; only the first copy ever
+     renders on a live board. */
+  function admUrlKey(u){ return String(u||"").trim().toLowerCase().replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/+$/,""); }
+  function admRenderMatrix(host){
+    host.classList.add("single");
+    const wrap=document.createElement("div"); wrap.id="adm-matrix-wrap";
+    const tbl=document.createElement("table"); tbl.id="adm-matrix";
+    const thead=document.createElement("thead"); const hr=document.createElement("tr");
+    const th0=document.createElement("th"); th0.textContent="Tile"; hr.appendChild(th0);
+    ADM_BOARD_OPTS.forEach(([k,l])=>{ const th=document.createElement("th"); th.textContent=l; hr.appendChild(th); });
+    const thO=document.createElement("th"); thO.textContent="OW"; hr.appendChild(thO);
+    const thD=document.createElement("th"); thD.textContent=""; hr.appendChild(thD);
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tbody=document.createElement("tbody");
+    const urlCount={};
+    APPS.forEach(a=>{ const k=admUrlKey(a.url); if(k) urlCount[k]=(urlCount[k]||0)+1; });
+    APPS.forEach((a,i)=>{
+      const tr=document.createElement("tr");
+      const td0=document.createElement("td");
+      const nm=document.createElement("div"); nm.className="mx-name"; nm.title="Edit "+(a.name||"");
+      nm.appendChild(admMiniIcon(a));
+      const b=document.createElement("b"); b.textContent=a.name||"(untitled)"; nm.appendChild(b);
+      if(urlCount[admUrlKey(a.url)]>1){ const d=document.createElement("span"); d.className="mx-dup";
+        d.textContent="DUP"; d.title="Another tile has this same link — only the first copy shows on live boards"; nm.appendChild(d); }
+      nm.onclick=()=>admEdit(i);
+      td0.appendChild(nm); tr.appendChild(td0);
+      const boards=effectiveBoards(a);
+      const refined=(a.under&&a.under.length)||(a.accounts&&a.accounts.length)||(a.hideFor&&a.hideFor.length)||(a.depts&&a.depts.length);
+      ADM_BOARD_OPTS.forEach(([key,lbl])=>{
+        const td=document.createElement("td");
+        const cell=document.createElement("button"); cell.type="button"; cell.className="mx-cell";
+        const on=boards.indexOf(key)>=0;
+        const div=key.indexOf(":")>=0?key.split(":")[1]:"bk";
+        const locked=(div!=="bk")&&key!=="staff"&&CSTORE_HIDE.includes(a.name);
+        if(locked){ cell.classList.add("lock"); cell.textContent="\u2013";
+          cell.title="Hidden on non-BK boards by the built-in C-Store list"; cell.disabled=true; }
+        else if(on&&refined){ cell.classList.add("part"); cell.textContent="\u25D0";
+          cell.title="On this board, refined by leader/account/department rules — click the tile name to edit them. Click here to remove from this board.";
+          cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
+        else if(on){ cell.classList.add("on"); cell.textContent="\u2713";
+          cell.title="Shown on "+lbl+" — click to hide";
+          cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
+        else{ cell.classList.add("off"); cell.textContent="\u2715";
+          cell.title="Hidden on "+lbl+" — click to show";
+          cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
+        td.appendChild(cell); tr.appendChild(td);
+      });
+      const tdO=document.createElement("td");
+      const ow=document.createElement("span"); ow.className="mx-cell on"; ow.textContent="\u2713";
+      ow.title="Overwatch always sees everything"; tdO.appendChild(ow); tr.appendChild(tdO);
+      const tdD=document.createElement("td");
+      const del=document.createElement("button"); del.type="button"; del.className="mx-del"; del.textContent="\u2715";
+      del.title="Delete this tile from every board";
+      del.onclick=()=>{ if(!confirm('Delete "'+a.name+'" from every board?')) return;
+        APPS.splice(i,1); admChanged(); };
+      tdD.appendChild(del); tr.appendChild(tdD);
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody); wrap.appendChild(tbl); host.appendChild(wrap);
+  }
+
   function admRenderBoards(){
     const host=document.getElementById("adm-boards"); if(!host) return;
     host.innerHTML="";
+    if(admView==="matrix"){ admRenderMatrix(host); return; }
     const grp=ADM_GROUPS.find(g=>g.key===admGroup)||ADM_GROUPS[0];
     host.classList.toggle("single", grp.key==="staff"||grp.key==="admin");
     if(grp.key==="staff"){
@@ -1955,7 +2103,6 @@
   /* X on a tile removes it from THIS board only, by taking the board's
      division (or department) out of the app's visibility. Deleting an app
      everywhere lives on the Delete button inside the edit modal. */
-  const ADM_ALL_DIVS=["bk","subway","cstore","carwash"];
   function admRemoveFromBoard(a,ctx){
     if(ctx.role==="admin"){
       if(!confirm('Overwatch sees everything, so removing "'+a.name+'" here deletes it from every board. Delete it?')) return;
@@ -1981,18 +2128,20 @@
       }
       a.depts=depts; admChanged(); return;
     }
-    /* Division boards (GM / DM / DO tabs). Division visibility is shared
-       across roles, so this hides it from every board of that division;
-       per-role visibility lives in Edit → Positions. */
-    const label=ADM_DIVLABEL[ctx.div]||ctx.div;
-    if(!confirm('Remove "'+a.name+'" from the '+label+' boards? (It stays on the other divisions. Use Edit → Positions to change which roles see it.)')) return;
-    let divs=(a.only?String(a.only).split(",").map(s=>s.trim()).filter(Boolean):ADM_ALL_DIVS.slice());
-    divs=divs.filter(d=>d!==ctx.div);
-    if(!divs.length){
-      if(!confirm('That was its last division — delete "'+a.name+'" from every board instead?')) return;
-      APPS.splice(APPS.indexOf(a),1); admChanged(); return;
+    /* Role+division boards: with the boards model this removes EXACTLY this
+       one board — nothing else changes. */
+    const key=ctx.role+":"+ctx.div;
+    const lbl=(ADM_BOARD_OPTS.find(o=>o[0]===key)||[,key])[1];
+    if(!confirm('Remove "'+a.name+'" from the '+lbl+' board only?')) return;
+    admSetBoard(a,key,false);
+    if(!effectiveBoards(a).length){
+      if(confirm('That was its last board — delete "'+a.name+'" entirely?')){
+        APPS.splice(APPS.indexOf(a),1);
+      }else{
+        admSetBoard(a,key,true);
+      }
     }
-    a.only=divs.join(","); admChanged();
+    admChanged();
   }
   function admMiniTile(a,pos,vis,ctx){
     const t=document.createElement("div"); t.className="mini-tile"; t.draggable=true; t.dataset.pos=pos;
@@ -2035,7 +2184,16 @@
   function admOpenModal(){ document.getElementById("adm-modal-wrap").hidden=false; }
   function admCloseModal(){ document.getElementById("adm-modal-wrap").hidden=true; }
 
-  const ADM_DIV_OPTS=[["bk","BK"],["subway","Subway"],["cstore","C-Store"],["carwash","Car Wash"]];
+  const ADM_BOARD_OPTS=[["gm:bk","BK GM"],["gm:subway","Subway GM"],["gm:cstore","C-Store GM"],["gm:carwash","Car Wash GM"],
+    ["coach:bk","BK DM"],["coach:cstore","C-Store DM"],["director:bk","BK DO"],["director:cstore","C-Store DO"],["staff","Staff"]];
+  function admSetBoard(a,key,on){
+    const boards=effectiveBoards(a).slice();
+    const k=boards.indexOf(key);
+    if(on&&k<0) boards.push(key);
+    if(!on&&k>=0) boards.splice(k,1);
+    a.boards=boards;
+    delete a.roles; delete a.only;   /* legacy fields are superseded once edited */
+  }
 
   /* Directors and District Managers from FindMi, as chip options. The value
      stored on the tile is the directory ID (stable if an email changes);
@@ -2084,12 +2242,9 @@
     document.getElementById("ae-accounts").value=(a.accounts||[]).join(", ");
     document.getElementById("ae-hidefor").value=(a.hideFor||[]).join(", ");
 
-    const divVal=(a.only||"").split(",").map(s=>s.trim()).filter(Boolean);
-    admChips(document.getElementById("ae-div"), ADM_DIV_OPTS,
-      v=>divVal.indexOf(v)>=0,
-      v=>{ admSyncFields(a);
-           const k=divVal.indexOf(v); if(k>=0) divVal.splice(k,1); else divVal.push(v);
-           if(divVal.length) a.only=divVal.join(","); else delete a.only;
+    admChips(document.getElementById("ae-boards"), ADM_BOARD_OPTS,
+      v=>effectiveBoards(a).indexOf(v)>=0,
+      v=>{ admSyncFields(a); admSetBoard(a,v,effectiveBoards(a).indexOf(v)<0);
            admChanged(); admEdit(i); });
 
     const dlist=admDepartments();
@@ -2117,13 +2272,6 @@
       v=>{ admSyncFields(a);
            if(v==="yes") a.tut=true; else delete a.tut; admChanged(); admEdit(i); });
 
-    admChips(document.getElementById("ae-roles"), ADM_ROLES,
-      v=>!!(a.roles&&a.roles.indexOf(v)>=0),
-      v=>{ admSyncFields(a);
-           a.roles=a.roles||[]; const k=a.roles.indexOf(v);
-           if(k>=0) a.roles.splice(k,1); else a.roles.push(v);
-           if(!a.roles.length) delete a.roles; admChanged(); admEdit(i); });
-
     admOpenModal();
   }
   function admNew(){
@@ -2138,7 +2286,7 @@
       /* A stray backdrop click was silently throwing new apps away — if
          anything has been typed or toggled, ask first. */
       const typed=(document.getElementById("ae-name").value.trim()||document.getElementById("ae-url").value.trim());
-      const touched=a&&(a.only||a.roles||a.depts||a.tut||a.accounts||a.hideFor||a.under);
+      const touched=a&&(a.only||a.roles||a.boards||a.depts||a.tut||a.accounts||a.hideFor||a.under);
       if((typed||touched)&&!confirm("Discard this new app?")) return;
       APPS.splice(admNewPendingIndex,1); admNewPendingIndex=null;
     }
@@ -2274,6 +2422,7 @@
       if(a.accounts&&a.accounts.length) s+=', accounts:'+JSON.stringify(a.accounts);
       if(a.hideFor&&a.hideFor.length) s+=', hideFor:'+JSON.stringify(a.hideFor);
       if(a.under&&a.under.length) s+=', under:'+JSON.stringify(a.under);
+      if(Array.isArray(a.boards)) s+=', boards:'+JSON.stringify(a.boards);
       if(a.tut) s+=', tut:true';
       if(a.tutCap) s+=', tutCap:'+JSON.stringify(a.tutCap);
       if(a.tutUrl) s+=', tutUrl:'+JSON.stringify(a.tutUrl);
@@ -2315,7 +2464,7 @@
      what used to silently reset earlier published changes. */
   document.getElementById("adm-open").onclick=async function(){
     document.body.classList.add("adm-open");
-    admBuildTabs(); admSyncTabs();
+    admBuildTabs(); admSyncTabs(); admSyncViews();
     const host=document.getElementById("adm-boards");
     host.classList.remove("single");
     host.innerHTML='<div class="mini-empty" style="padding:24px;font-size:13px">Loading the published tile list from the database…</div>';
