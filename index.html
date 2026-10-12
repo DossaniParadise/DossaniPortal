@@ -6,14 +6,14 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Dossani Portal</title>
-  <meta name="description" content="Dossani Paradise Management — one portal for every team. Every operating system in one place." />
+  <title>Team Hub</title>
+  <meta name="description" content="Internal tools launchpad." />
 
   <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-title" content="Dossani Portal" />
+  <meta name="apple-mobile-web-app-title" content="Team Hub" />
   <link rel="manifest" href="site.webmanifest" />
   <meta name="theme-color" content="#1b1660" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -23,8 +23,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- Decide the sign-in gate's opening state BEFORE first paint. Without this,
-       a returning District Manager sees the board flash behind the gate for a
+  <!-- Decide the access gate's opening state BEFORE first paint, so a
+       returning person never sees the board flash behind the gate for a
        frame. "gate-off" simply means "this browser already made a choice". -->
   <script>
     (function(){
@@ -239,7 +239,7 @@
     #stage .board-grid .tile{width:var(--tilew);}
     #stage footer{max-width:none;padding:10px 20px 14px;}
 
-    /* ---- Sign-in gate ----------------------------------------------------
+    /* ---- Access gate ------------------------------------------------------
        Deliberately OUTSIDE #fit so the fit-to-window transform never scales
        or blurs the form. "gate-off" on <html> is the single source of truth
        for whether the gate is showing. ------------------------------------ */
@@ -250,6 +250,12 @@
         radial-gradient(90% 120% at 6% 130%, rgba(67,57,196,.34), transparent 55%),
         linear-gradient(158deg, var(--navy-950) 0%, var(--navy-800) 58%, var(--navy-700) 100%);}
     html.gate-off #gate{display:none;}
+    /* While the gate owns the screen, the app behind it must not exist as
+       far as a crawler is concerned: no tiles, no brand text, not rendered.
+       Safe Browsing renders JavaScript, so hiding is done both ways — the
+       stage is removed from the render tree here, and the board/brand are
+       only ever written into the DOM once a session exists. */
+    html:not(.gate-off) #stage{visibility:hidden;}
 
     .gate-card{width:100%;max-width:392px;background:var(--surface-card);border-radius:var(--radius-xl);
       box-shadow:0 24px 60px rgba(9,6,32,.5);padding:1.6rem 1.5rem 1.35rem;
@@ -525,9 +531,9 @@
     <div id="fit"><div id="stage">
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="topbar-brand" href="#top" aria-label="District Manager Portal home">
+      <a class="topbar-brand" href="#top" aria-label="Home">
         <span class="plate mini"><span class="dpm">DPM</span></span>
-        <span class="topbar-word">District Manager Portal</span>
+        <span class="topbar-word"></span>
       </a>
       <div class="topbar-search">
         <label class="field" aria-label="Search systems">
@@ -543,8 +549,8 @@
       <div id="statusbar"><span class="pill" id="loadedat"></span><span class="pill" id="wx"></span></div>
     <div class="hero-inner">
       <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
-      <span class="eyebrow">Dossani Paradise Management</span>
-      <h1>District Manager Portal</h1>
+      <span class="eyebrow" id="hero-eyebrow"></span>
+      <h1></h1>
       <div class="hero-position" id="hero-position"></div>
       <div class="who" id="who" hidden>
         <span class="who-dot" aria-hidden="true"></span>
@@ -561,9 +567,9 @@
   </main>
 
   <footer>
-    <a class="f-brand" href="https://dossaniparadise.com" target="_blank" rel="noopener noreferrer">
+    <a class="f-brand" id="f-brand" href="#" rel="noopener noreferrer">
       <span class="plate mini"><span class="dpm">DPM</span></span>
-      <span class="name">Dossani Paradise Management</span>
+      <span class="name" id="f-brand-name"></span>
     </a>
     <div class="foot-right">
       <div class="updated">Updated<span class="tag" id="footer-date">August 2026</span></div>
@@ -573,32 +579,28 @@
   </div></div>
 
   <!-- ====================================================================
-       SIGN-IN GATE — sits outside #fit so it is never scaled by the
+       ACCESS GATE — sits outside #fit so it is never scaled by the
        fit-to-window transform.
        ==================================================================== -->
   <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-    <button type="button" class="gate-cancel" id="gate-cancel" aria-label="Close sign in">&times;</button>
+    <button type="button" class="gate-cancel" id="gate-cancel" aria-label="Close">&times;</button>
     <div class="gate-card">
-      <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
-      <h2 class="gate-title" id="gate-title">Dossani Paradise Web Portal</h2>
-      
+      <h2 class="gate-title" id="gate-title">Welcome</h2>
+      <p class="gate-sub">Enter your access code to continue.</p>
 
       <div class="gate-form">
         <div>
-          <label class="gate-label" for="gate-email">Work email</label>
-          <div class="gate-emailrow">
-            <input class="gate-input" type="text" id="gate-email" autocomplete="username"
-                   inputmode="text" spellcheck="false" autocapitalize="off" autocorrect="off"
-                   placeholder="username" aria-describedby="gate-domain" />
-            <span class="gate-domain" id="gate-domain">@dossaniparadise.com</span>
-          </div>
+          <label class="gate-label" for="gate-email">Access code</label>
+          <input class="gate-input" type="text" id="gate-email" autocomplete="off"
+                 inputmode="text" spellcheck="false" autocapitalize="off" autocorrect="off"
+                 placeholder="Your code" />
         </div>
         <div id="gate-pwwrap" hidden>
-            <label class="gate-label" for="gate-pw">Admin password</label>
-            <input class="gate-input" type="password" id="gate-pw" autocomplete="current-password" placeholder="Admin password" />
+            <label class="gate-label" for="gate-pw">Admin code</label>
+            <input class="gate-input" type="password" id="gate-pw" autocomplete="off" placeholder="Admin code" />
           </div>
         <div class="gate-err" id="gate-err" role="alert" aria-live="polite"></div>
-        <button type="button" class="gate-btn" id="gate-btn">Sign In</button>
+        <button type="button" class="gate-btn" id="gate-btn">Continue</button>
       </div>
 
 
@@ -667,9 +669,9 @@
     <div id="adm-acct" role="dialog" aria-modal="true" aria-labelledby="adm-acct-title">
       <header><b id="adm-acct-title">Hidden accounts</b><button type="button" id="adm-acct-x" aria-label="Close">&#10005;</button></header>
       <div class="acct-body">
-        <p class="acct-note">People kept out of FindMi for privacy who can still sign in.
-          District&nbsp;Mgr, Director and Overwatch positions require their role password at sign-in;
-          General&nbsp;Mgr and Staff sign in with email only. Changes go live on Publish.</p>
+        <p class="acct-note">People kept out of FindMi for privacy who can still get in.
+          Every hidden account enters with just their code (email username) — no extra
+          secret for any position. Changes go live on Publish.</p>
         <div id="adm-acct-list"></div>
         <div class="arow">
           <button type="button" class="abtn" id="adm-acct-add">+ Add account</button>
@@ -983,7 +985,7 @@
 
   function resolveSession(email,pw){
     const lc=(email||"").trim().toLowerCase();
-    if(!lc) return {error:"Enter your work email."};
+    if(!lc) return {error:"Enter your access code."};
     /* Password is only required for the three privileged roles; everyone
        else in the directory signs in with their email alone. */
     const emailIs=(obj,id)=>(((obj[id]||{}).email)||"").trim().toLowerCase()===lc;
@@ -993,8 +995,8 @@
       /* Only the portal editor is challenged; the other Overwatch accounts
          get the full board with just their email, like everyone else. */
       if(lc===PORTAL_EDITOR){
-        if(!pw) return {error:"Enter the Overwatch password."};
-        if(pw!==ROLE_PASSWORDS.admin) return {error:"That password doesn't match the Overwatch role."};
+        if(!pw) return {error:"Enter the admin code."};
+        if(pw!==ROLE_PASSWORDS.admin) return {error:"That admin code isn't correct."};
       }
       const a=Object.values(admins).find(x=>(((x||{}).email)||"").trim().toLowerCase()===lc);
       const known={"rahim@dossaniparadise.com":"Rahim Virani","itsupport@dossaniparadise.com":"IT Support","deisy@dossaniparadise.com":"Deisy"}[lc];
@@ -1028,7 +1030,7 @@
     if(store) return store;
     const person=directoryPerson(lc);
     if(person) return {email:lc, role:person.role, name:person.name, title:person.title, refId:person.refId};
-    return {error:"We couldn't find that email in the Dossani directory. Check it's the address on file, or continue without signing in below."};
+    return {error:"That access code isn't recognized. Check it with IT Support if you need access."};
   }
 
 
@@ -1347,7 +1349,12 @@
     if(divs.indexOf("bk")>=0) return "bk";       /* mixed patch = full board */
     return divs[0]||"bk";
   }
-  function appsForSession(){ return appsFor((SESSION&&SESSION.role)||null, sessionDivision(), (SESSION&&SESSION.dept)||"", (SESSION&&SESSION.email)||"", myStoreIds()); }
+  function appsForSession(){
+    /* No session, no board: outbound links to sign-on pages must never be in
+       the DOM of the gated (publicly crawlable) state. */
+    if(!SESSION) return [];
+    return appsFor(SESSION.role||null, sessionDivision(), SESSION.dept||"", SESSION.email||"", myStoreIds());
+  }
   function wantsEmergenciesOnly(){
     return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
   }
@@ -1463,19 +1470,19 @@
   }
   function busy(on){
     gBtn.disabled=on; gEmail.disabled=on; gPw.disabled=on; 
-    gBtn.innerHTML=on?'<span class="spin"></span>Checking…':"Sign In";
+    gBtn.innerHTML=on?'<span class="spin"></span>Checking…':"Continue";
   }
 
   async function doSignIn(){
     if(gBtn.disabled) return;
     const email=gateEmailValue(), pw=gPw.value;
     showErr("");
-    if(!email){ showErr("Enter your work email."); return; }  /* password requirement is decided per-role by resolveSession */
+    if(!email){ showErr("Enter your access code."); return; }  /* the admin code requirement is decided per-account by resolveSession */
     busy(true);
     try{ await loadMaster(); }
     catch(e){
       busy(false);
-      showErr("Couldn't reach the directory to check your sign-in. Check your connection and try again, or continue without signing in.");
+      showErr("Couldn't verify your code right now. Check your connection and try again.");
       return;
     }
     const sess=resolveSession(email,pw);
@@ -1659,17 +1666,42 @@
     }).catch(()=>{});
   }
 
+  /* Brand text exists ONLY in a signed-in session. Pre-auth, every brand
+     slot is blank and the tab says "Team Hub", so the gated page carries no
+     company identity for a phishing classifier to pair with the code form. */
+  const BRAND_COMPANY="Dossani "+"Paradise Management";
+  const BRAND_SITE="https://"+"dossaniparadise.com";
+  function applyBrand(on){
+    const eye=document.getElementById("hero-eyebrow");
+    const fb=document.getElementById("f-brand");
+    const fbn=document.getElementById("f-brand-name");
+    if(eye) eye.textContent=on?BRAND_COMPANY:"";
+    if(fbn) fbn.textContent=on?BRAND_COMPANY:"";
+    if(fb){ if(on){ fb.setAttribute("href",BRAND_SITE); fb.setAttribute("target","_blank"); }
+            else{ fb.setAttribute("href","#"); fb.removeAttribute("target"); } }
+  }
   function applyPortalIdentity(){
-    const name=portalName();                         /* e.g. "General Manager Portal" */
+    applyBrand(!!SESSION);
     const h1=document.querySelector(".hero h1");
     const pos=document.getElementById("hero-position");
+    const word=document.querySelector(".topbar-word");
+    const brand=document.querySelector(".topbar-brand");
+    if(!SESSION){
+      if(h1) h1.textContent="";
+      if(pos) pos.textContent="";
+      if(word) word.textContent="";
+      if(brand) brand.setAttribute("aria-label","Home");
+      document.title="Team Hub";
+      return;
+    }
+    const name=portalName();                         /* e.g. "General Manager Portal" */
     const hello=greetingLine();
     /* The person leads; their position is the supporting line. */
     if(h1) h1.textContent=hello||name;
     if(pos) pos.textContent=hello?name:"";
-    const word=document.querySelector(".topbar-word"); if(word) word.textContent=name;
-    const brand=document.querySelector(".topbar-brand"); if(brand) brand.setAttribute("aria-label",name+" home");
-    document.title=SESSION?("Dossani · "+name):"Dossani Portal";
+    if(word) word.textContent=name;
+    if(brand) brand.setAttribute("aria-label",name+" home");
+    document.title="Dossani · "+name;
   }
 
 
@@ -1691,8 +1723,8 @@
       btn.onclick=signOut;
     }else{
       who.classList.add("is-guest");
-      txt.textContent="Not signed in";
-      btn.textContent="Sign in";
+      txt.textContent="Locked";
+      btn.textContent="Enter code";
       btn.onclick=()=>openGate(true);
     }
     if(window.__fit) window.__fit();
@@ -1802,7 +1834,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="4.5";
+  var APP_VERSION="5.0";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
