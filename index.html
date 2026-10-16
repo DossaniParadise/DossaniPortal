@@ -373,6 +373,9 @@
       border-radius:999px;width:15px;height:15px;font-size:9px;line-height:15px;cursor:pointer;display:none;padding:0;}
     .mini-tile:hover .mt-x{display:block;}
     .mini-empty{grid-column:1/-1;font:600 11.5px var(--font-sans);color:var(--text-subtle);padding:10px 4px;}
+    .mini-tile.ghost{border-style:dashed;border-color:#e3b35c;background:#fdf8ee;opacity:.85;cursor:pointer;}
+    .mini-tile.ghost .ghost-tag{font:800 8px var(--font-sans);letter-spacing:.06em;text-transform:uppercase;
+      color:#8a5a00;background:#f5e3bd;border-radius:4px;padding:1px 5px;}
     #adm-modal-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;display:flex;
       align-items:center;justify-content:center;padding:16px;}
     #adm-modal-wrap[hidden]{display:none;}
@@ -701,6 +704,9 @@
         <label>Accounts <span style="font-weight:500;text-transform:none;letter-spacing:0">(emails, comma-separated — blank = normal rules)</span></label>
         <input type="text" id="ae-accounts" placeholder="Only these accounts see it (e.g. wash1@…, wash2@…)" />
         <input type="text" id="ae-hidefor" placeholder="Hide from these accounts" />
+        <div class="arow" style="margin-top:4px">
+          <button type="button" class="abtn" id="ae-clear-target" style="font-size:12px">\u26A1 Show to everyone \u2014 clear ALL targeting on this tile</button>
+        </div>
         <label>Tutorial</label>
         <div class="chips" id="ae-tut"></div>
         <input type="text" id="ae-tutcap" placeholder="Tutorial caption (default: Tutorial Video)" />
@@ -1970,7 +1976,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.9";
+  var APP_VERSION="6.0";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -2712,12 +2718,28 @@
     const role=admBoardKey==="staff"?"staff":admBoardKey.split(":")[0];
     const div=admBoardKey==="staff"?"bk":admBoardKey.split(":")[1];
     const vis=appsFor(role,div,"","",null);
-    document.getElementById("adm-board-title").textContent=lbl+" \u2014 "+vis.length+" tile"+(vis.length===1?"":"s");
+    /* Tiles whose boards include this board but whose TARGETING rules keep
+       them off the common view are shown as dashed "ghosts" — so a \u2713 in
+       the matrix can never silently disagree with what the board shows. */
+    const ghosts=APPS.filter(a=>vis.indexOf(a)<0&&effectiveBoards(a).indexOf(admBoardKey)>=0&&admRefined(a));
+    document.getElementById("adm-board-title").textContent=lbl+" \u2014 "+vis.length+" tile"+(vis.length===1?"":"s")+
+      (ghosts.length?" (+"+ghosts.length+" targeted)":"");
     const grid=document.getElementById("adm-board-grid"); grid.innerHTML="";
-    if(!vis.length){ const e=document.createElement("div"); e.className="mini-empty";
+    if(!vis.length&&!ghosts.length){ const e=document.createElement("div"); e.className="mini-empty";
       e.textContent="No tiles on this board."; grid.appendChild(e); return; }
     const ctx={role:role,div:div,dept:"",email:""};
     vis.forEach((a,pos)=>grid.appendChild(admMiniTile(a,pos,vis,ctx)));
+    ghosts.forEach(a=>{
+      const t=document.createElement("div"); t.className="mini-tile ghost";
+      t.title='"'+(a.name||"")+'" is checked onto this board but its targeting rules (accounts / leader groups / departments) decide who actually sees it \u2014 click to edit, and use "Show to everyone" there to clear the rules.';
+      t.appendChild(admMiniIcon(a));
+      const nm=document.createElement("div"); nm.className="nm"; nm.textContent=a.name||"(untitled)";
+      t.appendChild(nm);
+      const tag=document.createElement("div"); tag.className="ghost-tag"; tag.textContent="targeted";
+      t.appendChild(tag);
+      t.addEventListener("click",()=>admEdit(APPS.indexOf(a)));
+      grid.appendChild(t);
+    });
   }
   document.getElementById("adm-board-x").onclick=admBoardClose;
   document.getElementById("adm-board-wrap").addEventListener("click",function(e){
@@ -2859,6 +2881,13 @@
     if(!confirm('Delete "'+a.name+'" from every board?')) return;
     APPS.splice(i,1); admNewPendingIndex=null; admCloseModal(); admChanged();
   }
+  document.getElementById("ae-clear-target").onclick=function(){
+    const i=+document.getElementById("ae-i").value; const a=APPS[i]; if(!a) return;
+    if(!confirm('Clear every targeting rule on "'+(a.name||"this tile")+'"? It will show to everyone on its checked boards.')) return;
+    admSyncFields(a);
+    delete a.under; delete a.hideUnder; delete a.accounts; delete a.hideFor; delete a.depts;
+    admChanged(); admEdit(i);
+  };
   document.getElementById("ae-save").onclick=function(){
     const i=+document.getElementById("ae-i").value; const a=APPS[i]; if(!a) return;
     admSyncFields(a);
