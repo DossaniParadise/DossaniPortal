@@ -1056,31 +1056,40 @@
     return null;
   }
   /* ---- Everyone else in the directory ----------------------------------
-     Walks the whole alignment master for a matching email so GMs, marketing
-     coordinators, staff accountants and future teams resolve without being
-     hard-coded. Their FindMi title drives the portal name. */
+     Resolves a person from FindMi's PEOPLE nodes only. The shared database
+     also holds tickets, vendors, entities, filter logs and this portal's
+     own config — all full of email+name pairs — and the old version scanned
+     ALL of it in alphabetical order, so a stray match on (say) an entity or
+     a vendor shadowed the person's real FindMi record and froze their name,
+     title and department at whatever that other record said. Now:
+       • only the directory groups below are consulted, in this order;
+       • within a group the NEWEST matching record wins (Firebase push keys
+         sort chronologically), so an edit or delete-and-re-add in FindMi
+         beats any stale leftover duplicate;
+       • a jobTitle that says General Manager gets the GM board, since
+         FindMi has no generalManagers node — GM is a title on a vps row. */
   const ROLE_TITLE_FALLBACK={generalManagers:"General Manager",managers:"General Manager",
     staff:"Team Member",repairTechnicians:"Repair Technician",vps:"Support Staff",
     admins:"Administrator",directors:"Director of Operations",areaCoaches:"District Manager"};
-  /* FindMi keeps ALL support staff under `vps` for continuity, so that node
-     name says nothing about a person's job — their real title is jobTitle. */
+  const PEOPLE_GROUPS=["vps","generalManagers","managers","staff","repairTechnicians"];
   function directoryPerson(lc){
     if(!MASTER) return null;
-    /* Scan each top-level group separately so the group name (generalManagers,
-       staff, …) survives however deep the member records are nested. */
-    function scan(node){
-      if(!node||typeof node!=="object") return null;
-      if(Array.isArray(node)){ for(const n of node){ const r=scan(n); if(r) return r; } return null; }
+    function scanAll(node,out){
+      if(!node||typeof node!=="object") return;
+      if(Array.isArray(node)){ node.forEach(n=>scanAll(n,out)); return; }
       const em=((node.email||"")+"").trim().toLowerCase();
-      if(em&&em===lc&&node.name) return node;
-      for(const k in node){ const v=node[k]; if(v&&typeof v==="object"){ const r=scan(v); if(r) return r; } }
-      return null;
+      if(em&&em===lc&&node.name) out.push(node);
+      for(const k in node){ const v=node[k]; if(v&&typeof v==="object") scanAll(v,out); }
     }
-    for(const group in MASTER){
-      const hit=scan(MASTER[group]);
-      if(hit) return { name:hit.name,
-        title:(hit.jobTitle||hit.title||hit.position||hit.department||ROLE_TITLE_FALLBACK[group]||"").trim(),
-        role:(group==="generalManagers"||group==="managers")?"gm":"staff",
+    for(const group of PEOPLE_GROUPS){
+      if(!MASTER[group]) continue;
+      const hits=[]; scanAll(MASTER[group],hits);
+      if(!hits.length) continue;
+      const hit=hits[hits.length-1];                 /* newest record wins */
+      const title=(hit.jobTitle||hit.title||hit.position||hit.department||ROLE_TITLE_FALLBACK[group]||"").trim();
+      const isGM=(group==="generalManagers"||group==="managers")||/\bgeneral\s*manager\b|^gm$/i.test(title);
+      return { name:hit.name, title:title,
+        role:isGM?"gm":"staff",
         dept:((hit.department||"")+"").trim(),
         refId:hit.id||null };
     }
@@ -1834,7 +1843,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.0";
+  var APP_VERSION="5.1";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
