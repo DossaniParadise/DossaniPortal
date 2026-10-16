@@ -399,6 +399,26 @@
     #adm-acct-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;
       display:flex;align-items:center;justify-content:center;padding:16px;}
     #adm-acct-wrap[hidden]{display:none;}
+    #adm-board-wrap{position:fixed;inset:0;background:rgba(13,10,53,.55);z-index:500;
+      display:flex;align-items:center;justify-content:center;padding:16px;}
+    #adm-board-wrap[hidden]{display:none;}
+    #adm-board{background:#fff;width:780px;max-width:96vw;max-height:92vh;overflow-y:auto;
+      border-radius:14px;box-shadow:0 20px 60px rgba(13,10,53,.4);}
+    #adm-board header{background:var(--navy-800);color:#fff;padding:12px 16px;display:flex;
+      justify-content:space-between;align-items:center;border-radius:14px 14px 0 0;}
+    #adm-board header b{font-family:var(--font-display);letter-spacing:.05em;font-size:14px;}
+    #adm-board header button{background:none;border:none;color:#c7c3f1;font-size:18px;cursor:pointer;}
+    .mx-board{background:none;border:none;font:800 10px var(--font-sans);letter-spacing:.04em;
+      text-transform:uppercase;color:var(--navy-700);cursor:pointer;padding:3px 6px;border-radius:6px;}
+    .mx-board:hover{background:var(--navy-100);}
+    #adm-matrix.t thead th.mx-appcol{height:118px;vertical-align:bottom;padding:4px 2px;min-width:30px;}
+    .mx-vert{writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;gap:3px;
+      font:700 10.5px var(--font-sans);color:var(--text-heading);max-height:110px;overflow:hidden;margin:0 auto;}
+    .mx-vname{cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:92px;}
+    .mx-vname:hover{color:var(--navy-500);}
+    #adm-matrix.t th:first-child,#adm-matrix.t td:first-child{width:auto;min-width:104px;max-width:140px;
+      padding:4px 8px;text-align:left;}
+    #adm-matrix.t thead th.dragging{opacity:.35;}
     #adm-acct{background:#fff;width:560px;max-width:100%;max-height:92vh;overflow-y:auto;
       border-radius:14px;box-shadow:0 20px 60px rgba(13,10,53,.4);}
     #adm-acct header{background:var(--navy-800);color:#fff;padding:12px 16px;
@@ -427,12 +447,13 @@
     #adm-matrix thead th{position:sticky;top:0;background:var(--navy-50);color:var(--text-heading);
       font:800 10px var(--font-sans);letter-spacing:.04em;text-transform:uppercase;z-index:2;
       white-space:normal;line-height:1.2;padding:7px 4px;}
-    #adm-matrix th:first-child,#adm-matrix td:first-child{position:sticky;left:0;background:#fff;z-index:1;
-      width:26px;min-width:26px;padding:0 2px;}
-    #adm-matrix th:nth-child(2),#adm-matrix td:nth-child(2){position:sticky;left:26px;background:#fff;text-align:left;z-index:1;
+    #adm-matrix th:first-child,#adm-matrix td:first-child{position:sticky;left:0;background:#fff;z-index:1;}
+    #adm-matrix:not(.t) th:first-child,#adm-matrix:not(.t) td:first-child{width:26px;min-width:26px;padding:0 2px;}
+    #adm-matrix:not(.t) th:nth-child(2),#adm-matrix:not(.t) td:nth-child(2){position:sticky;left:26px;background:#fff;text-align:left;z-index:1;
       border-right:1px solid var(--gray-200);width:23%;min-width:160px;max-width:300px;overflow:hidden;text-overflow:ellipsis;
       padding-left:4px;}
-    #adm-matrix thead th:nth-child(2){background:var(--navy-50);z-index:3;}
+    #adm-matrix:not(.t) thead th:nth-child(2){background:var(--navy-50);z-index:3;}
+    #adm-matrix thead th:first-child{background:var(--navy-50);z-index:3;}
     #adm-matrix tbody tr:hover td{background:var(--navy-50);}
     #adm-matrix tbody tr:hover td:first-child,#adm-matrix tbody tr:hover td:nth-child(2){background:var(--navy-50);}
     #adm-matrix tbody tr.dragging td{opacity:.35;}
@@ -705,6 +726,18 @@
           <button type="button" class="abtn" id="adm-acct-add">+ Add account</button>
           <button type="button" class="abtn p" id="adm-acct-save">Done</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adm-board-wrap" hidden>
+    <div id="adm-board" role="dialog" aria-modal="true" aria-labelledby="adm-board-title">
+      <header><b id="adm-board-title">Board</b><button type="button" id="adm-board-x" aria-label="Close">&#10005;</button></header>
+      <div class="acct-body">
+        <p class="acct-note">This is the board exactly as its people see it. Drag tiles to reorder
+          (one master order — the move applies on every board) · ✕ removes the tile from
+          this board only · click a tile to edit it.</p>
+        <div class="mini-grid" id="adm-board-grid"></div>
       </div>
     </div>
   </div>
@@ -1937,7 +1970,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.8";
+  var APP_VERSION="5.9";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -2160,17 +2193,42 @@
     if(mixed.length) msg+="\n\nLeft alone (copies mix leader-targeting with account-targeting, which one tile can't express — combine these by hand):\n\u2022 "+mixed.join("\n\u2022 ");
     alert(msg);
   }
+  let admMxT=false, admBoardKey=null;
+  function admRefined(a){ return (a.under&&a.under.length)||(a.hideUnder&&a.hideUnder.length)||(a.accounts&&a.accounts.length)||(a.hideFor&&a.hideFor.length)||(a.depts&&a.depts.length); }
+  function admMxCellBtn(a,key,lbl){
+    const cell=document.createElement("button"); cell.type="button"; cell.className="mx-cell";
+    const on=effectiveBoards(a).indexOf(key)>=0;
+    if(on){ cell.classList.add("on"); cell.textContent="\u2713";
+      cell.title=lbl+": on \u2014 click to turn off"+(admRefined(a)?" (tile has targeting rules \u2014 edit the tile to change who)":"");
+      cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
+    else{ cell.classList.add("off"); cell.textContent="\u2715";
+      cell.title=lbl+": off \u2014 click to turn on";
+      cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
+    return cell;
+  }
+  function admBoardLabelBtn(key,lbl){
+    const b=document.createElement("button"); b.type="button"; b.className="mx-board";
+    b.textContent=lbl; b.title="Open the "+lbl+" board \u2014 preview its tiles, drag their order, \u2715 to remove";
+    b.onclick=()=>admBoardOpen(key);
+    return b;
+  }
+  function admAppSearchText(a){ return String((a.name||"")+" "+(a.desc||"")+" "+(a.url||"")).toLowerCase(); }
   function admRenderMatrix(host){
     host.classList.remove("single");
+    /* ---- toolbar ---- */
     const bar=document.createElement("div"); bar.id="adm-matrix-bar";
     const q=document.createElement("input"); q.type="search"; q.id="adm-mx-q";
     q.placeholder="Filter tiles\u2026"; q.value=admMxQuery;
     q.oninput=function(){ admMxQuery=this.value; admMxApplyFilter(); };
     bar.appendChild(q);
+    const fb=document.createElement("button"); fb.type="button"; fb.className="abtn";
+    fb.textContent="\u21c4 Flip"; fb.title=admMxT?"Back to tiles as rows":"Flip: boards as rows, tiles as columns";
+    fb.onclick=function(){ admMxT=!admMxT; admRenderBoards(); };
+    bar.appendChild(fb);
     const sb=document.createElement("button"); sb.type="button"; sb.className="abtn";
-    sb.textContent="Sort A\u2192Z"; sb.title="Sort every tile alphabetically — this becomes the order on every board";
+    sb.textContent="Sort A\u2192Z"; sb.title="Sort every tile alphabetically \u2014 this becomes the order on every board";
     sb.onclick=function(){
-      if(!confirm("Sort all tiles alphabetically? This replaces the current order on every board (you can still drag rows afterwards).")) return;
+      if(!confirm("Sort all tiles alphabetically? This replaces the current order on every board (you can still drag afterwards).")) return;
       APPS.sort((x,y)=>String(x.name||"").localeCompare(String(y.name||""),undefined,{sensitivity:"base"}));
       admChanged();
     };
@@ -2185,18 +2243,24 @@
       bar.appendChild(mb);
     }
     const cap=document.createElement("span"); cap.id="adm-matrix-cap";
-    cap.innerHTML="Drag \u2630 to reorder (the order every board shows) \u00b7 "+
-      "cells toggle <b>\u2713 on</b> / <b>\u2715 off</b> \u00b7 <b>All</b> = every board \u00b7 "+
-      "<span class=\"mx-aim\" style=\"padding:0\">\u25CF</span> = tile has targeting rules (click its name).";
+    cap.innerHTML="Drag \u2630 to reorder (the order every board shows) \u00b7 cells toggle <b>\u2713</b>/<b>\u2715</b> \u00b7 "+
+      "click a <b>board name</b> to open that board \u00b7 <span class=\"mx-aim\" style=\"padding:0\">\u25CF</span> = targeting rules (click the tile name).";
     bar.appendChild(cap);
     host.appendChild(bar);
     const wrap=document.createElement("div"); wrap.id="adm-matrix-wrap";
     const tbl=document.createElement("table"); tbl.id="adm-matrix";
+    if(admMxT){ tbl.classList.add("t"); admMxBuildT(tbl); }
+    else admMxBuild(tbl);
+    wrap.appendChild(tbl); host.appendChild(wrap);
+    admMxApplyFilter();
+  }
+  /* ---- normal: tiles as rows ---- */
+  function admMxBuild(tbl){
     const thead=document.createElement("thead"); const hr=document.createElement("tr");
     const thG=document.createElement("th"); thG.className="mx-grip-col"; hr.appendChild(thG);
     const th0=document.createElement("th"); th0.textContent="Tile"; hr.appendChild(th0);
     const thA=document.createElement("th"); thA.textContent="All"; thA.title="On every board"; hr.appendChild(thA);
-    ADM_BOARD_OPTS.forEach(([k,l])=>{ const th=document.createElement("th"); th.textContent=l; hr.appendChild(th); });
+    ADM_BOARD_OPTS.forEach(([k,l])=>{ const th=document.createElement("th"); th.appendChild(admBoardLabelBtn(k,l)); hr.appendChild(th); });
     const thO=document.createElement("th"); thO.textContent="OW"; hr.appendChild(thO);
     const thD=document.createElement("th"); thD.textContent=""; hr.appendChild(thD);
     thead.appendChild(hr); tbl.appendChild(thead);
@@ -2205,11 +2269,10 @@
     APPS.forEach(a=>{ const k=admUrlKey(a.url); if(k) urlCount[k]=(urlCount[k]||0)+1; });
     APPS.forEach((a,i)=>{
       const tr=document.createElement("tr");
-      tr.dataset.i=i;
-      tr.dataset.search=String((a.name||"")+" "+(a.desc||"")+" "+(a.url||"")).toLowerCase();
+      tr.dataset.search=admAppSearchText(a);
       const tdG=document.createElement("td"); tdG.className="mx-grip-col";
       const grip=document.createElement("span"); grip.className="mx-grip"; grip.textContent="\u2630";
-      grip.draggable=true; grip.title="Drag to reorder — this order shows on every board";
+      grip.draggable=true; grip.title="Drag to reorder \u2014 this order shows on every board";
       grip.addEventListener("dragstart",e=>{ tr.classList.add("dragging");
         e.dataTransfer.setData("text/plain",String(i)); e.dataTransfer.effectAllowed="move"; });
       grip.addEventListener("dragend",()=>tr.classList.remove("dragging"));
@@ -2220,8 +2283,6 @@
         const from=+e.dataTransfer.getData("text/plain");
         if(isNaN(from)||from===i) return;
         const moved=APPS.splice(from,1)[0];
-        /* After the removal, inserting at i lands the row after the hovered
-           row when dragging down, and before it when dragging up. */
         APPS.splice(i,0,moved);
         admChanged();
       });
@@ -2231,7 +2292,7 @@
       const b=document.createElement("b"); b.textContent=a.name||"(untitled)"; nm.appendChild(b);
       if(urlCount[admUrlKey(a.url)]>1){ const d=document.createElement("span"); d.className="mx-dup";
         d.textContent="DUP"; d.style.cursor="pointer";
-        d.title="Another tile has this same link — click to merge all its copies into one tile (boards and targeting combined)";
+        d.title="Another tile has this same link \u2014 click to merge all its copies into one tile (boards and targeting combined)";
         d.onclick=(e)=>{ e.stopPropagation();
           if(!confirm('Merge every copy of this link into one tile? Boards and targeting are combined, so nobody loses it.')) return;
           const r=admMergeGroup(admUrlKey(a.url));
@@ -2239,35 +2300,15 @@
           else if(r==="merged") admChanged();
         };
         nm.appendChild(d); }
+      if(admRefined(a)){ const dot=document.createElement("span"); dot.className="mx-aim"; dot.textContent="\u25CF";
+        dot.title="This tile has targeting rules (leaders / accounts / departments) \u2014 click the name to edit them"; nm.appendChild(dot); }
       nm.onclick=()=>admEdit(i);
       td0.appendChild(nm); tr.appendChild(td0);
-      const boards=effectiveBoards(a);
-      /* "All" — one switch for every board at once. */
       const tdA=document.createElement("td");
-      const allCb=document.createElement("input"); allCb.type="checkbox"; allCb.className="mx-all";
-      allCb.checked=BOARD_KEYS.every(k=>boards.indexOf(k)>=0);
-      allCb.title=allCb.checked?"On every board — uncheck to remove from ALL boards":"Check to put this tile on every board";
-      allCb.onchange=function(){
-        if(this.checked){ a.boards=BOARD_KEYS.slice(); }
-        else{ a.boards=[]; }
-        delete a.roles; delete a.only; delete a.boardsAll;
-        admChanged();
-      };
-      tdA.appendChild(allCb); tr.appendChild(tdA);
-      const refined=(a.under&&a.under.length)||(a.hideUnder&&a.hideUnder.length)||(a.accounts&&a.accounts.length)||(a.hideFor&&a.hideFor.length)||(a.depts&&a.depts.length);
-      if(refined){ const dot=document.createElement("span"); dot.className="mx-aim"; dot.textContent="\u25CF";
-        dot.title="This tile has targeting rules (leaders / accounts / departments) \u2014 click the name to edit them"; nm.appendChild(dot); }
+      tdA.appendChild(admMxAllCb(a)); tr.appendChild(tdA);
       ADM_BOARD_OPTS.forEach(([key,lbl])=>{
         const td=document.createElement("td");
-        const cell=document.createElement("button"); cell.type="button"; cell.className="mx-cell";
-        const on=boards.indexOf(key)>=0;
-        if(on){ cell.classList.add("on"); cell.textContent="\u2713";
-          cell.title=lbl+": on \u2014 click to turn off"+(refined?" (tile has targeting rules \u2014 click its name to edit who)":"");
-          cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
-        else{ cell.classList.add("off"); cell.textContent="\u2715";
-          cell.title=lbl+": off \u2014 click to turn on";
-          cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
-        td.appendChild(cell); tr.appendChild(td);
+        td.appendChild(admMxCellBtn(a,key,lbl)); tr.appendChild(td);
       });
       const tdO=document.createElement("td");
       const ow=document.createElement("span"); ow.className="mx-cell on"; ow.textContent="\u2713";
@@ -2280,14 +2321,77 @@
       tdD.appendChild(del); tr.appendChild(tdD);
       tbody.appendChild(tr);
     });
-    tbl.appendChild(tbody); wrap.appendChild(tbl); host.appendChild(wrap);
-    admMxApplyFilter();
+    tbl.appendChild(tbody);
+  }
+  function admMxAllCb(a){
+    const allCb=document.createElement("input"); allCb.type="checkbox"; allCb.className="mx-all";
+    allCb.checked=BOARD_KEYS.every(k=>effectiveBoards(a).indexOf(k)>=0);
+    allCb.title=allCb.checked?"On every board \u2014 uncheck to remove from ALL boards":"Check to put this tile on every board";
+    allCb.onchange=function(){
+      if(this.checked){ a.boards=BOARD_KEYS.slice(); }
+      else{ a.boards=[]; }
+      delete a.roles; delete a.only; delete a.boardsAll;
+      admChanged();
+    };
+    return allCb;
+  }
+  /* ---- flipped: boards as rows, tiles as columns ---- */
+  function admMxBuildT(tbl){
+    const thead=document.createElement("thead"); const hr=document.createElement("tr");
+    const c0=document.createElement("th"); c0.textContent="Board"; hr.appendChild(c0);
+    APPS.forEach((a,i)=>{
+      const th=document.createElement("th"); th.className="mx-appcol"; th.dataset.mxs=admAppSearchText(a);
+      const v=document.createElement("div"); v.className="mx-vert";
+      const grip=document.createElement("span"); grip.className="mx-grip"; grip.textContent="\u2630";
+      grip.draggable=true; grip.title="Drag onto another column to reorder \u2014 this order shows on every board";
+      grip.addEventListener("dragstart",e=>{ th.classList.add("dragging");
+        e.dataTransfer.setData("text/plain",String(i)); e.dataTransfer.effectAllowed="move"; });
+      grip.addEventListener("dragend",()=>th.classList.remove("dragging"));
+      th.addEventListener("dragover",e=>{ e.preventDefault(); e.dataTransfer.dropEffect="move"; });
+      th.addEventListener("drop",e=>{
+        e.preventDefault();
+        const from=+e.dataTransfer.getData("text/plain");
+        if(isNaN(from)||from===i) return;
+        const moved=APPS.splice(from,1)[0];
+        APPS.splice(i,0,moved);
+        admChanged();
+      });
+      const nm=document.createElement("span"); nm.className="mx-vname"; nm.textContent=a.name||"(untitled)";
+      nm.title="Edit "+(a.name||""); nm.onclick=()=>admEdit(i);
+      v.appendChild(grip); v.appendChild(nm);
+      if(admRefined(a)){ const dot=document.createElement("span"); dot.className="mx-aim"; dot.textContent="\u25CF";
+        dot.title="Has targeting rules \u2014 click the name to edit"; v.appendChild(dot); }
+      th.appendChild(v); hr.appendChild(th);
+    });
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tbody=document.createElement("tbody");
+    /* All-boards row first */
+    const trA=document.createElement("tr");
+    const tdA0=document.createElement("td"); tdA0.innerHTML="<b style=\"font:800 10.5px var(--font-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)\">All boards</b>";
+    trA.appendChild(tdA0);
+    APPS.forEach(a=>{ const td=document.createElement("td"); td.dataset.mxs=admAppSearchText(a);
+      td.appendChild(admMxAllCb(a)); trA.appendChild(td); });
+    tbody.appendChild(trA);
+    ADM_BOARD_OPTS.forEach(([key,lbl])=>{
+      const tr=document.createElement("tr");
+      const td0=document.createElement("td"); td0.appendChild(admBoardLabelBtn(key,lbl)); tr.appendChild(td0);
+      APPS.forEach(a=>{
+        const td=document.createElement("td"); td.dataset.mxs=admAppSearchText(a);
+        td.appendChild(admMxCellBtn(a,key,lbl)); tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
   }
   let admMxQuery="";
   function admMxApplyFilter(){
     const qv=admMxQuery.trim().toLowerCase();
-    document.querySelectorAll("#adm-matrix tbody tr").forEach(tr=>{
+    document.querySelectorAll("#adm-matrix tbody tr[data-search]").forEach(tr=>{
       tr.style.display=(!qv||tr.dataset.search.indexOf(qv)>=0)?"":"none";
+    });
+    /* flipped mode: hide whole columns */
+    document.querySelectorAll("#adm-matrix.t [data-mxs]").forEach(el=>{
+      el.style.display=(!qv||el.dataset.mxs.indexOf(qv)>=0)?"":"none";
     });
   }
 
@@ -2559,7 +2663,7 @@
     }
     /* Role+division boards: with the boards model this removes EXACTLY this
        one board — nothing else changes. */
-    const key=ctx.role+":"+ctx.div;
+    const key=(ctx.role==="staff")?"staff":(ctx.role+":"+ctx.div);
     const lbl=(ADM_BOARD_OPTS.find(o=>o[0]===key)||[,key])[1];
     if(!confirm('Remove "'+a.name+'" from the '+lbl+' board only?')) return;
     admSetBoard(a,key,false);
@@ -2597,7 +2701,28 @@
     });
     return t;
   }
-  function admChanged(){ admDirty=true; admRenderBoards(); admNote(); }
+  function admChanged(){ admDirty=true; admRenderBoards(); if(admBoardKey) admBoardRender(); admNote(); }
+
+  /* ---- Board quick-view modal ---- */
+  function admBoardOpen(key){ admBoardKey=key; admBoardRender(); document.getElementById("adm-board-wrap").hidden=false; }
+  function admBoardClose(){ admBoardKey=null; document.getElementById("adm-board-wrap").hidden=true; }
+  function admBoardRender(){
+    if(!admBoardKey) return;
+    const lbl=(ADM_BOARD_OPTS.find(o=>o[0]===admBoardKey)||[null,admBoardKey])[1];
+    const role=admBoardKey==="staff"?"staff":admBoardKey.split(":")[0];
+    const div=admBoardKey==="staff"?"bk":admBoardKey.split(":")[1];
+    const vis=appsFor(role,div,"","",null);
+    document.getElementById("adm-board-title").textContent=lbl+" \u2014 "+vis.length+" tile"+(vis.length===1?"":"s");
+    const grid=document.getElementById("adm-board-grid"); grid.innerHTML="";
+    if(!vis.length){ const e=document.createElement("div"); e.className="mini-empty";
+      e.textContent="No tiles on this board."; grid.appendChild(e); return; }
+    const ctx={role:role,div:div,dept:"",email:""};
+    vis.forEach((a,pos)=>grid.appendChild(admMiniTile(a,pos,vis,ctx)));
+  }
+  document.getElementById("adm-board-x").onclick=admBoardClose;
+  document.getElementById("adm-board-wrap").addEventListener("click",function(e){
+    if(e.target===this) admBoardClose();
+  });
 
   /* ---- Chip helper (shared by division / role / department / tutorial pickers) ---- */
   function admChips(host,opts,isOn,onTap){
@@ -2752,6 +2877,7 @@
   });
   document.addEventListener("keydown",function(e){
     if(e.key!=="Escape") return;
+    if(!document.getElementById("adm-board-wrap").hidden){ admBoardClose(); return; }
     if(!document.getElementById("adm-acct-wrap").hidden){ admAcctClose(); return; }
     if(!document.getElementById("adm-modal-wrap").hidden){ admCancelModal(); return; }
     if(document.body.classList.contains("adm-open")) document.body.classList.remove("adm-open");
