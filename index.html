@@ -1934,7 +1934,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.5";
+  var APP_VERSION="5.6";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -2096,12 +2096,85 @@
      edit those). Duplicate URLs are flagged; only the first copy ever
      renders on a live board. */
   function admUrlKey(u){ return String(u||"").trim().toLowerCase().replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/+$/,""); }
+  /* ---- Merge duplicates -------------------------------------------------
+     Collapses every tile that points at the same link into ONE tile that
+     keeps everything the copies did: boards and full-on boards are united,
+     leader/account targeting is united, and a global copy makes the merged
+     tile global (nobody loses the tile). Identity (name, caption, icon)
+     comes from the global copy when there is one, else the first copy.
+     Groups whose copies mix leader-targeting with account-targeting are
+     left alone — one tile can't say "this group OR that person" — and are
+     reported so they can be combined by hand. */
+  function admMergeGroup(k){
+    const group=APPS.filter(a=>admUrlKey(a.url)===k);
+    if(group.length<2) return "none";
+    const isGlobal=a=>!(a.under&&a.under.length)&&!(a.accounts&&a.accounts.length);
+    const anyGlobal=group.some(isGlobal);
+    const hasU=group.some(a=>a.under&&a.under.length);
+    const hasA=group.some(a=>a.accounts&&a.accounts.length);
+    if(!anyGlobal&&hasU&&hasA) return "mixed";
+    const base=group.find(isGlobal)||group[0];
+    const uniq=arr=>Array.from(new Set(arr));
+    group.forEach(c=>{ if(c===base) return;
+      if(!base.icon&&c.icon) base.icon=c.icon;
+      if(!base.desc&&c.desc) base.desc=c.desc;
+      if(!base.tut&&c.tut){ base.tut=true; base.tutUrl=c.tutUrl||""; if(c.tutCap) base.tutCap=c.tutCap; }
+    });
+    base.boards=uniq([].concat.apply([],group.map(effectiveBoards)));
+    const ball=uniq([].concat.apply([],group.map(a=>a.boardsAll||[])));
+    if(ball.length) base.boardsAll=ball; else delete base.boardsAll;
+    if(anyGlobal){ delete base.under; delete base.accounts; }
+    else if(hasU){ base.under=uniq([].concat.apply([],group.map(a=>a.under||[]))); delete base.accounts; }
+    else{ base.accounts=uniq([].concat.apply([],group.map(a=>a.accounts||[]))); delete base.under; }
+    /* departments: the broadest copy wins — any copy without a department
+       restriction clears it; otherwise the lists are united. */
+    if(group.some(a=>!(a.depts&&a.depts.length))) delete base.depts;
+    else base.depts=uniq([].concat.apply([],group.map(a=>a.depts||[])));
+    /* hides: every deliberate exclusion survives, minus anyone the merged
+       tile now explicitly includes. */
+    let hf=uniq([].concat.apply([],group.map(a=>a.hideFor||[])));
+    if(base.accounts) hf=hf.filter(e=>base.accounts.indexOf(e)<0);
+    if(hf.length) base.hideFor=hf; else delete base.hideFor;
+    let hu=uniq([].concat.apply([],group.map(a=>a.hideUnder||[])));
+    if(base.under) hu=hu.filter(r=>base.under.indexOf(r)<0);
+    if(hu.length) base.hideUnder=hu; else delete base.hideUnder;
+    delete base.roles; delete base.only;
+    for(let i=APPS.length-1;i>=0;i--){
+      if(APPS[i]!==base&&admUrlKey(APPS[i].url)===k) APPS.splice(i,1);
+    }
+    return "merged";
+  }
+  function admMergeAll(){
+    const counts={};
+    APPS.forEach(a=>{ const k=admUrlKey(a.url); if(k) counts[k]=(counts[k]||0)+1; });
+    const keys=Object.keys(counts).filter(k=>counts[k]>1);
+    if(!keys.length){ alert("No duplicate links found."); return; }
+    if(!confirm("Merge "+keys.length+" duplicated link"+(keys.length>1?"s":"")+" into single tiles?\n\nBoards and targeting are combined, so nobody loses a tile — the board just stops carrying copies.")) return;
+    let merged=0; const mixed=[];
+    keys.forEach(k=>{ const r=admMergeGroup(k);
+      if(r==="merged") merged++;
+      else if(r==="mixed"){ const t=APPS.find(a=>admUrlKey(a.url)===k); mixed.push(t?(t.name||k):k); } });
+    if(merged) admChanged();
+    let msg=merged+" merged."+(admDirty?" Publish to make it live.":"");
+    if(mixed.length) msg+="\n\nLeft alone (copies mix leader-targeting with account-targeting, which one tile can't express — combine these by hand):\n\u2022 "+mixed.join("\n\u2022 ");
+    alert(msg);
+  }
   function admRenderMatrix(host){
     host.classList.remove("single");
     const cap=document.createElement("div"); cap.id="adm-matrix-cap";
     cap.innerHTML="Click a cell to cycle: <b>\u2713 on for everyone</b> \u2192 <b>\u2715 off</b>"+
       " \u2192 <b>\u25D0 partial</b> (only the tile\u2019s targeted people \u2014 click the tile name to edit who). "+
-      "Tiles with no targeting rules just toggle \u2713/\u2715.";
+      "Tiles with no targeting rules just toggle \u2713/\u2715. ";
+    const dupCounts={};
+    APPS.forEach(a=>{ const k=admUrlKey(a.url); if(k) dupCounts[k]=(dupCounts[k]||0)+1; });
+    const nDup=Object.keys(dupCounts).filter(k=>dupCounts[k]>1).length;
+    if(nDup){
+      const mb=document.createElement("button"); mb.type="button"; mb.className="abtn";
+      mb.style.cssText="flex:none;padding:4px 10px;margin-left:8px;font-size:11px";
+      mb.textContent="Merge "+nDup+" duplicate"+(nDup>1?"s":"");
+      mb.onclick=admMergeAll;
+      cap.appendChild(mb);
+    }
     host.appendChild(cap);
     const wrap=document.createElement("div"); wrap.id="adm-matrix-wrap";
     const tbl=document.createElement("table"); tbl.id="adm-matrix";
@@ -2121,7 +2194,15 @@
       nm.appendChild(admMiniIcon(a));
       const b=document.createElement("b"); b.textContent=a.name||"(untitled)"; nm.appendChild(b);
       if(urlCount[admUrlKey(a.url)]>1){ const d=document.createElement("span"); d.className="mx-dup";
-        d.textContent="DUP"; d.title="Another tile has this same link — only the first copy shows on live boards"; nm.appendChild(d); }
+        d.textContent="DUP"; d.style.cursor="pointer";
+        d.title="Another tile has this same link — click to merge all its copies into one tile (boards and targeting combined)";
+        d.onclick=(e)=>{ e.stopPropagation();
+          if(!confirm('Merge every copy of this link into one tile? Boards and targeting are combined, so nobody loses it.')) return;
+          const r=admMergeGroup(admUrlKey(a.url));
+          if(r==="mixed") alert("These copies mix leader-targeting with account-targeting, which one tile can't express. Make one copy global (or align their targeting), then merge.");
+          else if(r==="merged") admChanged();
+        };
+        nm.appendChild(d); }
       nm.onclick=()=>admEdit(i);
       td0.appendChild(nm); tr.appendChild(td0);
       const boards=effectiveBoards(a);
