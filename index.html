@@ -454,9 +454,8 @@
       background:none;cursor:pointer;font:800 12px var(--font-sans);}
     .mx-cell.on{color:#0a7a2f;background:#e9f7ee;border-color:#bfe6cc;}
     .mx-cell.off{color:var(--gray-400);}
-    .mx-cell.part{color:#8a5a00;background:#fdf3e0;border-color:#f0ddb0;}
-    .mx-cell.lock{color:var(--gray-300);cursor:not-allowed;}
-    .mx-cell:not(.lock):hover{border-color:var(--navy-300);}
+    .mx-cell:hover{border-color:var(--navy-300);}
+    .mx-aim{color:#c98a00;font-size:9px;padding:0 2px;flex:none;}
     .mx-del{background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:12px;}
     .mx-del:hover{color:var(--accent);}
     @media (max-width:800px){ #adm-boards{grid-template-columns:1fr;} #adm-head{padding:10px 12px;} }
@@ -933,11 +932,6 @@
   const PORTAL_DEFAULT="District Manager Portal";
   /* Which tiles wear a badge: key -> exact tile name in APPS above. */
   const BADGE_TILES={ paymi:"PayMi", fixmi:"FixMi" };
-  /* C-Store operators don't run Burger King systems. These come off their
-     board, and Bitrix24 takes the featured slot RBI holds for BK. */
-  const CSTORE_HIDE=["RBI · Okta","Genius Back Office","PAR POS","SICOM",
-                     "RSI Web","RTI Oil","Flowers"];
-  const CSTORE_FEATURE="Bitrix24";
   const FIXMI_TICKETS_NODE="maintenanceTickets";
   /* FixMi calls a ticket "active" until it's Closed, which includes ones a
      tech already marked Finished. Those are done work awaiting paperwork, so
@@ -1367,10 +1361,7 @@
     const boardKey=(role==="staff")?"staff":((role||"gm")+":"+normBoardDiv(role||"gm",div));
     const list=APPS.filter(a=>{
       if(role!=="admin"&&effectiveBoards(a).indexOf(boardKey)<0) return false;
-      /* boardsAll: boards where this tile is FULLY on — its targeting rules
-         (leaders, accounts, hides, departments) are bypassed for everyone on
-         that board. Set from the Matrix's ✓ state on a targeted tile. */
-      const full=Array.isArray(a.boardsAll)&&a.boardsAll.indexOf(boardKey)>=0;
+      const full=false;   /* targeting always applies; boards are plain on/off */
       /* Leader-group targeting: the tile shows only when the viewer's stores
          overlap the CURRENT stores of one of the named leaders. Overwatch is
          exempt. storeIds===null means a generic admin preview board (a role in
@@ -1417,10 +1408,9 @@
       }
       return true;
     });
-    if(div==="bk"||role==="admin") return urlDedupe(list);
-    const kept=list.filter(a=>!CSTORE_HIDE.includes(a.name));
-    const feat=kept.find(a=>a.name===CSTORE_FEATURE);
-    return urlDedupe(feat?[feat,...kept.filter(a=>a!==feat)]:kept);
+    /* No built-in per-division lists anymore: which boards carry a tile —
+       and in what order — is exactly what the Matrix says, nothing else. */
+    return urlDedupe(list);
   }
   function sessionDivision(){
     if(window.__admDivision) return window.__admDivision;
@@ -1947,7 +1937,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.7";
+  var APP_VERSION="5.8";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -2016,7 +2006,6 @@
         if(a.under&&a.under.length) o.under=a.under.slice();
         if(a.hideUnder&&a.hideUnder.length) o.hideUnder=a.hideUnder.slice();
         if(Array.isArray(a.boards)) o.boards=a.boards.slice();
-        if(a.boardsAll&&a.boardsAll.length) o.boardsAll=a.boardsAll.slice();
         if(a.tut){ o.tut=true; o.tutUrl=a.tutUrl||""; if(a.tutCap) o.tutCap=a.tutCap; }
         return o;
       }), updatedAt:new Date().toISOString(), updatedBy:who||"unknown" };
@@ -2134,8 +2123,7 @@
       if(!base.tut&&c.tut){ base.tut=true; base.tutUrl=c.tutUrl||""; if(c.tutCap) base.tutCap=c.tutCap; }
     });
     base.boards=uniq([].concat.apply([],group.map(effectiveBoards)));
-    const ball=uniq([].concat.apply([],group.map(a=>a.boardsAll||[])));
-    if(ball.length) base.boardsAll=ball; else delete base.boardsAll;
+    delete base.boardsAll;
     if(anyGlobal){ delete base.under; delete base.accounts; }
     else if(hasU){ base.under=uniq([].concat.apply([],group.map(a=>a.under||[]))); delete base.accounts; }
     else{ base.accounts=uniq([].concat.apply([],group.map(a=>a.accounts||[]))); delete base.under; }
@@ -2197,9 +2185,9 @@
       bar.appendChild(mb);
     }
     const cap=document.createElement("span"); cap.id="adm-matrix-cap";
-    cap.innerHTML="Drag \u2630 to reorder (the order every board shows) \u00b7 cells cycle "+
-      "<b>\u2713 everyone</b> \u2192 <b>\u2715 off</b> \u2192 <b>\u25D0 partial</b> \u00b7 "+
-      "<b>All</b> checks a tile onto every board.";
+    cap.innerHTML="Drag \u2630 to reorder (the order every board shows) \u00b7 "+
+      "cells toggle <b>\u2713 on</b> / <b>\u2715 off</b> \u00b7 <b>All</b> = every board \u00b7 "+
+      "<span class=\"mx-aim\" style=\"padding:0\">\u25CF</span> = tile has targeting rules (click its name).";
     bar.appendChild(cap);
     host.appendChild(bar);
     const wrap=document.createElement("div"); wrap.id="adm-matrix-wrap";
@@ -2261,38 +2249,23 @@
       allCb.title=allCb.checked?"On every board — uncheck to remove from ALL boards":"Check to put this tile on every board";
       allCb.onchange=function(){
         if(this.checked){ a.boards=BOARD_KEYS.slice(); }
-        else{ a.boards=[]; delete a.boardsAll; }
-        delete a.roles; delete a.only;
+        else{ a.boards=[]; }
+        delete a.roles; delete a.only; delete a.boardsAll;
         admChanged();
       };
       tdA.appendChild(allCb); tr.appendChild(tdA);
       const refined=(a.under&&a.under.length)||(a.hideUnder&&a.hideUnder.length)||(a.accounts&&a.accounts.length)||(a.hideFor&&a.hideFor.length)||(a.depts&&a.depts.length);
+      if(refined){ const dot=document.createElement("span"); dot.className="mx-aim"; dot.textContent="\u25CF";
+        dot.title="This tile has targeting rules (leaders / accounts / departments) \u2014 click the name to edit them"; nm.appendChild(dot); }
       ADM_BOARD_OPTS.forEach(([key,lbl])=>{
         const td=document.createElement("td");
         const cell=document.createElement("button"); cell.type="button"; cell.className="mx-cell";
         const on=boards.indexOf(key)>=0;
-        const full=Array.isArray(a.boardsAll)&&a.boardsAll.indexOf(key)>=0;
-        const div=key.indexOf(":")>=0?key.split(":")[1]:"bk";
-        const locked=(div!=="bk")&&key!=="staff"&&CSTORE_HIDE.includes(a.name);
-        if(locked){ cell.classList.add("lock"); cell.textContent="\u2013";
-          cell.title="Hidden on non-BK boards by the built-in C-Store list"; cell.disabled=true; }
-        else if(!refined){
-          /* No targeting rules: a plain on/off toggle. */
-          if(on){ cell.classList.add("on"); cell.textContent="\u2713";
-            cell.title=lbl+": shown to everyone — click to hide";
-            cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
-          else{ cell.classList.add("off"); cell.textContent="\u2715";
-            cell.title=lbl+": hidden — click to show";
-            cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
-        }
-        else if(on&&full){ cell.classList.add("on"); cell.textContent="\u2713";
-          cell.title=lbl+": shown to EVERYONE here (targeting bypassed on this board) — click to turn off";
+        if(on){ cell.classList.add("on"); cell.textContent="\u2713";
+          cell.title=lbl+": on \u2014 click to turn off"+(refined?" (tile has targeting rules \u2014 click its name to edit who)":"");
           cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
-        else if(on){ cell.classList.add("part"); cell.textContent="\u25D0";
-          cell.title=lbl+": partial — only this tile\u2019s targeted people see it (click the tile name to edit who). Click to show to everyone on this board.";
-          cell.onclick=()=>{ admSetFull(a,key,true); admChanged(); }; }
         else{ cell.classList.add("off"); cell.textContent="\u2715";
-          cell.title=lbl+": hidden — click for partial (its targeted people only)";
+          cell.title=lbl+": off \u2014 click to turn on";
           cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
         td.appendChild(cell); tr.appendChild(td);
       });
@@ -2648,15 +2621,7 @@
     if(on&&k<0) boards.push(key);
     if(!on&&k>=0) boards.splice(k,1);
     a.boards=boards;
-    if(!on) admSetFull(a,key,false);
-    delete a.roles; delete a.only;   /* legacy fields are superseded once edited */
-  }
-  function admSetFull(a,key,on){
-    const l=(Array.isArray(a.boardsAll)?a.boardsAll:[]).slice();
-    const k=l.indexOf(key);
-    if(on&&k<0) l.push(key);
-    if(!on&&k>=0) l.splice(k,1);
-    if(l.length) a.boardsAll=l; else delete a.boardsAll;
+    delete a.roles; delete a.only; delete a.boardsAll;   /* legacy fields die on edit */
   }
 
   /* Directors and District Managers from FindMi, as chip options. The value
@@ -2758,7 +2723,7 @@
       /* A stray backdrop click was silently throwing new apps away — if
          anything has been typed or toggled, ask first. */
       const typed=(document.getElementById("ae-name").value.trim()||document.getElementById("ae-url").value.trim());
-      const touched=a&&(a.only||a.roles||a.boards||a.depts||a.tut||a.accounts||a.hideFor||a.under||a.hideUnder||a.boardsAll);
+      const touched=a&&(a.only||a.roles||a.boards||a.depts||a.tut||a.accounts||a.hideFor||a.under||a.hideUnder);
       if((typed||touched)&&!confirm("Discard this new app?")) return;
       APPS.splice(admNewPendingIndex,1); admNewPendingIndex=null;
     }
@@ -2896,7 +2861,6 @@
       if(a.under&&a.under.length) s+=', under:'+JSON.stringify(a.under);
       if(a.hideUnder&&a.hideUnder.length) s+=', hideUnder:'+JSON.stringify(a.hideUnder);
       if(Array.isArray(a.boards)) s+=', boards:'+JSON.stringify(a.boards);
-      if(a.boardsAll&&a.boardsAll.length) s+=', boardsAll:'+JSON.stringify(a.boardsAll);
       if(a.tut) s+=', tut:true';
       if(a.tutCap) s+=', tutCap:'+JSON.stringify(a.tutCap);
       if(a.tutUrl) s+=', tutUrl:'+JSON.stringify(a.tutUrl);
