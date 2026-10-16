@@ -1073,17 +1073,28 @@
   }
   function storeAccount(lc){
     const stores=(MASTER&&MASTER.restaurants)||{};
+    /* More than one restaurant record can carry the same sign-in email
+       (an old import leftover next to the live record). The first key is
+       the OLDEST, so picking it froze the portal on a record FindMi no
+       longer shows. Collect every match and keep the most complete one —
+       a named GM beats no GM, and on a tie the newest record wins. */
+    const matches=[];
     for(const id in stores){
       const s=stores[id]||{};
-      if(((s.email||"")+"").trim().toLowerCase()===lc){
-        const label=(s.storeName||("Store "+(s.storeNumber||id))).trim();
-        const mgr=storeGmName(s);
-        return { email:lc, role:"gm", refId:id, isStore:true,
-                 name:mgr||label, hasManager:!!mgr,
-                 storeLabel:label, title:"General Manager" };
-      }
+      if(((s.email||"")+"").trim().toLowerCase()===lc) matches.push([id,s]);
     }
-    return null;
+    if(!matches.length) return null;
+    let best=matches[0];
+    for(const m of matches){
+      const bestHasMgr=!!storeGmName(best[1]), mHasMgr=!!storeGmName(m[1]);
+      if((mHasMgr&&!bestHasMgr)||(mHasMgr===bestHasMgr&&m[0]>best[0])) best=m;
+    }
+    const id=best[0], s=best[1];
+    const label=(s.storeName||("Store "+(s.storeNumber||id))).trim();
+    const mgr=storeGmName(s);
+    return { email:lc, role:"gm", refId:id, isStore:true,
+             name:mgr||label, hasManager:!!mgr,
+             storeLabel:label, title:"General Manager" };
   }
   /* ---- Everyone else in the directory ----------------------------------
      Resolves a person from FindMi's PEOPLE nodes only. The shared database
@@ -1923,7 +1934,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.4";
+  var APP_VERSION="5.5";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
