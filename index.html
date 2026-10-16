@@ -427,10 +427,23 @@
     #adm-matrix thead th{position:sticky;top:0;background:var(--navy-50);color:var(--text-heading);
       font:800 10px var(--font-sans);letter-spacing:.04em;text-transform:uppercase;z-index:2;
       white-space:normal;line-height:1.2;padding:7px 4px;}
-    #adm-matrix th:first-child,#adm-matrix td:first-child{position:sticky;left:0;background:#fff;text-align:left;z-index:1;
-      border-right:1px solid var(--gray-200);width:24%;min-width:170px;max-width:320px;overflow:hidden;text-overflow:ellipsis;
-      padding-left:10px;}
-    #adm-matrix-cap{font:600 11px var(--font-sans);color:var(--text-muted);padding:8px 12px 0;grid-column:1/-1;}
+    #adm-matrix th:first-child,#adm-matrix td:first-child{position:sticky;left:0;background:#fff;z-index:1;
+      width:26px;min-width:26px;padding:0 2px;}
+    #adm-matrix th:nth-child(2),#adm-matrix td:nth-child(2){position:sticky;left:26px;background:#fff;text-align:left;z-index:1;
+      border-right:1px solid var(--gray-200);width:23%;min-width:160px;max-width:300px;overflow:hidden;text-overflow:ellipsis;
+      padding-left:4px;}
+    #adm-matrix thead th:nth-child(2){background:var(--navy-50);z-index:3;}
+    #adm-matrix tbody tr:hover td{background:var(--navy-50);}
+    #adm-matrix tbody tr:hover td:first-child,#adm-matrix tbody tr:hover td:nth-child(2){background:var(--navy-50);}
+    #adm-matrix tbody tr.dragging td{opacity:.35;}
+    .mx-grip{cursor:grab;color:var(--gray-400);font-size:12px;padding:2px 4px;display:inline-block;}
+    .mx-grip:hover{color:var(--navy-600);}
+    .mx-all{width:15px;height:15px;accent-color:var(--navy-700);cursor:pointer;}
+    #adm-matrix-bar{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:2px 2px 0;}
+    #adm-matrix-bar .abtn{flex:none;padding:6px 12px;font-size:11.5px;}
+    #adm-mx-q{padding:7px 11px;border:1px solid var(--gray-300);border-radius:999px;font:600 12.5px var(--font-sans);
+      width:220px;background:#fff;}
+    #adm-matrix-cap{font:600 11px var(--font-sans);color:var(--text-muted);line-height:1.5;}
     #adm-matrix thead th:first-child{background:var(--navy-50);z-index:3;}
     .mx-name{display:flex;align-items:center;gap:7px;cursor:pointer;}
     .mx-name img,.mx-name .mt-letter{width:17px;height:17px;object-fit:contain;border-radius:4px;flex:none;}
@@ -1934,7 +1947,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.6";
+  var APP_VERSION="5.7";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -2076,7 +2089,7 @@
   }
 
   /* ---- Boards ---- */
-  let admView="boards";
+  let admView="matrix";
   function admSyncViews(){
     document.getElementById("adm-view-boards").classList.toggle("on",admView==="boards");
     document.getElementById("adm-view-people").classList.toggle("on",admView==="people");
@@ -2161,25 +2174,40 @@
   }
   function admRenderMatrix(host){
     host.classList.remove("single");
-    const cap=document.createElement("div"); cap.id="adm-matrix-cap";
-    cap.innerHTML="Click a cell to cycle: <b>\u2713 on for everyone</b> \u2192 <b>\u2715 off</b>"+
-      " \u2192 <b>\u25D0 partial</b> (only the tile\u2019s targeted people \u2014 click the tile name to edit who). "+
-      "Tiles with no targeting rules just toggle \u2713/\u2715. ";
+    const bar=document.createElement("div"); bar.id="adm-matrix-bar";
+    const q=document.createElement("input"); q.type="search"; q.id="adm-mx-q";
+    q.placeholder="Filter tiles\u2026"; q.value=admMxQuery;
+    q.oninput=function(){ admMxQuery=this.value; admMxApplyFilter(); };
+    bar.appendChild(q);
+    const sb=document.createElement("button"); sb.type="button"; sb.className="abtn";
+    sb.textContent="Sort A\u2192Z"; sb.title="Sort every tile alphabetically — this becomes the order on every board";
+    sb.onclick=function(){
+      if(!confirm("Sort all tiles alphabetically? This replaces the current order on every board (you can still drag rows afterwards).")) return;
+      APPS.sort((x,y)=>String(x.name||"").localeCompare(String(y.name||""),undefined,{sensitivity:"base"}));
+      admChanged();
+    };
+    bar.appendChild(sb);
     const dupCounts={};
     APPS.forEach(a=>{ const k=admUrlKey(a.url); if(k) dupCounts[k]=(dupCounts[k]||0)+1; });
     const nDup=Object.keys(dupCounts).filter(k=>dupCounts[k]>1).length;
     if(nDup){
       const mb=document.createElement("button"); mb.type="button"; mb.className="abtn";
-      mb.style.cssText="flex:none;padding:4px 10px;margin-left:8px;font-size:11px";
       mb.textContent="Merge "+nDup+" duplicate"+(nDup>1?"s":"");
       mb.onclick=admMergeAll;
-      cap.appendChild(mb);
+      bar.appendChild(mb);
     }
-    host.appendChild(cap);
+    const cap=document.createElement("span"); cap.id="adm-matrix-cap";
+    cap.innerHTML="Drag \u2630 to reorder (the order every board shows) \u00b7 cells cycle "+
+      "<b>\u2713 everyone</b> \u2192 <b>\u2715 off</b> \u2192 <b>\u25D0 partial</b> \u00b7 "+
+      "<b>All</b> checks a tile onto every board.";
+    bar.appendChild(cap);
+    host.appendChild(bar);
     const wrap=document.createElement("div"); wrap.id="adm-matrix-wrap";
     const tbl=document.createElement("table"); tbl.id="adm-matrix";
     const thead=document.createElement("thead"); const hr=document.createElement("tr");
+    const thG=document.createElement("th"); thG.className="mx-grip-col"; hr.appendChild(thG);
     const th0=document.createElement("th"); th0.textContent="Tile"; hr.appendChild(th0);
+    const thA=document.createElement("th"); thA.textContent="All"; thA.title="On every board"; hr.appendChild(thA);
     ADM_BOARD_OPTS.forEach(([k,l])=>{ const th=document.createElement("th"); th.textContent=l; hr.appendChild(th); });
     const thO=document.createElement("th"); thO.textContent="OW"; hr.appendChild(thO);
     const thD=document.createElement("th"); thD.textContent=""; hr.appendChild(thD);
@@ -2189,6 +2217,26 @@
     APPS.forEach(a=>{ const k=admUrlKey(a.url); if(k) urlCount[k]=(urlCount[k]||0)+1; });
     APPS.forEach((a,i)=>{
       const tr=document.createElement("tr");
+      tr.dataset.i=i;
+      tr.dataset.search=String((a.name||"")+" "+(a.desc||"")+" "+(a.url||"")).toLowerCase();
+      const tdG=document.createElement("td"); tdG.className="mx-grip-col";
+      const grip=document.createElement("span"); grip.className="mx-grip"; grip.textContent="\u2630";
+      grip.draggable=true; grip.title="Drag to reorder — this order shows on every board";
+      grip.addEventListener("dragstart",e=>{ tr.classList.add("dragging");
+        e.dataTransfer.setData("text/plain",String(i)); e.dataTransfer.effectAllowed="move"; });
+      grip.addEventListener("dragend",()=>tr.classList.remove("dragging"));
+      tdG.appendChild(grip); tr.appendChild(tdG);
+      tr.addEventListener("dragover",e=>{ e.preventDefault(); e.dataTransfer.dropEffect="move"; });
+      tr.addEventListener("drop",e=>{
+        e.preventDefault();
+        const from=+e.dataTransfer.getData("text/plain");
+        if(isNaN(from)||from===i) return;
+        const moved=APPS.splice(from,1)[0];
+        /* After the removal, inserting at i lands the row after the hovered
+           row when dragging down, and before it when dragging up. */
+        APPS.splice(i,0,moved);
+        admChanged();
+      });
       const td0=document.createElement("td");
       const nm=document.createElement("div"); nm.className="mx-name"; nm.title="Edit "+(a.name||"");
       nm.appendChild(admMiniIcon(a));
@@ -2206,6 +2254,18 @@
       nm.onclick=()=>admEdit(i);
       td0.appendChild(nm); tr.appendChild(td0);
       const boards=effectiveBoards(a);
+      /* "All" — one switch for every board at once. */
+      const tdA=document.createElement("td");
+      const allCb=document.createElement("input"); allCb.type="checkbox"; allCb.className="mx-all";
+      allCb.checked=BOARD_KEYS.every(k=>boards.indexOf(k)>=0);
+      allCb.title=allCb.checked?"On every board — uncheck to remove from ALL boards":"Check to put this tile on every board";
+      allCb.onchange=function(){
+        if(this.checked){ a.boards=BOARD_KEYS.slice(); }
+        else{ a.boards=[]; delete a.boardsAll; }
+        delete a.roles; delete a.only;
+        admChanged();
+      };
+      tdA.appendChild(allCb); tr.appendChild(tdA);
       const refined=(a.under&&a.under.length)||(a.hideUnder&&a.hideUnder.length)||(a.accounts&&a.accounts.length)||(a.hideFor&&a.hideFor.length)||(a.depts&&a.depts.length);
       ADM_BOARD_OPTS.forEach(([key,lbl])=>{
         const td=document.createElement("td");
@@ -2248,6 +2308,14 @@
       tbody.appendChild(tr);
     });
     tbl.appendChild(tbody); wrap.appendChild(tbl); host.appendChild(wrap);
+    admMxApplyFilter();
+  }
+  let admMxQuery="";
+  function admMxApplyFilter(){
+    const qv=admMxQuery.trim().toLowerCase();
+    document.querySelectorAll("#adm-matrix tbody tr").forEach(tr=>{
+      tr.style.display=(!qv||tr.dataset.search.indexOf(qv)>=0)?"":"none";
+    });
   }
 
   /* ---- People view ------------------------------------------------------
