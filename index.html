@@ -422,12 +422,15 @@
     #adm-views button.on{background:#fff;color:var(--navy-800);}
     #adm-matrix-wrap{grid-column:1/-1;overflow:auto;background:#fff;border:1px solid var(--border-subtle);
       border-radius:14px;box-shadow:0 2px 10px rgba(20,16,74,.06);}
-    #adm-matrix{border-collapse:separate;border-spacing:0;font:600 12px var(--font-sans);min-width:100%;}
-    #adm-matrix th,#adm-matrix td{border-bottom:1px solid var(--gray-200);padding:6px 8px;text-align:center;white-space:nowrap;}
+    #adm-matrix{border-collapse:separate;border-spacing:0;font:600 12px var(--font-sans);width:100%;}
+    #adm-matrix th,#adm-matrix td{border-bottom:1px solid var(--gray-200);padding:5px 4px;text-align:center;}
     #adm-matrix thead th{position:sticky;top:0;background:var(--navy-50);color:var(--text-heading);
-      font:800 10.5px var(--font-sans);letter-spacing:.05em;text-transform:uppercase;z-index:2;}
+      font:800 10px var(--font-sans);letter-spacing:.04em;text-transform:uppercase;z-index:2;
+      white-space:normal;line-height:1.2;padding:7px 4px;}
     #adm-matrix th:first-child,#adm-matrix td:first-child{position:sticky;left:0;background:#fff;text-align:left;z-index:1;
-      border-right:1px solid var(--gray-200);max-width:230px;overflow:hidden;text-overflow:ellipsis;}
+      border-right:1px solid var(--gray-200);width:24%;min-width:170px;max-width:320px;overflow:hidden;text-overflow:ellipsis;
+      padding-left:10px;}
+    #adm-matrix-cap{font:600 11px var(--font-sans);color:var(--text-muted);padding:8px 12px 0;grid-column:1/-1;}
     #adm-matrix thead th:first-child{background:var(--navy-50);z-index:3;}
     .mx-name{display:flex;align-items:center;gap:7px;cursor:pointer;}
     .mx-name img,.mx-name .mt-letter{width:17px;height:17px;object-fit:contain;border-radius:4px;flex:none;}
@@ -1054,13 +1057,27 @@
      name is `storeManager`. They get the General Manager board, and because
      the session carries the store id, the C-Store/BK split and the FixMi
      count both scope to that one store automatically. */
+  /* Mirrors FindMi's storeManagersOf(): newer records keep managers in a
+     `managers` array ([{name,title:"GM"/"AGM",phone},…]) and only stores
+     never imported still use the legacy storeManager/assistantManager
+     string fields — so the GM's name is read from the array first, else
+     the legacy field, else the store label. */
+  function storeGmName(s){
+    if(Array.isArray(s.managers)&&s.managers.length){
+      const gm=s.managers.find(m=>m&&String(m.title||"").trim().toUpperCase()==="GM"&&String(m.name||"").trim());
+      if(gm) return String(gm.name).trim();
+      const any=s.managers.find(m=>m&&String(m.name||"").trim());
+      if(any) return String(any.name).trim();
+    }
+    return ((s.storeManager||"")+"").trim();
+  }
   function storeAccount(lc){
     const stores=(MASTER&&MASTER.restaurants)||{};
     for(const id in stores){
       const s=stores[id]||{};
       if(((s.email||"")+"").trim().toLowerCase()===lc){
         const label=(s.storeName||("Store "+(s.storeNumber||id))).trim();
-        const mgr=((s.storeManager||"")+"").trim();
+        const mgr=storeGmName(s);
         return { email:lc, role:"gm", refId:id, isStore:true,
                  name:mgr||label, hasManager:!!mgr,
                  storeLabel:label, title:"General Manager" };
@@ -1323,11 +1340,13 @@
     dept=(dept||"").trim().toLowerCase();
     email=(email||"").trim().toLowerCase();
     const inList=arr=>arr.map(e=>String(e).trim().toLowerCase()).indexOf(email)>=0;
+    const boardKey=(role==="staff")?"staff":((role||"gm")+":"+normBoardDiv(role||"gm",div));
     const list=APPS.filter(a=>{
-      if(role!=="admin"){
-        const key=(role==="staff")?"staff":((role||"gm")+":"+normBoardDiv(role||"gm",div));
-        if(effectiveBoards(a).indexOf(key)<0) return false;
-      }
+      if(role!=="admin"&&effectiveBoards(a).indexOf(boardKey)<0) return false;
+      /* boardsAll: boards where this tile is FULLY on — its targeting rules
+         (leaders, accounts, hides, departments) are bypassed for everyone on
+         that board. Set from the Matrix's ✓ state on a targeted tile. */
+      const full=Array.isArray(a.boardsAll)&&a.boardsAll.indexOf(boardKey)>=0;
       /* Leader-group targeting: the tile shows only when the viewer's stores
          overlap the CURRENT stores of one of the named leaders. Overwatch is
          exempt. storeIds===null means a generic admin preview board (a role in
@@ -1335,7 +1354,7 @@
          the leaders' stores actually belongs to that division — so a tile for
          a BK-only DM's stores previews on the BK boards alone, exactly
          mirroring who really sees it. */
-      if(a.under&&a.under.length&&role!=="admin"){
+      if(a.under&&a.under.length&&role!=="admin"&&!full){
         const leaderStores=[];
         a.under.forEach(ref=>storesUnderLeader(ref).forEach(id=>leaderStores.push(id)));
         if(storeIds===null||storeIds===undefined){
@@ -1351,7 +1370,7 @@
          whose stores fall under one of these leaders, and follows the
          leader's store list as it changes in FindMi. Generic preview
          boards ignore it (they represent no particular stores). */
-      if(a.hideUnder&&a.hideUnder.length&&role!=="admin"&&storeIds!==null&&storeIds!==undefined){
+      if(a.hideUnder&&a.hideUnder.length&&role!=="admin"&&!full&&storeIds!==null&&storeIds!==undefined){
         const mine=new Set(storeIds);
         if(mine.size){
           const hid=[]; a.hideUnder.forEach(ref=>storesUnderLeader(ref).forEach(id=>hid.push(id)));
@@ -1362,13 +1381,13 @@
          hidden from the people who administer the board.
            accounts: if set, ONLY these emails see the tile
            hideFor:  these emails never see the tile */
-      if(role!=="admin"){
+      if(role!=="admin"&&!full){
         if(a.accounts&&a.accounts.length&&(!email||!inList(a.accounts))) return false;
         if(a.hideFor&&a.hideFor.length&&email&&inList(a.hideFor)) return false;
       }
       /* A tile flagged for departments belongs to those support-staff teams
          only — Overwatch still sees everything. */
-      if(a.depts&&a.depts.length&&role!=="admin"){
+      if(a.depts&&a.depts.length&&role!=="admin"&&!full){
         if(role!=="staff") return false;
         if(!dept||a.depts.map(d=>String(d).trim().toLowerCase()).indexOf(dept)<0) return false;
       }
@@ -1904,7 +1923,7 @@
      waits, and refreshes the moment the person tabs away and comes back —
      never yanking the page out from under a click.
      ====================================================================== */
-  var APP_VERSION="5.2";
+  var APP_VERSION="5.4";
   (function(){ var fv=document.getElementById("footer-ver"); if(fv) fv.textContent="v"+APP_VERSION; })();
   const VER_PATH=PORTAL_NODE+"/appMeta";
   let _verPublished=false, _updatePending=false, _booted=false;
@@ -1973,6 +1992,7 @@
         if(a.under&&a.under.length) o.under=a.under.slice();
         if(a.hideUnder&&a.hideUnder.length) o.hideUnder=a.hideUnder.slice();
         if(Array.isArray(a.boards)) o.boards=a.boards.slice();
+        if(a.boardsAll&&a.boardsAll.length) o.boardsAll=a.boardsAll.slice();
         if(a.tut){ o.tut=true; o.tutUrl=a.tutUrl||""; if(a.tutCap) o.tutCap=a.tutCap; }
         return o;
       }), updatedAt:new Date().toISOString(), updatedBy:who||"unknown" };
@@ -2066,7 +2086,12 @@
      renders on a live board. */
   function admUrlKey(u){ return String(u||"").trim().toLowerCase().replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/+$/,""); }
   function admRenderMatrix(host){
-    host.classList.add("single");
+    host.classList.remove("single");
+    const cap=document.createElement("div"); cap.id="adm-matrix-cap";
+    cap.innerHTML="Click a cell to cycle: <b>\u2713 on for everyone</b> \u2192 <b>\u2715 off</b>"+
+      " \u2192 <b>\u25D0 partial</b> (only the tile\u2019s targeted people \u2014 click the tile name to edit who). "+
+      "Tiles with no targeting rules just toggle \u2713/\u2715.";
+    host.appendChild(cap);
     const wrap=document.createElement("div"); wrap.id="adm-matrix-wrap";
     const tbl=document.createElement("table"); tbl.id="adm-matrix";
     const thead=document.createElement("thead"); const hr=document.createElement("tr");
@@ -2094,18 +2119,28 @@
         const td=document.createElement("td");
         const cell=document.createElement("button"); cell.type="button"; cell.className="mx-cell";
         const on=boards.indexOf(key)>=0;
+        const full=Array.isArray(a.boardsAll)&&a.boardsAll.indexOf(key)>=0;
         const div=key.indexOf(":")>=0?key.split(":")[1]:"bk";
         const locked=(div!=="bk")&&key!=="staff"&&CSTORE_HIDE.includes(a.name);
         if(locked){ cell.classList.add("lock"); cell.textContent="\u2013";
           cell.title="Hidden on non-BK boards by the built-in C-Store list"; cell.disabled=true; }
-        else if(on&&refined){ cell.classList.add("part"); cell.textContent="\u25D0";
-          cell.title="On this board, refined by leader/account/department rules — click the tile name to edit them. Click here to remove from this board.";
+        else if(!refined){
+          /* No targeting rules: a plain on/off toggle. */
+          if(on){ cell.classList.add("on"); cell.textContent="\u2713";
+            cell.title=lbl+": shown to everyone — click to hide";
+            cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
+          else{ cell.classList.add("off"); cell.textContent="\u2715";
+            cell.title=lbl+": hidden — click to show";
+            cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
+        }
+        else if(on&&full){ cell.classList.add("on"); cell.textContent="\u2713";
+          cell.title=lbl+": shown to EVERYONE here (targeting bypassed on this board) — click to turn off";
           cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
-        else if(on){ cell.classList.add("on"); cell.textContent="\u2713";
-          cell.title="Shown on "+lbl+" — click to hide";
-          cell.onclick=()=>{ admSetBoard(a,key,false); admChanged(); }; }
+        else if(on){ cell.classList.add("part"); cell.textContent="\u25D0";
+          cell.title=lbl+": partial — only this tile\u2019s targeted people see it (click the tile name to edit who). Click to show to everyone on this board.";
+          cell.onclick=()=>{ admSetFull(a,key,true); admChanged(); }; }
         else{ cell.classList.add("off"); cell.textContent="\u2715";
-          cell.title="Hidden on "+lbl+" — click to show";
+          cell.title=lbl+": hidden — click for partial (its targeted people only)";
           cell.onclick=()=>{ admSetBoard(a,key,true); admChanged(); }; }
         td.appendChild(cell); tr.appendChild(td);
       });
@@ -2150,7 +2185,7 @@
     html+=grp("Store accounts",Object.keys(stores).filter(id=>(stores[id]||{}).email).map(id=>{
       const st=stores[id];
       const lbl=(st.storeName||("Store "+(st.storeNumber||id))).trim();
-      const mgr=((st.storeManager||"")+"").trim();
+      const mgr=storeGmName(st);
       return ["acct:"+String(st.email).trim().toLowerCase(),lbl+(mgr?" — "+mgr:"")];
     }).sort((a,b)=>a[1].localeCompare(b[1])));
     html+=grp("Hidden accounts",extraAccounts().map(a=>["acct:"+String(a.email||"").trim().toLowerCase(),(a.name||a.email||"")+(a.title?" — "+a.title:"")]));
@@ -2229,8 +2264,20 @@
     admEdit(admNewPendingIndex);
   };
 
+  /* Rebuilding the view must never yank the page back to the top: the
+     scroll position of the page and of the matrix is restored after every
+     re-render, so a cell click leaves you exactly where you were. */
   function admRenderBoards(){
     const host=document.getElementById("adm-boards"); if(!host) return;
+    const st=host.scrollTop;
+    const mw=document.getElementById("adm-matrix-wrap");
+    const ml=mw?mw.scrollLeft:0, mt=mw?mw.scrollTop:0;
+    admRenderBoardsInner(host);
+    host.scrollTop=st;
+    const mw2=document.getElementById("adm-matrix-wrap");
+    if(mw2){ mw2.scrollLeft=ml; mw2.scrollTop=mt; }
+  }
+  function admRenderBoardsInner(host){
     host.innerHTML="";
     if(admView==="people"){ admRenderPeople(host); return; }
     if(admView==="matrix"){ admRenderMatrix(host); return; }
@@ -2274,7 +2321,7 @@
       if(storeDivision(s)==="carwash"&&s.email){
         out.push({ email:String(s.email).trim().toLowerCase(),
                    label:(s.storeName||("Store "+(s.storeNumber||id))).trim(),
-                   mgr:((s.storeManager||"")+"").trim() });
+                   mgr:storeGmName(s) });
       }
     }
     return out.sort((a,b)=>a.label.localeCompare(b.label));
@@ -2441,7 +2488,15 @@
     if(on&&k<0) boards.push(key);
     if(!on&&k>=0) boards.splice(k,1);
     a.boards=boards;
+    if(!on) admSetFull(a,key,false);
     delete a.roles; delete a.only;   /* legacy fields are superseded once edited */
+  }
+  function admSetFull(a,key,on){
+    const l=(Array.isArray(a.boardsAll)?a.boardsAll:[]).slice();
+    const k=l.indexOf(key);
+    if(on&&k<0) l.push(key);
+    if(!on&&k>=0) l.splice(k,1);
+    if(l.length) a.boardsAll=l; else delete a.boardsAll;
   }
 
   /* Directors and District Managers from FindMi, as chip options. The value
@@ -2543,7 +2598,7 @@
       /* A stray backdrop click was silently throwing new apps away — if
          anything has been typed or toggled, ask first. */
       const typed=(document.getElementById("ae-name").value.trim()||document.getElementById("ae-url").value.trim());
-      const touched=a&&(a.only||a.roles||a.boards||a.depts||a.tut||a.accounts||a.hideFor||a.under||a.hideUnder);
+      const touched=a&&(a.only||a.roles||a.boards||a.depts||a.tut||a.accounts||a.hideFor||a.under||a.hideUnder||a.boardsAll);
       if((typed||touched)&&!confirm("Discard this new app?")) return;
       APPS.splice(admNewPendingIndex,1); admNewPendingIndex=null;
     }
@@ -2681,6 +2736,7 @@
       if(a.under&&a.under.length) s+=', under:'+JSON.stringify(a.under);
       if(a.hideUnder&&a.hideUnder.length) s+=', hideUnder:'+JSON.stringify(a.hideUnder);
       if(Array.isArray(a.boards)) s+=', boards:'+JSON.stringify(a.boards);
+      if(a.boardsAll&&a.boardsAll.length) s+=', boardsAll:'+JSON.stringify(a.boardsAll);
       if(a.tut) s+=', tut:true';
       if(a.tutCap) s+=', tutCap:'+JSON.stringify(a.tutCap);
       if(a.tutUrl) s+=', tutUrl:'+JSON.stringify(a.tutUrl);
